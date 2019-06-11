@@ -9,7 +9,7 @@ from abc import ABC, abstractmethod
 from typing import Tuple, List, Dict
 import torch
 from torch import nn
-
+import numpy as np
 
 class KBCModel(nn.Module, ABC):
     @abstractmethod
@@ -62,9 +62,11 @@ class KBCModel(nn.Module, ABC):
                                 int(x - c_begin) for x in filter_out
                                 if c_begin <= x < c_begin + chunk_size
                             ]
-                            scores[i, filter_in_chunk] = -1e6
+                            scores[i, np.array(filter_in_chunk, dtype = np.int64)] = -1e6
+
                         else:
-                            scores[i, filter_out] = -1e6
+                            scores[i, np.array(filter_out, dtype=np.int64)] = -1e6
+
                     ranks[b_begin:b_begin + batch_size] += torch.sum(
                         (scores > targets).float(), dim=1
                     ).cpu()
