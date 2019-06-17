@@ -106,7 +106,7 @@ class ConvE(KBCModel):
         self.bn0 = nn.BatchNorm2d(1)
         self.bn1 = nn.BatchNorm2d(32)
         self.bn2 = nn.BatchNorm1d(self.embedding_dim)
-        self.register_parameter('b', Parameter(torch.zeros(num_e)))  # What is this?
+        self.register_parameter('b', Parameter(torch.zeros(num_e)))
         self.fc = nn.Linear(10368, self.embedding_dim)
 
     def init(self):
@@ -138,7 +138,7 @@ class ConvE(KBCModel):
         y = self.bn2(y)
         y = F.relu(y)  # f(vec(f[e_s; rel] * w) W
         y = y * rhs  # f(vec(f[e_s; rel] * w) W) e_o
-        y += self.b.expand_as(y)
+
         y = torch.sigmoid(y)  # p = sigmoid( psi_r (e_s, e_o) )
 
         return torch.sum(y, 1, keepdim=True)
