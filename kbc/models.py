@@ -10,6 +10,9 @@ from typing import Tuple, List, Dict
 import torch
 from torch import nn
 import numpy as np
+from torch.nn import functional as F, Parameter
+from torch.nn.init import xavier_normal_
+
 
 class KBCModel(nn.Module, ABC):
     @abstractmethod
@@ -75,6 +78,127 @@ class KBCModel(nn.Module, ABC):
 
                 c_begin += chunk_size
         return ranks
+
+
+class ConvE(KBCModel):
+    def __init__(
+            self, sizes: Tuple[int, int, int], rank: int,
+            dropouts: Tuple[float, float, float] = (0.3, 0.3, 0.3),
+            use_bias: bool = True
+    ):
+        super(ConvE, self).__init__()
+        # Parameter init_size is not used but still included (to make it compatible with other components)
+        self.sizes = sizes
+        self.embedding_dim = rank  # For ConvE, we shall refer rank as the embedding dimension
+        self.use_bias = use_bias
+        self.dropouts = dropouts  # (input_dropout, dropout, feature_map_dropout)
+
+        num_e = max(sizes[0], sizes[2])
+
+        self.emb_e = nn.Embedding(num_e, self.embedding_dim, padding_idx=0)  # equivalent to both lhs and rhs
+        self.emb_rel = nn.Embedding(sizes[1], self.embedding_dim, padding_idx=0)
+        self.inp_drop = nn.Dropout(self.dropouts[0])
+
+        self.hidden_drop = nn.Dropout(self.dropouts[1])
+        self.feature_map_drop = nn.Dropout2d(self.dropouts[2])
+
+        self.conv1 = nn.Conv2d(1, 32, (3, 3), 1, 0, bias=self.use_bias)
+        self.bn0 = nn.BatchNorm2d(1)
+        self.bn1 = nn.BatchNorm2d(32)
+        self.bn2 = nn.BatchNorm1d(self.embedding_dim)
+        self.register_parameter('b', Parameter(torch.zeros(num_e)))  # What is this?
+        self.fc = nn.Linear(10368, self.embedding_dim)
+
+    def init(self):
+        xavier_normal_(self.emb_e.weight.data)
+        xavier_normal_(self.emb_rel.weight.data)
+
+    # Work on score and forward
+    def score(self, x):
+        lhs = self.emb_e(x[:, 0])
+        rel = self.emb_rel(x[:, 1])
+        rhs = self.emb_e(x[:, 2])
+
+        batch_size = len(x)
+
+        e1_embedded = lhs.view(-1, 1, 10, 20)
+        rel_embedded = rel.view(-1, 1, 10, 20)
+
+        stacked_inputs = torch.cat([e1_embedded, rel_embedded], 2)
+
+        stacked_inputs = self.bn0(stacked_inputs)
+        y = self.inp_drop(stacked_inputs)
+        y = self.conv1(y)
+        y = self.bn1(y)
+        y = F.relu(y)
+        y = self.feature_map_drop(y)  # vec(f[e_s; rel] * w)
+        y = y.view(batch_size, -1)
+        y = self.fc(y)  # vec(f[e_s;rel] * w) W
+        y = self.hidden_drop(y)
+        y = self.bn2(y)
+        y = F.relu(y)  # f(vec(f[e_s; rel] * w) W
+        y = y * rhs  # f(vec(f[e_s; rel] * w) W) e_o
+        y += self.b.expand_as(y)
+        y = torch.sigmoid(y)  # p = sigmoid( psi_r (e_s, e_o) )
+
+        return torch.sum(y, 1, keepdim=True)
+
+    def forward(self, x):
+        lhs = self.emb_e(x[:, 0])
+        rel = self.emb_rel(x[:, 1])
+        rhs = self.emb_e(x[:, 2])
+
+        batch_size = len(x)
+
+        e1_embedded = lhs.view(-1, 1, 10, 20)
+        rel_embedded = rel.view(-1, 1, 10, 20)
+
+        stacked_inputs = torch.cat([e1_embedded, rel_embedded], 2)
+
+        stacked_inputs = self.bn0(stacked_inputs)  # [e_s; rel]
+        y = self.inp_drop(stacked_inputs)
+        y = self.conv1(y)  # [e_s; rel] * w
+        y = self.bn1(y)
+        y = F.relu(y)  # f([e_s; rel] * w
+        y = self.feature_map_drop(y)  # vec( f([e_s;rel]) )
+        y = y.view(batch_size, -1)
+        y = self.fc(y)  # vec( f([e_s;rel]) ) W
+        y = self.hidden_drop(y)
+        y = self.bn2(y)
+        y = F.relu(y)  # f( vec( f([e_s;rel]) ) W )
+        y = torch.mm(y, self.emb_e.weight.transpose(1, 0))  # f( vec( f([e_s;rel]) ) W ) e_o
+        y += self.b.expand_as(y)
+        y = torch.sigmoid(y)
+
+        return y, (lhs, rel, rhs)
+
+    def get_rhs(self, chunk_begin: int, chunk_size: int):
+        return self.emb_e.weight.data[
+               chunk_begin:chunk_begin + chunk_size
+               ].transpose(0, 1)
+
+    # This is not used in the project but still implemented
+    def get_queries(self, queries: torch.Tensor):
+        lhs = self.emb_e(queries[:, 0])
+        rel = self.emb_rel(queries[:, 1])
+
+        e1_embedded = lhs.view(-1, 1, 10, 20)
+        rel_embedded = rel.view(-1, 1, 10, 20)
+
+        stacked_inputs = torch.cat([e1_embedded, rel_embedded], 2)
+
+        stacked_inputs = self.bn0(stacked_inputs)  # [e_s; rel]
+        y = self.inp_drop(stacked_inputs)
+        y = self.conv1(y)  # [e_s; rel] * w
+        y = self.bn1(y)
+        y = F.relu(y)  # f([e_s; rel] * w
+        y = self.feature_map_drop(y)  # vec( f([e_s;rel]) )
+        y = self.fc(y)  # vec( f([e_s;rel]) ) W
+        y = self.hidden_drop(y)
+        y = self.bn2(y)
+        y = F.relu(y)  # f( vec( f([e_s;rel]) ) W )
+
+        return y
 
 
 class CP(KBCModel):

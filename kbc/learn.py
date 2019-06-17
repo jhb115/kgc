@@ -12,7 +12,7 @@ import torch
 from torch import optim
 
 from kbc.datasets import Dataset
-from kbc.models import CP, ComplEx
+from kbc.models import CP, ComplEx, ConvE
 from kbc.regularizers import N2, N3
 from kbc.optimizers import KBCOptimizer
 
@@ -29,7 +29,7 @@ parser.add_argument(
     help="Dataset in {}".format(datasets)
 )
 
-models = ['CP', 'ComplEx']
+models = ['CP', 'ComplEx', 'ConvE']
 parser.add_argument(
     '--model', choices=models,
     help="Model in {}".format(models)
@@ -83,6 +83,19 @@ parser.add_argument(
     '--decay2', default=0.999, type=float,
     help="decay rate for second moment estimate in Adam"
 )
+
+# Parser argument for ConvE
+# Dropout
+parser.add_argument(
+    '--dropouts', default=(0.3,0.3,0.3), type=tuple,
+    help="Dropout rates for each layer in ConvE"
+)
+# Boolean for the bias in ConvE layers
+parser.add_argument(
+    "--use_bias", default=True, type=bool,
+    help="Using or not using bias for the ConvE layers"
+)
+
 args = parser.parse_args()
 
 dataset = Dataset(args.dataset)
@@ -92,6 +105,7 @@ print(dataset.get_shape())
 model = {
     'CP': lambda: CP(dataset.get_shape(), args.rank, args.init),
     'ComplEx': lambda: ComplEx(dataset.get_shape(), args.rank, args.init),
+    'ConvE': lambda: ConvE(dataset.get_shape(), args.rank, args.dropouts, args.use_bias)
 }[args.model]()
 
 regularizer = {
@@ -102,6 +116,10 @@ regularizer = {
 device = 'cuda'
 model.to(device)
 
+if args.model == "ConvE":
+    model.init()
+
+
 optim_method = {
     'Adagrad': lambda: optim.Adagrad(model.parameters(), lr=args.learning_rate),
     'Adam': lambda: optim.Adam(model.parameters(), lr=args.learning_rate, betas=(args.decay1, args.decay2)),
@@ -109,7 +127,6 @@ optim_method = {
 }[args.optimizer]()
 
 optimizer = KBCOptimizer(model, regularizer, optim_method, args.batch_size)
-
 
 def avg_both(mrrs: Dict[str, float], hits: Dict[str, torch.FloatTensor]):
     """
@@ -122,6 +139,7 @@ def avg_both(mrrs: Dict[str, float], hits: Dict[str, torch.FloatTensor]):
     h = (hits['lhs'] + hits['rhs']) / 2.
     return {'MRR': m, 'hits@[1,3,10]': h}
 
+#e.g. run python kbc/learn.py --dataset 'WN18RR' --model 'ConvE'
 
 cur_loss = 0
 curve = {'train': [], 'valid': [], 'test': []}
