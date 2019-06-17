@@ -16,6 +16,12 @@ from kbc.models import CP, ComplEx, ConvE
 from kbc.regularizers import N2, N3
 from kbc.optimizers import KBCOptimizer
 
+import numpy as np
+
+np.random.seed(0)
+torch.manual_seed(0)
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
 
 big_datasets = ['FB15K', 'WN', 'WN18RR', 'FB237', 'YAGO3-10']
 datasets = big_datasets
