@@ -182,6 +182,8 @@ class ConvE(KBCModel):
         lhs = self.emb_e(queries[:, 0])
         rel = self.emb_rel(queries[:, 1])
 
+        batch_size = len(queries)
+
         e1_embedded = lhs.view(-1, 1, 10, 20)
         rel_embedded = rel.view(-1, 1, 10, 20)
 
@@ -193,6 +195,7 @@ class ConvE(KBCModel):
         y = self.bn1(y)
         y = F.relu(y)  # f([e_s; rel] * w
         y = self.feature_map_drop(y)  # vec( f([e_s;rel]) )
+        y = y.view(batch_size, -1)
         y = self.fc(y)  # vec( f([e_s;rel]) ) W
         y = self.hidden_drop(y)
         y = self.bn2(y)
