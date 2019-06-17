@@ -139,7 +139,8 @@ def avg_both(mrrs: Dict[str, float], hits: Dict[str, torch.FloatTensor]):
     h = (hits['lhs'] + hits['rhs']) / 2.
     return {'MRR': m, 'hits@[1,3,10]': h}
 
-#e.g. run python kbc/learn.py --dataset 'WN18RR' --model 'ConvE'
+# e.g. run
+# python kbc/learn.py --dataset 'WN18RR' --model 'ConvE'
 
 cur_loss = 0
 curve = {'train': [], 'valid': [], 'test': []}
