@@ -79,19 +79,27 @@ class KBCModel(nn.Module, ABC):
                 c_begin += chunk_size
         return ranks
 
+# Customizable parameters for ConvE:
+# dropouts ( = (0.3,0.3,0.3) )
+# kernel_size ( = (3,3) )
+# out_channel ( = 32 )
+# rank ( = embedding_dim = 200)
 
 class ConvE(KBCModel):
     def __init__(
             self, sizes: Tuple[int, int, int], rank: int,
             dropouts: Tuple[float, float, float] = (0.3, 0.3, 0.3),
-            use_bias: bool = True
+            use_bias: bool=True, HW=False, kernel_size=(3, 3), output_channel=32
     ):
         super(ConvE, self).__init__()
-        # Parameter init_size is not used but still included (to make it compatible with other components)
         self.sizes = sizes
+        self.output_channel = output_channel
+        self.kernel_size = kernel_size
         self.embedding_dim = rank  # For ConvE, we shall refer rank as the embedding dimension
         self.use_bias = use_bias
         self.dropouts = dropouts  # (input_dropout, dropout, feature_map_dropout)
+
+        self.H_dim, self.W_dim = self.image_dim(HW)
 
         num_e = max(sizes[0], sizes[2])
 
@@ -102,12 +110,32 @@ class ConvE(KBCModel):
         self.hidden_drop = nn.Dropout(self.dropouts[1])
         self.feature_map_drop = nn.Dropout2d(self.dropouts[2])
 
-        self.conv1 = nn.Conv2d(1, 32, (3, 3), 1, 0, bias=self.use_bias)
+        self.conv1 = nn.Conv2d(1, self.output_channel, self.kernel_size, 1, 0, bias=self.use_bias)
         self.bn0 = nn.BatchNorm2d(1)
-        self.bn1 = nn.BatchNorm2d(32)
+        self.bn1 = nn.BatchNorm2d(self.output_channel)
         self.bn2 = nn.BatchNorm1d(self.embedding_dim)
         self.register_parameter('b', Parameter(torch.zeros(num_e)))
-        self.fc = nn.Linear(10368, self.embedding_dim)
+
+        fc_dim = self.linear_dim()
+        self.fc = nn.Linear(fc_dim, self.embedding_dim)
+
+    def linear_dim(self):  # calculates the dimension of fc layer in ConvE
+        fc_dim = self.output_channel * (self.H_dim * 2 - self.kernel_size[0] + 1) * (self.W_dim - self.kernel_size[1] + 1)
+        return fc_dim
+
+    def image_dim(self, HW):
+        # HW == False -> find rectangular H, W for reshaping
+        if HW == False:
+            W = np.sqrt(self.embedding_dim*2)  # due to the vertical stacking
+            H = W/2
+            if int(H) != H or int(W) != W:
+                raise ValueError('H and W are not integer')
+        else:
+            H, W = HW
+            if H * W != self.embedding_dim:
+                raise ValueError('H x W must be equal to the rank')
+
+        return H, W
 
     def init(self):
         xavier_normal_(self.emb_e.weight.data)
@@ -121,8 +149,8 @@ class ConvE(KBCModel):
 
         batch_size = len(x)
 
-        e1_embedded = lhs.view(-1, 1, 10, 20)
-        rel_embedded = rel.view(-1, 1, 10, 20)
+        e1_embedded = lhs.view(-1, 1, self.H_dim, self.W_dim)
+        rel_embedded = rel.view(-1, 1, self.H_dim, self.W_dim)
 
         stacked_inputs = torch.cat([e1_embedded, rel_embedded], 2)
 
@@ -150,8 +178,8 @@ class ConvE(KBCModel):
 
         batch_size = len(x)
 
-        e1_embedded = lhs.view(-1, 1, 10, 20)
-        rel_embedded = rel.view(-1, 1, 10, 20)
+        e1_embedded = lhs.view(-1, 1, self.H_dim, self.W_dim)
+        rel_embedded = rel.view(-1, 1, self.H_dim, self.W_dim)
 
         stacked_inputs = torch.cat([e1_embedded, rel_embedded], 2)
 
@@ -184,8 +212,8 @@ class ConvE(KBCModel):
 
         batch_size = len(queries)
 
-        e1_embedded = lhs.view(-1, 1, 10, 20)
-        rel_embedded = rel.view(-1, 1, 10, 20)
+        e1_embedded = lhs.view(-1, 1, self.H_dim, self.W_dim)
+        rel_embedded = rel.view(-1, 1, self.H_dim, self.W_dim)
 
         stacked_inputs = torch.cat([e1_embedded, rel_embedded], 2)
 
