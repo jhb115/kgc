@@ -82,8 +82,9 @@ class KBCModel(nn.Module, ABC):
 # Customizable parameters for ConvE:
 # dropouts ( = (0.3,0.3,0.3) )
 # kernel_size ( = (3,3) )
-# out_channel ( = 32 )
+# output_channel ( = 32 )
 # rank ( = embedding_dim = 200)
+# HW = (10, 20)
 
 class ConvE(KBCModel):
     def __init__(

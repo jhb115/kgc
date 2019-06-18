@@ -103,6 +103,21 @@ parser.add_argument(
     help="Using or not using bias for the ConvE layers"
 )
 
+parser.add_argument(
+    "--kernel_size", default=(3,3), type=tuple,
+    help="Kernel Size"
+)
+
+parser.add_argument(
+    "--output_channel", default=32, type=int,
+    help="Number of output channel"
+)
+
+parser.add_argument(
+    "--HW", default=False,
+    help="False or (Height, Width) shape for 2D re-shapinng entity embedding"
+)
+
 args = parser.parse_args()
 
 dataset = Dataset(args.dataset)
@@ -112,7 +127,8 @@ print(dataset.get_shape())
 model = {
     'CP': lambda: CP(dataset.get_shape(), args.rank, args.init),
     'ComplEx': lambda: ComplEx(dataset.get_shape(), args.rank, args.init),
-    'ConvE': lambda: ConvE(dataset.get_shape(), args.rank, args.dropouts, args.use_bias)
+    'ConvE': lambda: ConvE(dataset.get_shape(), args.rank, args.dropouts, args.use_bias, args.HW, args.kernel_size,
+                           args.output_channel)
 }[args.model]()
 
 regularizer = {
