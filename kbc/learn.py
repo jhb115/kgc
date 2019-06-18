@@ -120,6 +120,9 @@ parser.add_argument(
 
 args = parser.parse_args()
 
+#Example Run:
+#!python kbc/learn.py --dataset 'FB15K' --model 'ConvE' --rank 200 --max_epochs 3 --hw 0 0 --kernel_size 3 3 --output_channel 32
+
 if args.model == 'ConvE':
     hw = tuple(args.hw)
     kernel_size = tuple(args.kernel_size)
@@ -146,7 +149,6 @@ model.to(device)
 
 if args.model == "ConvE":
     model.init()
-
 
 optim_method = {
     'Adagrad': lambda: optim.Adagrad(model.parameters(), lr=args.learning_rate),
