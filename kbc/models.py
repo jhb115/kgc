@@ -90,7 +90,7 @@ class ConvE(KBCModel):
     def __init__(
             self, sizes: Tuple[int, int, int], rank: int,
             dropouts: Tuple[float, float, float] = (0.3, 0.3, 0.3),
-            use_bias: bool=True, HW=False, kernel_size=(3, 3), output_channel=32
+            use_bias: bool=True, hw: Tuple[int, int] = (0, 0), kernel_size: Tuple[int, int] = (3, 3), output_channel=32
     ):
         super(ConvE, self).__init__()
         self.sizes = sizes
@@ -100,7 +100,7 @@ class ConvE(KBCModel):
         self.use_bias = use_bias
         self.dropouts = dropouts  # (input_dropout, dropout, feature_map_dropout)
 
-        self.H_dim, self.W_dim = self.image_dim(HW)
+        self.H_dim, self.W_dim = self.image_dim(hw)
 
         num_e = max(sizes[0], sizes[2])
 
@@ -124,19 +124,18 @@ class ConvE(KBCModel):
         fc_dim = self.output_channel * (self.H_dim * 2 - self.kernel_size[0] + 1) * (self.W_dim - self.kernel_size[1] + 1)
         return fc_dim
 
-    def image_dim(self, HW):
-        # HW == False -> find rectangular H, W for reshaping
-        if HW == False:
-            W = np.sqrt(self.embedding_dim*2)  # due to the vertical stacking
-            H = W/2
-            if int(H) != H or int(W) != W:
+    def image_dim(self, hw):
+        if hw == (0, 0):  # -> find rectangular H, W for reshaping
+            w = np.sqrt(self.embedding_dim*2)  # due to the vertical stacking
+            h = w/2
+            if int(h) != h or int(w) != w:
                 raise ValueError('H and W are not integer')
         else:
-            H, W = HW
-            if H * W != self.embedding_dim:
+            h, w = hw
+            if h * w != self.embedding_dim:
                 raise ValueError('H x W must be equal to the rank')
 
-        return H, W
+        return int(h), int(w)
 
     def init(self):
         xavier_normal_(self.emb_e.weight.data)

@@ -94,31 +94,36 @@ parser.add_argument(
 # Parser argument for ConvE
 # Dropout
 parser.add_argument(
-    '--dropouts', default=(0.3,0.3,0.3), type=tuple,
+    '--dropouts', default=(0.3, 0.3, 0.3), type=float,
     help="Dropout rates for each layer in ConvE"
 )
 # Boolean for the bias in ConvE layers
 parser.add_argument(
-    "--use_bias", default=True, type=bool,
+    '--use_bias', default=True, type=bool,
     help="Using or not using bias for the ConvE layers"
 )
 
 parser.add_argument(
-    "--kernel_size", default=(3,3), type=tuple,
+    '--kernel_size', default=(3, 3), nargs='+', type=int,
     help="Kernel Size"
 )
 
 parser.add_argument(
-    "--output_channel", default=32, type=int,
+    '--output_channel', default=32, type=int,
     help="Number of output channel"
 )
 
 parser.add_argument(
-    "--HW", default=False,
-    help="False or (Height, Width) shape for 2D re-shapinng entity embedding"
+    '--hw', default=(10, 20), nargs='+', type=int,
+    help="False or (Height, Width) shape for 2D reshaping entity embedding"
 )
 
 args = parser.parse_args()
+
+if args.model == 'ConvE':
+    hw = tuple(args.hw)
+    kernel_size = tuple(args.kernel_size)
+    dropouts = tuple(args.dropouts)
 
 dataset = Dataset(args.dataset)
 examples = torch.from_numpy(dataset.get_train().astype('int64'))
@@ -127,7 +132,7 @@ print(dataset.get_shape())
 model = {
     'CP': lambda: CP(dataset.get_shape(), args.rank, args.init),
     'ComplEx': lambda: ComplEx(dataset.get_shape(), args.rank, args.init),
-    'ConvE': lambda: ConvE(dataset.get_shape(), args.rank, args.dropouts, args.use_bias, args.HW, args.kernel_size,
+    'ConvE': lambda: ConvE(dataset.get_shape(), args.rank, dropouts, args.use_bias, hw, kernel_size,
                            args.output_channel)
 }[args.model]()
 
