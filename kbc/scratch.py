@@ -2,7 +2,6 @@
 import torch
 from torch import optim
 
-
 from pathlib import Path
 import pkg_resources
 from kbc.datasets import Dataset
