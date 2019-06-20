@@ -167,7 +167,7 @@ class ConvE(KBCModel):
         y = F.relu(y)  # f(vec(f[e_s; rel] * w) W
         y = y * rhs  # f(vec(f[e_s; rel] * w) W) e_o
 
-        y = torch.sigmoid(y)  # p = sigmoid( psi_r (e_s, e_o) )
+        #y = torch.sigmoid(y)  # p = sigmoid( psi_r (e_s, e_o) )
 
         return torch.sum(y, 1, keepdim=True)
 
