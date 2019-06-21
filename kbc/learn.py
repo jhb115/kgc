@@ -15,6 +15,7 @@ from kbc.datasets import Dataset
 from kbc.models import CP, ComplEx, ConvE
 from kbc.regularizers import N2, N3
 from kbc.optimizers import KBCOptimizer
+import pickle
 
 import numpy as np
 
@@ -188,6 +189,7 @@ def avg_both(mrrs: Dict[str, float], hits: Dict[str, torch.FloatTensor]):
 # python kbc/learn.py --dataset 'WN18RR' --model 'ComplEx' --rank 200 -- learning_rate 0.1 --max_epochs 3
 
 
+
 cur_loss = 0
 curve = {'train': [], 'valid': [], 'test': []}
 for e in range(args.max_epochs):
@@ -206,5 +208,8 @@ for e in range(args.max_epochs):
         print("\t TRAIN: ", train)
         print("\t VALID : ", valid)
 
-results = dataset.eval(model, 'test', -1)
+    if (e+1) % 10 == 0:
+        results = dataset.eval(model, 'test', -1)
+        print("\n\nTEST : ", results)
+
 print("\n\nTEST : ", results)
