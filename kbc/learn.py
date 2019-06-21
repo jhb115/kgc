@@ -118,10 +118,21 @@ parser.add_argument(
     help="False or (Height, Width) shape for 2D reshaping entity embedding"
 )
 
+loss_choices = ['Multi', 'Binary']
+parser.add_argument(
+    '--loss', default='Multi', type=str, choices=loss_choices,
+    help="Choose Binary or Multi for cross entropy loss"
+)
+
+
 args = parser.parse_args()
 
 #Example Run:
 #!python kbc/learn.py --dataset 'FB15K' --model 'ConvE' --rank 200 --max_epochs 3 --hw 0 0 --kernel_size 3 3 --output_channel 32
+#!python kbc/learn.py --dataset 'FB15K' --model 'ConvE' --rank 200 --max_epochs 3 --hw 0 0 --kernel_size 3 3 --output_channel 32 --regularizer 'N0'
+
+#Choosing --regularizer 'N0' will disable regularization term
+
 
 if args.model == 'ConvE':
     hw = tuple(args.hw)
@@ -140,6 +151,7 @@ model = {
 }[args.model]()
 
 regularizer = {
+    'N0': 'N0',
     'N2': N2(args.reg),
     'N3': N3(args.reg),
 }[args.regularizer]
@@ -156,7 +168,7 @@ optim_method = {
     'SGD': lambda: optim.SGD(model.parameters(), lr=args.learning_rate)
 }[args.optimizer]()
 
-optimizer = KBCOptimizer(model, regularizer, optim_method, args.batch_size)
+optimizer = KBCOptimizer(model, regularizer, optim_method, args.batch_size, loss_type=args.loss)
 
 def avg_both(mrrs: Dict[str, float], hits: Dict[str, torch.FloatTensor]):
     """
