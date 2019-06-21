@@ -196,7 +196,8 @@ class ConvE(KBCModel):
         y = F.relu(y)  # f( vec( f([e_s;rel]) ) W )
         y = torch.mm(y, self.emb_e.weight.transpose(1, 0))  # f( vec( f([e_s;rel]) ) W ) e_o
         y += self.b.expand_as(y)
-        y = torch.sigmoid(y)
+
+        #y = torch.sigmoid(y)
 
         return y, (lhs, rel, rhs)
 

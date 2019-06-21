@@ -44,11 +44,11 @@ class KBCOptimizer(object):
                 truth = input_batch[:, 2]
 
                 l_fit = loss(predictions, truth)
-                if self.regularizer != 'N0':
+                if self.regularizer == 'N0':
+                    l = l_fit
+                else:
                     l_reg = self.regularizer.forward(factors)
                     l = l_fit + l_reg
-                else:
-                    l = l_fit
 
                 self.optimizer.zero_grad()
                 l.backward()
