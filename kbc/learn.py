@@ -42,7 +42,7 @@ parser.add_argument(
     help="Model in {}".format(models)
 )
 
-regularizers = ['N3', 'N2']
+regularizers = ['N0', 'N3', 'N2']
 parser.add_argument(
     '--regularizer', choices=regularizers, default='N3',
     help="Regularizer in {}".format(regularizers)
@@ -183,6 +183,10 @@ def avg_both(mrrs: Dict[str, float], hits: Dict[str, torch.FloatTensor]):
 
 # e.g. run
 # python kbc/learn.py --dataset 'WN18RR' --model 'ConvE'
+# python kbc/learn.py --dataset 'WN18RR' --model 'ConvE' --rank 200 --learning_rate 0.1 --max_epochs 3 --loss 'Binary' --regularizer 'N0'
+# python kbc/learn.py --dataset 'WN18RR' --model 'ConvE' --rank 200 --learning_rate 0.1 --max_epochs 3 --loss 'Multi' --regularizer 'N3'
+# python kbc/learn.py --dataset 'WN18RR' --model 'ComplEx' --rank 200 -- learning_rate 0.1 --max_epochs 3
+
 
 cur_loss = 0
 curve = {'train': [], 'valid': [], 'test': []}
