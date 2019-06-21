@@ -15,7 +15,9 @@ from kbc.datasets import Dataset
 from kbc.models import CP, ComplEx, ConvE
 from kbc.regularizers import N2, N3
 from kbc.optimizers import KBCOptimizer
+import os
 import pickle
+import pandas as pd
 
 import numpy as np
 
@@ -188,10 +190,46 @@ def avg_both(mrrs: Dict[str, float], hits: Dict[str, torch.FloatTensor]):
 # python kbc/learn.py --dataset 'WN18RR' --model 'ConvE' --rank 200 --learning_rate 0.1 --max_epochs 3 --loss 'Multi' --regularizer 'N3'
 # python kbc/learn.py --dataset 'WN18RR' --model 'ComplEx' --rank 200 -- learning_rate 0.1 --max_epochs 3
 
+# include information of
+# model_name, rank, learning_rate, regularization, reg,
+def get_name(my_args):
+    descriptions = ['', '', 'rank', 'lr', 'b_size', 'w_reg']
+    values = [my_args.model, my_args.regularizer, str(my_args.rank), str(my_args.learning_rate), str(my_args.batch_size),
+              str(my_args.reg)]
+    name = ''
 
+    for i in range(len(values)):
+        if descriptions[i] != '':
+            name += descriptions[i] + '-'
+        name += values[i] + '_'
+    name -= '-'
+
+    return name
+
+def get_folder_path(my_args):
+    folder = my_args.dataset + '/' + my_args.model
+    if not os.path.exists(folder):
+        os.makedirs(folder)
+    return folder
+
+f_name = get_name(args)
+folder_path = get_folder_path(args)
+f_name += folder_path
+
+train_mrr = []
+train_hits = []
+
+valid_mrr = []
+valid_hits = []
+
+test_mrr = []
+test_hits = []
+
+
+all_test_mrr = []
+all_test_hits = []
 
 cur_loss = 0
-curve = {'train': [], 'valid': [], 'test': []}
 for e in range(args.max_epochs):
     cur_loss = optimizer.epoch(examples)
 
@@ -201,15 +239,29 @@ for e in range(args.max_epochs):
             for split in ['valid', 'test', 'train']
         ]
 
-        curve['valid'].append(valid)
-        curve['test'].append(test)
-        curve['train'].append(train)
+        train_mrr.append(train['MRR'])
+        train_hits.append(train['hits@[1,3,10]'].numpy())
+        valid_mrr.append(valid['MRR'])
+        valid_hits.append(valid['hits@[1,3,10]'].numpy())
+        test_mrr.append(test['MRR'])
+        test_hits.append(test['hits@[1,3,10]'].numpy())
 
         print("\t TRAIN: ", train)
         print("\t VALID : ", valid)
 
     if (e+1) % 10 == 0:
         results = dataset.eval(model, 'test', -1)
+        results = avg_both(results)
+
+        all_test_mrr.append(results['MRR'])
+        all_test_hits.append(results['hits@[1,3,10]'].numpy())
         print("\n\nTEST : ", results)
+
+    if (e+1)% 20 == 0:
+        # save the evaluated scores
+
+
+
+
 
 print("\n\nTEST : ", results)
