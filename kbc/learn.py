@@ -10,16 +10,18 @@ from typing import Dict
 
 import torch
 from torch import optim
+from torch.utils.tensorboard import SummaryWriter
 
 from kbc.datasets import Dataset
 from kbc.models import CP, ComplEx, ConvE
 from kbc.regularizers import N2, N3
 from kbc.optimizers import KBCOptimizer
-import os
-import pickle
-import pandas as pd
 
 import numpy as np
+
+writer = SummaryWriter()
+
+
 
 #Fix the random seeds for reproducibility
 np.random.seed(0)
@@ -192,23 +194,54 @@ def avg_both(mrrs: Dict[str, float], hits: Dict[str, torch.FloatTensor]):
 # include information of
 # model_name, rank, learning_rate, regularization, reg,
 
+
 cur_loss = 0
+train_i = 0
+test_i = 0
+
+split_name = ['train', 'valid', 'test']
+hits_name = ['_hits@1', '_hits@3', '_hits@10']
+
 for e in range(args.max_epochs):
     cur_loss = optimizer.epoch(examples)
 
     if (e + 1) % args.valid == 0:
-        valid, test, train = [
+
+        train_results = [
             avg_both(*dataset.eval(model, split, -1 if split != 'train' else 50000))
-            for split in ['valid', 'test', 'train']
+            for split in split_name
         ]
 
-        print("\t TRAIN: ", train)
-        print("\t VALID : ", valid)
+        for split_i in range(3):
+            split = split_name[split_i]
+            writer.add_scalar('train/' + split + '_mrr', train_results[split_i]['MRR'], train_i)
+            tmp = train_results[split_i]['hits@[1,3,10']
+
+            for hit_i in range(3):
+                writer.add_scalar('train/' + split + hits_name[hit_i], tmp[hit_i], train_i)
+
+        print("\t TRAIN: ", train_results[0])
+        print("\t VALID : ", train_results[1])
+
+        train_i += 1
 
     if (e+1) % 10 == 0:
+
         results = dataset.eval(model, 'test', -1)
         results = avg_both(results)
+
+        writer.add_scalar('test/test_mrr', results['MRR'], test_i)
+        tmp = results['hits@[1,3,10]']
+
+        for hit_i in range(3):
+            writer.add_scalar('test/test' + hits_name[hit_i], tmp[hit_i], test_i)
+
         print("\n\nTEST : ", results)
+
+        test_i += 1
 
 
 print("\n\nTEST : ", results)
+
+writer.export_scalars_to_json("./all_scalars.json")
+writer.close()
