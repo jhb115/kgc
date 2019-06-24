@@ -212,22 +212,23 @@ def get_folder_path(my_args):
         os.makedirs(folder)
     return folder
 
+
 f_name = get_name(args)
 folder_path = get_folder_path(args)
 f_name += folder_path
 
-train_mrr = []
-train_hits = []
+each_name = ['train', 'valid', 'test']
+each_score = ['_mrr', '_hits@1', '_hits@3', '_hits@10']
 
-valid_mrr = []
-valid_hits = []
+column_list = [name + score for name in each_name for score in each_score]
+test_column_list = ['test' + score for score in each_score]
 
-test_mrr = []
-test_hits = []
+train_df = pd.DataFrame(columns=column_list)
+test_df = pd.DataFrame(columns=test_column_list)
 
+tmp_train = {each_column:[] for each_column in column_list}
+tmp_test = {each_test_column:[] for each_test_column in test_column_list}
 
-all_test_mrr = []
-all_test_hits = []
 
 cur_loss = 0
 for e in range(args.max_epochs):
@@ -239,12 +240,12 @@ for e in range(args.max_epochs):
             for split in ['valid', 'test', 'train']
         ]
 
-        train_mrr.append(train['MRR'])
-        train_hits.append(train['hits@[1,3,10]'].numpy())
-        valid_mrr.append(valid['MRR'])
-        valid_hits.append(valid['hits@[1,3,10]'].numpy())
-        test_mrr.append(test['MRR'])
-        test_hits.append(test['hits@[1,3,10]'].numpy())
+        for split in ['valid', 'test', 'train']:
+            tmp_train[split+'_mrr'].append(train['MRR'])
+
+            tmp = train['hits@[1,3,10]'].numpy()
+            for i in range(3):
+                tmp_train[split+each_score[i+1]].append(tmp[i])
 
         print("\t TRAIN: ", train)
         print("\t VALID : ", valid)
@@ -253,15 +254,32 @@ for e in range(args.max_epochs):
         results = dataset.eval(model, 'test', -1)
         results = avg_both(results)
 
-        all_test_mrr.append(results['MRR'])
-        all_test_hits.append(results['hits@[1,3,10]'].numpy())
+        tmp_test['test_mrr'].append(results['MRR'])
+        tmp = results['hits@[1,3,10'].numpy()
+        for i in range(3):
+            tmp_train['test'+each_score[i+1]].append(tmp[i])
+
+
         print("\n\nTEST : ", results)
 
-    if (e+1)% 20 == 0:
-        # save the evaluated scores
+    if (e+1)% 20 == 0: #Update dataframe
+
+        hits_name = ['_hits@1', '_hits@2', '_hits@3']
+        tmp_train_input = {}
+        for name in ['train', 'valid', 'test']:
+            tmp_hits = np.stack(tmp_train[name + '_hits'])
+            tmp_train_input[name + '_mrr'] = tmp_train[name + '_mrr']
+            for i in range(3):
+                tmp_train_input[name + hits_name[i]] = tmp_hits[i]
+
+        tmp_train = {'train_mrr': tmp_train['train_mrr'],
+                    'train' + x[i]: tmp_train_hits[i] for i in range(3)}
 
 
 
+        train_df.append(ignore_index=True)
+        test_df.append(ignore_index=True)
 
+        tmp_train, tmp_test = reset_tmp_dict(each_name, each_score)
 
 print("\n\nTEST : ", results)
