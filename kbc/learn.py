@@ -209,15 +209,7 @@ for e in range(args.max_epochs):
     if (e+1) % 10 == 0:
         results = dataset.eval(model, 'test', -1)
         results = avg_both(results)
-
-
         print("\n\nTEST : ", results)
-
-    if (e+1)% 20 == 0:
-        # save the evaluated scores
-
-
-
 
 
 print("\n\nTEST : ", results)
