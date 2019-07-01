@@ -7,29 +7,19 @@
 
 import argparse
 from typing import Dict
+import configparser
 
 import torch
 from torch import optim
-#from torch.utils.tensorboard import SummaryWriter
-#from tensorboardX import SummaryWriter
-#from tensorboardX import SummaryWriter
-
-#installation requires
-#pip install tensorboardX
-#pip install tensorboard
-#tensorboard --logdir=<your_log_dir>
-
 
 from kbc.datasets import Dataset
 from kbc.models import CP, ComplEx, ConvE
 from kbc.regularizers import N2, N3
 from kbc.optimizers import KBCOptimizer
-
+import os
 import numpy as np
 
-#writer = SummaryWriter()
-
-#Fix the random seeds for reproducibility
+#For reproducilibility
 np.random.seed(0)
 torch.manual_seed(0)
 torch.backends.cudnn.deterministic = True
@@ -135,12 +125,12 @@ parser.add_argument(
     help="Choose Binary or Multi for cross entropy loss"
 )
 
-
+# Setup parser
 args = parser.parse_args()
 
-#Example Run:
-#!python kbc/learn.py --dataset 'FB15K' --model 'ConvE' --rank 200 --max_epochs 3 --hw 0 0 --kernel_size 3 3 --output_channel 32
-#!python kbc/learn.py --dataset 'FB15K' --model 'ConvE' --rank 200 --max_epochs 3 --hw 0 0 --kernel_size 3 3 --output_channel 32 --regularizer 'N0'
+# Example Run:
+# !python kbc/learn.py --dataset 'FB15K' --model 'ConvE' --rank 200 --max_epochs 3 --hw 0 0 --kernel_size 3 3 --output_channel 32
+# !python kbc/learn.py --dataset 'FB15K' --model 'ConvE' --rank 200 --max_epochs 3 --hw 0 0 --kernel_size 3 3 --output_channel 32 --regularizer 'N0'
 
 #Choosing --regularizer 'N0' will disable regularization term
 
@@ -149,6 +139,7 @@ if args.model == 'ConvE':
     kernel_size = tuple(args.kernel_size)
     dropouts = tuple(args.dropouts)
 
+# Get Dataset
 dataset = Dataset(args.dataset)
 examples = torch.from_numpy(dataset.get_train().astype('int64'))
 
@@ -191,15 +182,6 @@ def avg_both(mrrs: Dict[str, float], hits: Dict[str, torch.FloatTensor]):
     h = (hits['lhs'] + hits['rhs']) / 2.
     return {'MRR': m, 'hits@[1,3,10]': h}
 
-# e.g. run
-# python kbc/learn.py --dataset 'WN18RR' --model 'ConvE'
-# python kbc/learn.py --dataset 'WN18RR' --model 'ConvE' --rank 200 --learning_rate 0.1 --max_epochs 3 --loss 'Binary' --regularizer 'N0'
-# python kbc/learn.py --dataset 'WN18RR' --model 'ConvE' --rank 200 --learning_rate 0.1 --max_epochs 3 --loss 'Multi' --regularizer 'N3'
-# python kbc/learn.py --dataset 'WN18RR' --model 'ComplEx' --rank 200 -- learning_rate 0.1 --max_epochs 3
-
-# include information of
-# model_name, rank, learning_rate, regularization, reg,
-
 
 cur_loss = 0
 train_i = 0
@@ -208,49 +190,116 @@ test_i = 0
 split_name = ['train', 'valid', 'test']
 hits_name = ['_hits@1', '_hits@3', '_hits@10']
 
+train_mrr = []
+train_hit1 = []
+train_hit3 = []
+train_hit10 = []
+
+valid_mrr = []
+valid_hit1 = []
+valid_hit3 = []
+valid_hit10 = []
 
 
+test_mrr = []
+test_hit1 = []
+test_hit3 = []
+test_hit10 = []
+
+#check if the directory exists
+results_folder = './results/{}/{}'.format(args.model, args.dataset)
+
+if not os.path.exists(results_folder):
+    raise Exception('You do not have folder named:{}'.format(results_folder))
+
+train_no = 1
+
+while not os.path.exists(results_folder + '/train' + str(train_no)):
+    train_no += 1
+
+folder_name = results_folder + '/train' + str(train_no)
+os.mkdir(folder_name)
+
+
+#Save the configuration file
+config = configparser.ConfigParser()
+
+for key, val in vars(args):
+    config[key] = val
+
+with open(folder_name + '/config.ini', 'w') as configfile:
+    config.write(configfile)
+
+# Save the configuration file and txt file description.
+# What to include in the configuration file and txt file:
+# Config: args.model, args.dataset,
+# args.max_epochs, e, args.regularizer, args.optimizer, args.rank, args.batch_size,
+# args.reg, args.init, args.learning_rate
+# if args.model == 'ConvE':
+# args.dropouts, args.use_bias, args.kernel_size, args.output_channel, args.hw
+
+config['e'] = 0
 
 for e in range(args.max_epochs):
     cur_loss = optimizer.epoch(examples)
 
-    if (e + 1) % args.valid == 0:
+    print('\n train epoch = ', e)
+    if (e + 1) % args.valid == 0 or (e+1) == args.max_epochs:
 
-        train_results = [
+        train_results, valid_results = [
             avg_both(*dataset.eval(model, split, -1 if split != 'train' else 50000))
             for split in split_name
         ]
 
-        # for split_i in range(3):
-        #     split = split_name[split_i]
-        #     writer.add_scalar('train/' + split + '_mrr', train_results[split_i]['MRR'], train_i)
-        #     tmp = train_results[split_i]['hits@[1,3,10]']
-        #
-        #     for hit_i in range(3):
-        #         writer.add_scalar('train/' + split + hits_name[hit_i], tmp[hit_i], train_i)
+        print("\n\t TRAIN: ", train_results)
+        print("\t VALID : ", valid_results)
 
-        print("\t TRAIN: ", train_results[0])
-        print("\t VALID : ", train_results[1])
+        train_mrr.append(train_results['MRR'])
 
-        train_i += 1
+        hits1310 = train_results['hits@[1,3,10]'].numpy()
+        train_hit1.append(hits1310[0])
+        train_hit3.append(hits1310[1])
+        train_hit10.append(hits1310[2])
 
-    if (e+1) % 10 == 0 or (e+1) == args.max_epochs:
+        valid_mrr.append(valid_results['MRR'])
 
-        results = avg_both( *dataset.eval(model, 'test', -1))
+        hits1310 = valid_results['hits@[1,3,10]'].numpy()
+        valid_hit1.append(hits1310[0])
+        valid_hit3.append(hits1310[1])
+        valid_hit10.append(hits1310[2])
 
-        # writer.add_scalar('test/test_mrr', results['MRR'], test_i)
-        # tmp = results['hits@[1,3,10]']
-        #
-        # for hit_i in range(3):
-        #     writer.add_scalar('test/test' + hits_name[hit_i], tmp[hit_i], test_i)
+#    if (e+1) % args.valid == 0 or (e+1) == args.max_epochs:
+
+        results = avg_both(*dataset.eval(model, 'test', -1))
+
+        test_mrr.append(results['MRR'])
+
+        hits1310 = results['hits@[1,3,10]'].numpy()
+
+        test_hit1.append(hits1310[0])
+        test_hit3.append(hits1310[1])
+        test_hit10.append(hits1310[2])
 
         print("\n\nTEST : ", results)
 
+        np.save(folder_name + '/test_mrr', np.array(test_mrr))
+        np.save(folder_name + '/test_hit1', np.array(test_hit1))
+        np.save(folder_name + '/test_hit3', np.array(test_hit3))
+        np.save(folder_name + '/test_hit10', np.array(test_hit10))
+
+        config['eval_e'] = e
+
+        with open(folder_name + '/config.ini', 'w') as configfile:
+            config.write(configfile)
+
         test_i += 1
 
+    if (e+1) % 5 or (e+1) == args.max_epochs:  # Save the model parameters
+        torch.save(model.state_dict(), folder_name + '/model_state')
 
-#print("\n\nTEST : ", results)
+        # Update configfile
+        config['e'] = e
+        with open(folder_name + '/config.ini', 'w') as configfile:
+            config.write(configfile)
 
-#writer.export_scalars_to_json("./all_scalars.json")
 
-#writer.close()
