@@ -227,9 +227,12 @@ config = vars(args)
 pickle.dump(config, open(folder_name + '/config.p', 'wb'))
 
 config_ini = configparser.ConfigParser()
-config_ini['setup'] = config
+config_ini['setup'] = {}
 
+for key in config.keys():
+    config_ini['setup'][str(key)] = str(config[key])
 
+#config_ini['setup'] = config
 with open(folder_name + '/config.ini', 'wb') as configfile:
     config_ini.write(configfile)
 

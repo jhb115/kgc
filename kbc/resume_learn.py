@@ -31,7 +31,7 @@ parser.add_argument('--train_no')
 
 args = parser.parse_args()
 
-folder_path = './results/{}/{}/train{}'.format(args.model, args.dataset, str(args.train_no))
+folder_path = './results/{}/{}/train{}'.format(args.model, args.dataset, str(int(args.train_no)))
 
 # check if the folder exists
 if not os.path.exists(folder_path):
