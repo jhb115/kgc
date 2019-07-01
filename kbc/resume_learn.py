@@ -95,7 +95,7 @@ cur_loss = 0
 train_i = 0
 test_i = 0
 
-split_name = ['train', 'valid', 'test']
+split_name = ['train', 'valid']
 hits_name = ['_hits@1', '_hits@3', '_hits@10']
 
 train_mrr = np.load(folder_path + '/train_mrr.npy')

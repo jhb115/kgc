@@ -188,7 +188,7 @@ cur_loss = 0
 train_i = 0
 test_i = 0
 
-split_name = ['train', 'valid', 'test']
+split_name = ['train', 'valid']
 hits_name = ['_hits@1', '_hits@3', '_hits@10']
 
 train_mrr = []
@@ -244,11 +244,14 @@ with open(folder_name + '/config.ini', 'w') as configfile:
 # if args.model == 'ConvE':
 # args.dropouts, args.use_bias, args.kernel_size, args.output_channel, args.hw
 
-for e in range(args.max_epochs):
+#for e in range(args.max_epochs):
+for e in [0]:
     print('\n train epoch = ', e)
 
     cur_loss = optimizer.epoch(examples)
-    if (e + 1) % args.valid == 0 or (e+1) == args.max_epochs:
+
+    #if (e + 1) % args.valid == 0 or (e+1) == args.max_epochs:
+    if (e + 1) % 1 == 0 or (e + 1) == args.max_epochs:
 
         torch.save(model.state_dict(), folder_name + '/model_state')
 
