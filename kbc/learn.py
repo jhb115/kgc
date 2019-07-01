@@ -245,9 +245,9 @@ with open(folder_name + '/config.ini', 'w') as configfile:
 # args.dropouts, args.use_bias, args.kernel_size, args.output_channel, args.hw
 
 for e in range(args.max_epochs):
-    cur_loss = optimizer.epoch(examples)
-
     print('\n train epoch = ', e)
+
+    cur_loss = optimizer.epoch(examples)
     if (e + 1) % args.valid == 0 or (e+1) == args.max_epochs:
 
         torch.save(model.state_dict(), folder_name + '/model_state')
