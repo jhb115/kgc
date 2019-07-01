@@ -76,6 +76,9 @@ optim_method = {
 
 optimizer = KBCOptimizer(model, regularizer, optim_method, config['batch_size'], loss_type=config['loss'])
 
+model.load_state_dict(torch.load(folder_path + '/model_state'))
+
+
 def avg_both(mrrs: Dict[str, float], hits: Dict[str, torch.FloatTensor]):
     """
     aggregate metrics for missing lhs and rhs
@@ -121,7 +124,7 @@ test_hit10 = np.load(folder_path + '/train_hit10.npy')
 
 
 config_ini = configparser.ConfigParser()
-config_ini.read(open(folder_path + '/config.ini', 'rb'))
+config_ini.read(open(folder_path + '/config.ini', 'r'))
 
 
 for e in range(config['e'], config['max_epochs']):
@@ -187,6 +190,6 @@ for e in range(config['e'], config['max_epochs']):
 
         config_ini['setup']['e'] = str(e)
 
-        with open(folder_path + '/config.ini', 'wb') as configfile:
+        with open(folder_path + '/config.ini', 'w') as configfile:
             config_ini.write(configfile)
 

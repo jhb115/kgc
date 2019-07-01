@@ -233,7 +233,7 @@ for key in config.keys():
     config_ini['setup'][str(key)] = str(config[key])
 
 #config_ini['setup'] = config
-with open(folder_name + '/config.ini', 'wb') as configfile:
+with open(folder_name + '/config.ini', 'w') as configfile:
     config_ini.write(configfile)
 
 # Save the configuration file and txt file description.
@@ -298,7 +298,7 @@ for e in range(args.max_epochs):
 
         config_ini['setup']['e'] = str(e)
 
-        with open(folder_name + '/config.ini', 'wb') as configfile:
+        with open(folder_name + '/config.ini', 'w') as configfile:
             config_ini.write(configfile)
 
         test_i += 1
