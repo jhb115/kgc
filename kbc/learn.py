@@ -7,6 +7,7 @@
 
 import argparse
 from typing import Dict
+import pickle
 import configparser
 
 import torch
@@ -214,21 +215,23 @@ if not os.path.exists(results_folder):
 
 train_no = 1
 
-while not os.path.exists(results_folder + '/train' + str(train_no)):
+while os.path.exists(results_folder + '/train' + str(train_no)):
     train_no += 1
 
 folder_name = results_folder + '/train' + str(train_no)
 os.mkdir(folder_name)
 
+# Save the configuration file
+config = vars(args)
 
-#Save the configuration file
-config = configparser.ConfigParser()
+pickle.dump(config, open(folder_name + '/config.p', 'wb'))
 
-for key, val in vars(args):
-    config[key] = val
+config_ini = configparser.ConfigParser()
+config_ini['setup'] = config
 
-with open(folder_name + '/config.ini', 'w') as configfile:
-    config.write(configfile)
+
+with open(folder_name + '/config.ini', 'wb') as configfile:
+    config_ini.write(configfile)
 
 # Save the configuration file and txt file description.
 # What to include in the configuration file and txt file:
@@ -238,13 +241,13 @@ with open(folder_name + '/config.ini', 'w') as configfile:
 # if args.model == 'ConvE':
 # args.dropouts, args.use_bias, args.kernel_size, args.output_channel, args.hw
 
-config['e'] = 0
-
 for e in range(args.max_epochs):
     cur_loss = optimizer.epoch(examples)
 
     print('\n train epoch = ', e)
     if (e + 1) % args.valid == 0 or (e+1) == args.max_epochs:
+
+        torch.save(model.state_dict(), folder_name + '/model_state')
 
         train_results, valid_results = [
             avg_both(*dataset.eval(model, split, -1 if split != 'train' else 50000))
@@ -287,19 +290,16 @@ for e in range(args.max_epochs):
         np.save(folder_name + '/test_hit3', np.array(test_hit3))
         np.save(folder_name + '/test_hit10', np.array(test_hit10))
 
-        config['eval_e'] = e
+        config['e'] = e
+        pickle.dump(config, open(folder_name + '/config.p', 'wb'))
 
-        with open(folder_name + '/config.ini', 'w') as configfile:
-            config.write(configfile)
+        config_ini['setup']['e'] = str(e)
+
+        with open(folder_name + '/config.ini', 'wb') as configfile:
+            config_ini.write(configfile)
 
         test_i += 1
 
-    if (e+1) % 5 or (e+1) == args.max_epochs:  # Save the model parameters
-        torch.save(model.state_dict(), folder_name + '/model_state')
 
-        # Update configfile
-        config['e'] = e
-        with open(folder_name + '/config.ini', 'w') as configfile:
-            config.write(configfile)
 
 
