@@ -245,7 +245,7 @@ with open(folder_name + '/config.ini', 'w') as configfile:
 # args.dropouts, args.use_bias, args.kernel_size, args.output_channel, args.hw
 
 for e in range(args.max_epochs):
-    print('\n train epoch = ', e)
+    print('\n train epoch = ', e+1)
 
     cur_loss = optimizer.epoch(examples)
 

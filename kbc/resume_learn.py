@@ -129,7 +129,7 @@ config_ini.read(open(folder_path + '/config.ini', 'r'))
 for e in range(config['e']+1, config['max_epochs']):
     cur_loss = optimizer.epoch(examples)
 
-    print('\n train epoch = ', e)
+    print('\n train epoch = ', e+1)
     if (e + 1) % config['valid'] == 0 or (e+1) == config['max_epochs']:
 
         torch.save(model.state_dict(), folder_path + '/model_state.pt')
