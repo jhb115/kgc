@@ -244,16 +244,13 @@ with open(folder_name + '/config.ini', 'w') as configfile:
 # if args.model == 'ConvE':
 # args.dropouts, args.use_bias, args.kernel_size, args.output_channel, args.hw
 
-#for e in range(args.max_epochs):
-for e in [0]:
+for e in range(args.max_epochs):
     print('\n train epoch = ', e)
 
     cur_loss = optimizer.epoch(examples)
 
-    #if (e + 1) % args.valid == 0 or (e+1) == args.max_epochs:
-    if (e + 1) % 1 == 0 or (e + 1) == args.max_epochs:
-
-        torch.save(model.state_dict(), folder_name + '/model_state')
+    if (e + 1) % args.valid == 0 or (e+1) == args.max_epochs:
+        torch.save(model.state_dict(), folder_name + '/model_state.pt')
 
         train_results, valid_results = [
             avg_both(*dataset.eval(model, split, -1 if split != 'train' else 50000))
@@ -276,6 +273,16 @@ for e in [0]:
         valid_hit1.append(hits1310[0])
         valid_hit3.append(hits1310[1])
         valid_hit10.append(hits1310[2])
+
+        np.save(folder_name + '/train_mrr', np.array(train_mrr))
+        np.save(folder_name + '/train_hit1', np.array(train_hit1))
+        np.save(folder_name + '/train_hit3', np.array(train_hit3))
+        np.save(folder_name + '/train_hit10', np.array(train_hit10))
+
+        np.save(folder_name + '/valid_mrr', np.array(valid_mrr))
+        np.save(folder_name + '/valid_hit1', np.array(valid_hit1))
+        np.save(folder_name + '/valid_hit3', np.array(valid_hit3))
+        np.save(folder_name + '/valid_hit10', np.array(valid_hit10))
 
 #    if (e+1) % args.valid == 0 or (e+1) == args.max_epochs:
 

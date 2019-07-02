@@ -76,8 +76,7 @@ optim_method = {
 
 optimizer = KBCOptimizer(model, regularizer, optim_method, config['batch_size'], loss_type=config['loss'])
 
-model.load_state_dict(torch.load(folder_path + '/model_state'))
-
+model.load_state_dict(torch.load(folder_path + '/model_state.pt'))
 
 def avg_both(mrrs: Dict[str, float], hits: Dict[str, torch.FloatTensor]):
     """
@@ -98,21 +97,21 @@ test_i = 0
 split_name = ['train', 'valid']
 hits_name = ['_hits@1', '_hits@3', '_hits@10']
 
-train_mrr = np.load(folder_path + '/train_mrr.npy')
-train_hit1 = np.load(folder_path + '/train_hit1.npy')
-train_hit3 = np.load(folder_path + '/train_hit3.npy')
-train_hit10 = np.load(folder_path + '/train_hit10.npy')
+train_mrr = list(np.load(folder_path + '/train_mrr.npy'))
+train_hit1 = list(np.load(folder_path + '/train_hit1.npy'))
+train_hit3 = list(np.load(folder_path + '/train_hit3.npy'))
+train_hit10 = list(np.load(folder_path + '/train_hit10.npy'))
 
-valid_mrr = np.load(folder_path + '/train_mrr.npy')
-valid_hit1 = np.load(folder_path + '/train_hit1.npy')
-valid_hit3 = np.load(folder_path + '/train_hit3.npy')
-valid_hit10 = np.load(folder_path + '/train_hit10.npy')
+valid_mrr = list(np.load(folder_path + '/train_mrr.npy'))
+valid_hit1 = list(np.load(folder_path + '/train_hit1.npy'))
+valid_hit3 = list(np.load(folder_path + '/train_hit3.npy'))
+valid_hit10 = list(np.load(folder_path + '/train_hit10.npy'))
 
 
-test_mrr = np.load(folder_path + '/train_mrr.npy')
-test_hit1 = np.load(folder_path + '/train_hit1.npy')
-test_hit3 = np.load(folder_path + '/train_hit3.npy')
-test_hit10 = np.load(folder_path + '/train_hit10.npy')
+test_mrr = list(np.load(folder_path + '/train_mrr.npy'))
+test_hit1 = list(np.load(folder_path + '/train_hit1.npy'))
+test_hit3 = list(np.load(folder_path + '/train_hit3.npy'))
+test_hit10 = list(np.load(folder_path + '/train_hit10.npy'))
 
 # Save the configuration file and txt file description.
 # What to include in the configuration file and txt file:
@@ -127,13 +126,13 @@ config_ini = configparser.ConfigParser()
 config_ini.read(open(folder_path + '/config.ini', 'r'))
 
 
-for e in range(config['e'], config['max_epochs']):
+for e in range(config['e']+1, config['max_epochs']):
     cur_loss = optimizer.epoch(examples)
 
     print('\n train epoch = ', e)
     if (e + 1) % config['valid'] == 0 or (e+1) == config['max_epochs']:
 
-        torch.save(model.state_dict(), folder_path + '/model_state')
+        torch.save(model.state_dict(), folder_path + '/model_state.pt')
 
         train_results, valid_results = [
             avg_both(*dataset.eval(model, split, -1 if split != 'train' else 50000))
