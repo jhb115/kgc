@@ -121,10 +121,8 @@ test_hit10 = list(np.load(folder_path + '/train_hit10.npy'))
 # if args.model == 'ConvE':
 # args.dropouts, config['use_bias'], args.kernel_size, config['output_channel'], config['hw']
 
-
 config_ini = configparser.ConfigParser()
-config_ini.read(open(folder_path + '/config.ini', 'r'))
-
+config_ini.read(folder_path + '/config.ini')
 
 for e in range(config['e']+1, config['max_epochs']):
     cur_loss = optimizer.epoch(examples)
@@ -191,4 +189,5 @@ for e in range(config['e']+1, config['max_epochs']):
 
         with open(folder_path + '/config.ini', 'w') as configfile:
             config_ini.write(configfile)
+
 
