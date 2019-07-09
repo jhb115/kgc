@@ -14,17 +14,17 @@ import numpy as np
 import torch
 from kbc.models import KBCModel
 
-DATA_PATH = Path(pkg_resources.resource_filename('kbc', 'data/'))
+DATA_PATH = Path(pkg_resources.resource_filename('kbc', 'src_data/'))
 
 
 class Dataset(object):
-    def __init__(self, name: str, use_colab=False):  # file_path for manually specifying file_path
+    def __init__(self, name: str, use_colab=True):
         self.root = DATA_PATH / name
 
         self.data = {}
 
         for f in ['train', 'test', 'valid']:
-            if not use_colab:
+            if use_colab:
                 in_file = open(str(self.root / (f + '.pickle')), 'rb')
                 self.data[f] = pickle.load(in_file)
             else:

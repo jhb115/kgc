@@ -18,7 +18,7 @@ e.g.
 - create list where [ (start, end), (start, end), ... ]
 e.g. [ (0, 3), (3, 4), (4, 7), ... ]  
 '''
-#%%%
+
 # This function assumes that the reciprocal relationships (reciprocal triplets) already exist.
 
 def sort_data(data):
@@ -58,3 +58,20 @@ def get_neighbor(sorted_data, subject, slice_dic):
 
     return sorted_data[start_i:end_i]  # returns an array of neighbouring triplets
 
+#%%%%
+
+'''
+class Dataset
+get_train -> returns train examples (examples include reciprocal triplets)
+'''
+from kbc.datasets import Dataset
+mydata = Dataset('FB15K', use_colab = False)
+
+#%%%
+
+from pathlib import Path
+import pkg_resources
+
+
+DATA_PATH = Path(pkg_resources.resource_filename('kbc', 'src_data/')) / 'FB15K'
+print(DATA_PATH)
