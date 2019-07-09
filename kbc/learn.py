@@ -14,7 +14,7 @@ import torch
 from torch import optim
 
 from kbc.datasets import Dataset
-from kbc.models import CP, ComplEx, ConvE
+from kbc.models import CP, ComplEx, ConvE, Context_CP
 from kbc.regularizers import N2, N3
 from kbc.optimizers import KBCOptimizer
 import os
@@ -38,7 +38,7 @@ parser.add_argument(
     help="Dataset in {}".format(datasets)
 )
 
-models = ['CP', 'ComplEx', 'ConvE']
+models = ['CP', 'ComplEx', 'ConvE', 'Context_CP']
 parser.add_argument(
     '--model', choices=models,
     help="Model in {}".format(models)
@@ -149,7 +149,8 @@ model = {
     'CP': lambda: CP(dataset.get_shape(), args.rank, args.init),
     'ComplEx': lambda: ComplEx(dataset.get_shape(), args.rank, args.init),
     'ConvE': lambda: ConvE(dataset.get_shape(), args.rank, dropouts, args.use_bias, hw, kernel_size,
-                           args.output_channel)
+                           args.output_channel),
+    'Context_CP': lambda: Context_CP(dataset.get_shape(), args.rank, args.init, args.dataset)
 }[args.model]()
 
 regularizer = {
@@ -163,6 +164,7 @@ model.to(device)
 
 if args.model == "ConvE":
     model.init()
+
 
 optim_method = {
     'Adagrad': lambda: optim.Adagrad(model.parameters(), lr=args.learning_rate),

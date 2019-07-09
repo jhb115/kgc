@@ -12,7 +12,7 @@ from torch import nn
 import numpy as np
 from torch.nn import functional as F, Parameter
 from torch.nn.init import xavier_normal_
-
+from kbc.context_utils import get_neighbor
 
 class KBCModel(nn.Module, ABC):
     @abstractmethod
@@ -85,6 +85,79 @@ class KBCModel(nn.Module, ABC):
 # output_channel ( = 32 )
 # rank ( = embedding_dim = 200)
 # HW = (10, 20)
+
+
+# This is CP model that combines two components together:
+# local (individual triplet) + global (context of neighbourhood)
+class Context_CP(KBCModel):
+    def __init__(
+            self, sizes: Tuple[int, int, int], rank: int,
+            init_size: float = 1e-3, data_name = 'FB15K'
+    ):
+        super(CP, self).__init__()
+        self.sizes = sizes
+        self.rank = rank
+        self.data_name = data_name
+
+        self.lhs = nn.Embedding(sizes[0], rank, sparse=True)
+        self.rel = nn.Embedding(sizes[1], rank, sparse=True)
+        self.rhs = nn.Embedding(sizes[2], rank, sparse=True)
+
+        self.lhs.weight.data *= init_size
+        self.rel.weight.data *= init_size
+        self.rhs.weight.data *= init_size
+
+        self.W = nn.Linear(int(3*rank), rank)  # W for w = [lhs; rel; rhs]^T W
+
+    def score(self, x):
+        # Need to change this
+        # tot_score = local_score + context_score
+
+        lhs = self.lhs(x[:, 0])
+        rel = self.rel(x[:, 1])
+        rhs = self.rhs(x[:, 2])
+
+        # Calculate context_score
+        # For a given lhs (i.e x[:,0]) , get all neighbouring (rel, rhs)
+
+        nb_lhs, nb_rel, nb_rhs = get_neighbor(x[:, 0], self.data_name)  # we need to tell which dataset we are considering.
+        # x.shape == (chunk_size, 1)
+        # nb_rhs.shape , nb_rel.shape, nb_rhs.shape == (chunk_size, number_of_nb_to_each_element_in_x == n_nb)
+
+        emb_nb_E = get_emb_E(nb_lhs, nb_rel, nb_rhs, self.data_name)  # emb_nb_E.shape == (chunk_size, 3 x k), use torch.cat, k is emb_size == rank
+
+        w = torch.matmul(emb_nb_E, self.W)  # w.shape == (chunk_size, k)
+
+        alpha = torch.softmax( torch.matmul(w, nb_rhs))
+
+        e_c = torch.dot(alpha, nb_rhs)
+
+        tot_score = torch.sum(lhs * rel * rhs * e_c, 1, keepdim=True)
+
+        return tot_score
+
+    def forward(self, x):
+        # Need to change this
+        # tot_forward = local_forward + context_forward
+
+        lhs = self.lhs(x[:, 0])
+        rel = self.rel(x[:, 1])
+        rhs = self.rhs(x[:, 2])
+
+        local_forward = (lhs * rel) @ self.rhs.weight.t()
+
+        tot_forward = local_forward  # + context_forward
+
+        return tot_forward, (lhs, rel, rhs)
+
+    def get_rhs(self, chunk_begin: int, chunk_size: int):
+        return self.rhs.weight.data[
+            chunk_begin:chunk_begin + chunk_size
+        ].transpose(0, 1)
+
+    def get_queries(self, queries: torch.Tensor):
+        return self.lhs(queries[:, 0]).data * self.rel(queries[:, 1]).data
+
 
 class ConvE(KBCModel):
     def __init__(

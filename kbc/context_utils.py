@@ -65,13 +65,47 @@ class Dataset
 get_train -> returns train examples (examples include reciprocal triplets)
 '''
 from kbc.datasets import Dataset
-mydata = Dataset('FB15K', use_colab = False)
+mydata = Dataset('WN18RR', use_colab = False)
 
 #%%%
 
-from pathlib import Path
-import pkg_resources
+train = mydata.get_train()
+org_train = mydata.data['train']
 
 
-DATA_PATH = Path(pkg_resources.resource_filename('kbc', 'src_data/')) / 'FB15K'
-print(DATA_PATH)
+#%%%
+# Check if all reciprocal relationship exist in train
+print(len(org_train)*2)
+print(len(train))
+
+
+#%%%
+# Check if max( rel ) + 1 == n_predicates
+print(mydata.n_predicates)
+print(max(train[:, 1])+1)
+print(min(train[:, 0]))
+
+#%%%
+# Check if all entities in valid and test exist in train
+
+
+
+
+
+#%%%
+# Check if all relations in valid and test exist in train
+
+
+#%%%
+
+
+
+
+
+
+
+
+
+
+
+#%%%%
