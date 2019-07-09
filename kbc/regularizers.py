@@ -16,7 +16,6 @@ class Regularizer(nn.Module, ABC):
     def forward(self, factors: Tuple[torch.Tensor]):
         pass
 
-
 class N2(Regularizer):
     def __init__(self, weight: float):
         super(N2, self).__init__()

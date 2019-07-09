@@ -14,18 +14,23 @@ import numpy as np
 import torch
 from kbc.models import KBCModel
 
-
 DATA_PATH = Path(pkg_resources.resource_filename('kbc', 'data/'))
 
-
 class Dataset(object):
-    def __init__(self, name: str):
+    def __init__(self, name: str, use_colab=True):
         self.root = DATA_PATH / name
 
         self.data = {}
+
         for f in ['train', 'test', 'valid']:
-            in_file = open(str(self.root / (f + '.pickle')), 'rb')
-            self.data[f] = pickle.load(in_file)
+            if not use_colab:
+                in_file = open(str(self.root / (f + '.pickle')), 'rb')
+                self.data[f] = pickle.load(in_file)
+            else:
+                in_file = open('drive/My Drive/SummerProject/Shared/CDT/kbc/kbc/data/' + name + '/' + f + '.pickle',
+                               'rb')
+                print(in_file)
+                self.data[f] = pickle.load(in_file)
 
         maxis = np.max(self.data['train'], axis=0)
         self.n_entities = int(max(maxis[0], maxis[2]) + 1)

@@ -9,7 +9,10 @@ from abc import ABC, abstractmethod
 from typing import Tuple, List, Dict
 import torch
 from torch import nn
-
+import numpy as np
+from torch.nn import functional as F, Parameter
+from torch.nn.init import xavier_normal_
+from kbc.context_utils import get_neighbor
 
 class KBCModel(nn.Module, ABC):
     @abstractmethod
@@ -62,9 +65,11 @@ class KBCModel(nn.Module, ABC):
                                 int(x - c_begin) for x in filter_out
                                 if c_begin <= x < c_begin + chunk_size
                             ]
-                            scores[i, filter_in_chunk] = -1e6
+                            scores[i, np.array(filter_in_chunk, dtype = np.int64)] = -1e6
+
                         else:
-                            scores[i, filter_out] = -1e6
+                            scores[i, np.array(filter_out, dtype=np.int64)] = -1e6
+
                     ranks[b_begin:b_begin + batch_size] += torch.sum(
                         (scores > targets).float(), dim=1
                     ).cpu()
@@ -73,6 +78,232 @@ class KBCModel(nn.Module, ABC):
 
                 c_begin += chunk_size
         return ranks
+
+# Customizable parameters for ConvE:
+# dropouts ( = (0.3,0.3,0.3) )
+# kernel_size ( = (3,3) )
+# output_channel ( = 32 )
+# rank ( = embedding_dim = 200)
+# HW = (10, 20)
+
+
+# This is CP model that combines two components together:
+# local (individual triplet) + global (context of neighbourhood)
+class Context_CP(KBCModel):
+    def __init__(
+            self, sizes: Tuple[int, int, int], rank: int,
+            init_size: float = 1e-3, data_name = 'FB15K'
+    ):
+        super(CP, self).__init__()
+        self.sizes = sizes
+        self.rank = rank
+        self.data_name = data_name
+
+        self.lhs = nn.Embedding(sizes[0], rank, sparse=True)
+        self.rel = nn.Embedding(sizes[1], rank, sparse=True)
+        self.rhs = nn.Embedding(sizes[2], rank, sparse=True)
+
+        self.lhs.weight.data *= init_size
+        self.rel.weight.data *= init_size
+        self.rhs.weight.data *= init_size
+
+        self.W = nn.Linear(int(3*rank), rank)  # W for w = [lhs; rel; rhs]^T W
+
+    def score(self, x):
+        # Need to change this
+        # tot_score = local_score + context_score
+
+        lhs = self.lhs(x[:, 0])
+        rel = self.rel(x[:, 1])
+        rhs = self.rhs(x[:, 2])
+
+        # Calculate context_score
+        # For a given lhs (i.e x[:,0]) , get all neighbouring (rel, rhs)
+
+        nb_lhs, nb_rel, nb_rhs = get_neighbor(x[:, 0], self.data_name)  # we need to tell which dataset we are considering.
+        # x.shape == (chunk_size, 1)
+        # nb_rhs.shape , nb_rel.shape, nb_rhs.shape == (chunk_size, number_of_nb_to_each_element_in_x == n_nb)
+
+        emb_nb_E = get_emb_E(nb_lhs, nb_rel, nb_rhs, self.data_name)  # emb_nb_E.shape == (chunk_size, 3 x k), use torch.cat, k is emb_size == rank
+
+        w = torch.matmul(emb_nb_E, self.W)  # w.shape == (chunk_size, k)
+
+        alpha = torch.softmax( torch.matmul(w, nb_rhs))
+
+        e_c = torch.dot(alpha, nb_rhs)
+
+        tot_score = torch.sum(lhs * rel * rhs * e_c, 1, keepdim=True)
+
+        return tot_score
+
+    def forward(self, x):
+        # Need to change this
+        # tot_forward = local_forward + context_forward
+
+        lhs = self.lhs(x[:, 0])
+        rel = self.rel(x[:, 1])
+        rhs = self.rhs(x[:, 2])
+
+        local_forward = (lhs * rel) @ self.rhs.weight.t()
+
+        tot_forward = local_forward  # + context_forward
+
+        return tot_forward, (lhs, rel, rhs)
+
+    def get_rhs(self, chunk_begin: int, chunk_size: int):
+        return self.rhs.weight.data[
+            chunk_begin:chunk_begin + chunk_size
+        ].transpose(0, 1)
+
+    def get_queries(self, queries: torch.Tensor):
+        return self.lhs(queries[:, 0]).data * self.rel(queries[:, 1]).data
+
+
+class ConvE(KBCModel):
+    def __init__(
+            self, sizes: Tuple[int, int, int], rank: int,
+            dropouts: Tuple[float, float, float] = (0.3, 0.3, 0.3),
+            use_bias: bool=True, hw: Tuple[int, int] = (0, 0), kernel_size: Tuple[int, int] = (3, 3), output_channel=32
+    ):
+        super(ConvE, self).__init__()
+        self.sizes = sizes
+        self.output_channel = output_channel
+        self.kernel_size = kernel_size
+        self.embedding_dim = rank  # For ConvE, we shall refer rank as the embedding dimension
+        self.use_bias = use_bias
+        self.dropouts = dropouts  # (input_dropout, dropout, feature_map_dropout)
+
+        self.H_dim, self.W_dim = self.image_dim(hw)
+
+        num_e = max(sizes[0], sizes[2])
+
+        self.emb_e = nn.Embedding(num_e, self.embedding_dim, padding_idx=0)  # equivalent to both lhs and rhs
+        self.emb_rel = nn.Embedding(sizes[1], self.embedding_dim, padding_idx=0)
+        self.inp_drop = nn.Dropout(self.dropouts[0])
+
+        self.hidden_drop = nn.Dropout(self.dropouts[1])
+        self.feature_map_drop = nn.Dropout2d(self.dropouts[2])
+
+        self.conv1 = nn.Conv2d(1, self.output_channel, self.kernel_size, 1, 0, bias=self.use_bias)
+        self.bn0 = nn.BatchNorm2d(1)
+        self.bn1 = nn.BatchNorm2d(self.output_channel)
+        self.bn2 = nn.BatchNorm1d(self.embedding_dim)
+        self.register_parameter('b', Parameter(torch.zeros(num_e)))
+
+        fc_dim = self.linear_dim()
+        self.fc = nn.Linear(fc_dim, self.embedding_dim)
+
+    def linear_dim(self):  # calculates the dimension of fc layer in ConvE
+        fc_dim = self.output_channel * (self.H_dim * 2 - self.kernel_size[0] + 1) * (self.W_dim - self.kernel_size[1] + 1)
+        return fc_dim
+
+    def image_dim(self, hw):
+        if hw == (0, 0):  # -> find rectangular H, W for reshaping
+            w = np.sqrt(self.embedding_dim*2)  # due to the vertical stacking
+            h = w/2
+            if int(h) != h or int(w) != w:
+                raise ValueError('H and W are not integer')
+        else:
+            h, w = hw
+            if h * w != self.embedding_dim:
+                raise ValueError('H x W must be equal to the rank')
+
+        return int(h), int(w)
+
+    def init(self):
+        xavier_normal_(self.emb_e.weight.data)
+        xavier_normal_(self.emb_rel.weight.data)
+
+    # Work on score and forward
+    def score(self, x):
+        lhs = self.emb_e(x[:, 0])
+        rel = self.emb_rel(x[:, 1])
+        rhs = self.emb_e(x[:, 2])
+
+        batch_size = len(x)
+
+        e1_embedded = lhs.view(-1, 1, self.H_dim, self.W_dim)
+        rel_embedded = rel.view(-1, 1, self.H_dim, self.W_dim)
+
+        stacked_inputs = torch.cat([e1_embedded, rel_embedded], 2)
+
+        stacked_inputs = self.bn0(stacked_inputs)
+        y = self.inp_drop(stacked_inputs)
+        y = self.conv1(y)
+        y = self.bn1(y)
+        y = F.relu(y)
+        y = self.feature_map_drop(y)  # vec(f[e_s; rel] * w)
+        y = y.view(batch_size, -1)
+        y = self.fc(y)  # vec(f[e_s;rel] * w) W
+        y = self.hidden_drop(y)
+        y = self.bn2(y)
+        y = F.relu(y)  # f(vec(f[e_s; rel] * w) W
+        y = y * rhs  # f(vec(f[e_s; rel] * w) W) e_o
+
+        #y = torch.sigmoid(y)  # p = sigmoid( psi_r (e_s, e_o) )
+
+        return torch.sum(y, 1, keepdim=True)
+
+    def forward(self, x):
+        lhs = self.emb_e(x[:, 0])
+        rel = self.emb_rel(x[:, 1])
+        rhs = self.emb_e(x[:, 2])
+
+        batch_size = len(x)
+
+        e1_embedded = lhs.view(-1, 1, self.H_dim, self.W_dim)
+        rel_embedded = rel.view(-1, 1, self.H_dim, self.W_dim)
+
+        stacked_inputs = torch.cat([e1_embedded, rel_embedded], 2)
+
+        stacked_inputs = self.bn0(stacked_inputs)  # [e_s; rel]
+        y = self.inp_drop(stacked_inputs)
+        y = self.conv1(y)  # [e_s; rel] * w
+        y = self.bn1(y)
+        y = F.relu(y)  # f([e_s; rel] * w
+        y = self.feature_map_drop(y)  # vec( f([e_s;rel]) )
+        y = y.view(batch_size, -1)
+        y = self.fc(y)  # vec( f([e_s;rel]) ) W
+        y = self.hidden_drop(y)
+        y = self.bn2(y)
+        y = F.relu(y)  # f( vec( f([e_s;rel]) ) W )
+        y = torch.mm(y, self.emb_e.weight.transpose(1, 0))  # f( vec( f([e_s;rel]) ) W ) e_o
+        y += self.b.expand_as(y)
+
+        #y = torch.sigmoid(y)
+
+        return y, (lhs, rel, rhs)
+
+    def get_rhs(self, chunk_begin: int, chunk_size: int):
+        return self.emb_e.weight.data[
+               chunk_begin:chunk_begin + chunk_size
+               ].transpose(0, 1)
+
+    # This is not used in the project but still implemented
+    def get_queries(self, queries: torch.Tensor):
+        lhs = self.emb_e(queries[:, 0])
+        rel = self.emb_rel(queries[:, 1])
+
+        batch_size = len(queries)
+
+        e1_embedded = lhs.view(-1, 1, self.H_dim, self.W_dim)
+        rel_embedded = rel.view(-1, 1, self.H_dim, self.W_dim)
+
+        stacked_inputs = torch.cat([e1_embedded, rel_embedded], 2)
+
+        stacked_inputs = self.bn0(stacked_inputs)  # [e_s; rel]
+        y = self.inp_drop(stacked_inputs)
+        y = self.conv1(y)  # [e_s; rel] * w
+        y = self.bn1(y)
+        y = F.relu(y)  # f([e_s; rel] * w
+        y = self.feature_map_drop(y)  # vec( f([e_s;rel]) )
+        y = y.view(batch_size, -1)
+        y = self.fc(y)  # vec( f([e_s;rel]) ) W
+        y = self.hidden_drop(y)
+        y = self.bn2(y)
+        y = F.relu(y)  # f( vec( f([e_s;rel]) ) W )
+
+        return y
 
 
 class CP(KBCModel):

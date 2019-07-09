@@ -7,15 +7,24 @@
 
 import argparse
 from typing import Dict
+import pickle
+import configparser
 
 import torch
 from torch import optim
 
 from kbc.datasets import Dataset
-from kbc.models import CP, ComplEx
+from kbc.models import CP, ComplEx, ConvE, Context_CP
 from kbc.regularizers import N2, N3
 from kbc.optimizers import KBCOptimizer
+import os
+import numpy as np
 
+#For reproducilibility
+np.random.seed(0)
+torch.manual_seed(0)
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
 
 big_datasets = ['FB15K', 'WN', 'WN18RR', 'FB237', 'YAGO3-10']
 datasets = big_datasets
@@ -29,13 +38,13 @@ parser.add_argument(
     help="Dataset in {}".format(datasets)
 )
 
-models = ['CP', 'ComplEx']
+models = ['CP', 'ComplEx', 'ConvE', 'Context_CP']
 parser.add_argument(
     '--model', choices=models,
     help="Model in {}".format(models)
 )
 
-regularizers = ['N3', 'N2']
+regularizers = ['N0', 'N3', 'N2']
 parser.add_argument(
     '--regularizer', choices=regularizers, default='N3',
     help="Regularizer in {}".format(regularizers)
@@ -83,8 +92,55 @@ parser.add_argument(
     '--decay2', default=0.999, type=float,
     help="decay rate for second moment estimate in Adam"
 )
+
+# Parser argument for ConvE
+# Dropout
+parser.add_argument(
+    '--dropouts', default=(0.3, 0.3, 0.3), type=float,
+    help="Dropout rates for each layer in ConvE"
+)
+# Boolean for the bias in ConvE layers
+parser.add_argument(
+    '--use_bias', default=True, type=bool,
+    help="Using or not using bias for the ConvE layers"
+)
+
+parser.add_argument(
+    '--kernel_size', default=(3, 3), nargs='+', type=int,
+    help="Kernel Size"
+)
+
+parser.add_argument(
+    '--output_channel', default=32, type=int,
+    help="Number of output channel"
+)
+
+parser.add_argument(
+    '--hw', default=(10, 20), nargs='+', type=int,
+    help="False or (Height, Width) shape for 2D reshaping entity embedding"
+)
+
+loss_choices = ['Multi', 'Binary']
+parser.add_argument(
+    '--loss', default='Multi', type=str, choices=loss_choices,
+    help="Choose Binary or Multi for cross entropy loss"
+)
+
+# Setup parser
 args = parser.parse_args()
 
+# Example Run:
+# !python kbc/learn.py --dataset 'FB15K' --model 'ConvE' --rank 200 --max_epochs 3 --hw 0 0 --kernel_size 3 3 --output_channel 32
+# !python kbc/learn.py --dataset 'FB15K' --model 'ConvE' --rank 200 --max_epochs 3 --hw 0 0 --kernel_size 3 3 --output_channel 32 --regularizer 'N0'
+
+#Choosing --regularizer 'N0' will disable regularization term
+
+if args.model == 'ConvE':
+    hw = tuple(args.hw)
+    kernel_size = tuple(args.kernel_size)
+    dropouts = tuple(args.dropouts)
+
+# Get Dataset
 dataset = Dataset(args.dataset)
 examples = torch.from_numpy(dataset.get_train().astype('int64'))
 
@@ -92,9 +148,13 @@ print(dataset.get_shape())
 model = {
     'CP': lambda: CP(dataset.get_shape(), args.rank, args.init),
     'ComplEx': lambda: ComplEx(dataset.get_shape(), args.rank, args.init),
+    'ConvE': lambda: ConvE(dataset.get_shape(), args.rank, dropouts, args.use_bias, hw, kernel_size,
+                           args.output_channel),
+    'Context_CP': lambda: Context_CP(dataset.get_shape(), args.rank, args.init, args.dataset)
 }[args.model]()
 
 regularizer = {
+    'N0': 'N0',
     'N2': N2(args.reg),
     'N3': N3(args.reg),
 }[args.regularizer]
@@ -102,14 +162,17 @@ regularizer = {
 device = 'cuda'
 model.to(device)
 
+if args.model == "ConvE":
+    model.init()
+
+
 optim_method = {
     'Adagrad': lambda: optim.Adagrad(model.parameters(), lr=args.learning_rate),
     'Adam': lambda: optim.Adam(model.parameters(), lr=args.learning_rate, betas=(args.decay1, args.decay2)),
     'SGD': lambda: optim.SGD(model.parameters(), lr=args.learning_rate)
 }[args.optimizer]()
 
-optimizer = KBCOptimizer(model, regularizer, optim_method, args.batch_size)
-
+optimizer = KBCOptimizer(model, regularizer, optim_method, args.batch_size, loss_type=args.loss)
 
 def avg_both(mrrs: Dict[str, float], hits: Dict[str, torch.FloatTensor]):
     """
@@ -124,22 +187,134 @@ def avg_both(mrrs: Dict[str, float], hits: Dict[str, torch.FloatTensor]):
 
 
 cur_loss = 0
-curve = {'train': [], 'valid': [], 'test': []}
+train_i = 0
+test_i = 0
+
+split_name = ['train', 'valid']
+hits_name = ['_hits@1', '_hits@3', '_hits@10']
+
+train_mrr = []
+train_hit1 = []
+train_hit3 = []
+train_hit10 = []
+
+valid_mrr = []
+valid_hit1 = []
+valid_hit3 = []
+valid_hit10 = []
+
+
+test_mrr = []
+test_hit1 = []
+test_hit3 = []
+test_hit10 = []
+
+#check if the directory exists
+results_folder = './results/{}/{}'.format(args.model, args.dataset)
+
+if not os.path.exists(results_folder):
+    raise Exception('You do not have folder named:{}'.format(results_folder))
+
+train_no = 1
+
+while os.path.exists(results_folder + '/train' + str(train_no)):
+    train_no += 1
+
+folder_name = results_folder + '/train' + str(train_no)
+os.mkdir(folder_name)
+
+# Save the configuration file
+config = vars(args)
+
+pickle.dump(config, open(folder_name + '/config.p', 'wb'))
+
+config_ini = configparser.ConfigParser()
+config_ini['setup'] = {}
+
+for key in config.keys():
+    config_ini['setup'][str(key)] = str(config[key])
+
+#config_ini['setup'] = config
+with open(folder_name + '/config.ini', 'w') as configfile:
+    config_ini.write(configfile)
+
+# Save the configuration file and txt file description.
+# What to include in the configuration file and txt file:
+# Config: args.model, args.dataset,
+# args.max_epochs, e, args.regularizer, args.optimizer, args.rank, args.batch_size,
+# args.reg, args.init, args.learning_rate
+# if args.model == 'ConvE':
+# args.dropouts, args.use_bias, args.kernel_size, args.output_channel, args.hw
+
 for e in range(args.max_epochs):
+    print('\n train epoch = ', e+1)
+
     cur_loss = optimizer.epoch(examples)
 
-    if (e + 1) % args.valid == 0:
-        valid, test, train = [
+    if (e + 1) % args.valid == 0 or (e+1) == args.max_epochs:
+        torch.save(model.state_dict(), folder_name + '/model_state.pt')
+
+        train_results, valid_results = [
             avg_both(*dataset.eval(model, split, -1 if split != 'train' else 50000))
-            for split in ['valid', 'test', 'train']
+            for split in split_name
         ]
 
-        curve['valid'].append(valid)
-        curve['test'].append(test)
-        curve['train'].append(train)
+        print("\n\t TRAIN: ", train_results)
+        print("\t VALID : ", valid_results)
 
-        print("\t TRAIN: ", train)
-        print("\t VALID : ", valid)
+        train_mrr.append(train_results['MRR'])
 
-results = dataset.eval(model, 'test', -1)
-print("\n\nTEST : ", results)
+        hits1310 = train_results['hits@[1,3,10]'].numpy()
+        train_hit1.append(hits1310[0])
+        train_hit3.append(hits1310[1])
+        train_hit10.append(hits1310[2])
+
+        valid_mrr.append(valid_results['MRR'])
+
+        hits1310 = valid_results['hits@[1,3,10]'].numpy()
+        valid_hit1.append(hits1310[0])
+        valid_hit3.append(hits1310[1])
+        valid_hit10.append(hits1310[2])
+
+        np.save(folder_name + '/train_mrr', np.array(train_mrr))
+        np.save(folder_name + '/train_hit1', np.array(train_hit1))
+        np.save(folder_name + '/train_hit3', np.array(train_hit3))
+        np.save(folder_name + '/train_hit10', np.array(train_hit10))
+
+        np.save(folder_name + '/valid_mrr', np.array(valid_mrr))
+        np.save(folder_name + '/valid_hit1', np.array(valid_hit1))
+        np.save(folder_name + '/valid_hit3', np.array(valid_hit3))
+        np.save(folder_name + '/valid_hit10', np.array(valid_hit10))
+
+#    if (e+1) % args.valid == 0 or (e+1) == args.max_epochs:
+
+        results = avg_both(*dataset.eval(model, 'test', -1))
+
+        test_mrr.append(results['MRR'])
+
+        hits1310 = results['hits@[1,3,10]'].numpy()
+
+        test_hit1.append(hits1310[0])
+        test_hit3.append(hits1310[1])
+        test_hit10.append(hits1310[2])
+
+        print("\n\nTEST : ", results)
+
+        np.save(folder_name + '/test_mrr', np.array(test_mrr))
+        np.save(folder_name + '/test_hit1', np.array(test_hit1))
+        np.save(folder_name + '/test_hit3', np.array(test_hit3))
+        np.save(folder_name + '/test_hit10', np.array(test_hit10))
+
+        config['e'] = e
+        pickle.dump(config, open(folder_name + '/config.p', 'wb'))
+
+        config_ini['setup']['e'] = str(e)
+
+        with open(folder_name + '/config.ini', 'w') as configfile:
+            config_ini.write(configfile)
+
+        test_i += 1
+
+
+
+
