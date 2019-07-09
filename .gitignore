@@ -1,9 +1,9 @@
 build
+.idea
 *.egg-info
 **/__pycache__
 **/*cpython*
 kbc/lib/bindings.cpp
 dist
 kbc/data
-.idea
 **/.nfs*
