@@ -5,4 +5,5 @@ build
 kbc/lib/bindings.cpp
 dist
 kbc/data
+.idea
 **/.nfs*
