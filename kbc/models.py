@@ -12,7 +12,7 @@ from torch import nn
 import numpy as np
 from torch.nn import functional as F, Parameter
 from torch.nn.init import xavier_normal_
-from kbc.context_utils import get_neighbor
+#from kbc.context_utils import get_neighbor
 
 class KBCModel(nn.Module, ABC):
     @abstractmethod

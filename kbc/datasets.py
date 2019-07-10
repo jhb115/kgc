@@ -13,6 +13,7 @@ from typing import Dict, Tuple, List
 import numpy as np
 import torch
 from kbc.models import KBCModel
+import os
 
 DATA_PATH = Path(pkg_resources.resource_filename('kbc', 'data/'))
 
@@ -45,12 +46,41 @@ class Dataset(object):
         return self.data[split]
 
     def get_train(self):
+        # .pickle file contains non-reciprocals which is data['train']
+        #  this function returns org+reciprocal triplets
         copy = np.copy(self.data['train'])
         tmp = np.copy(copy[:, 0])
         copy[:, 0] = copy[:, 2]
         copy[:, 2] = tmp
         copy[:, 1] += self.n_predicates // 2  # has been multiplied by two.
         return np.vstack((self.data['train'], copy))
+
+    def get_sorted_train(self, train):
+        sorted_file_path = self.root / 'sorted_train.pickle'
+        slice_file_path = self.root / 'slice_train.pickle'
+        if os.path.exists(sorted_file_path) and os.path.exists(slice_file_path):
+            return pickle.load(open(sorted_file_path, 'rb')), \
+                    pickle.load(open(slice_file_path, 'rb'))
+        else:
+            train.sort(axis=0)
+            i = 0
+            curr_ent = train[0, 0]
+            slice_dic = {}
+            start = 0
+            while i < len(train):
+                prev_ent = curr_ent
+                curr_ent = train[i, 0]
+
+                if prev_ent != curr_ent:
+                    slice_dic[prev_ent] = (start, i)
+                    start = i
+
+                if i == len(train) - 1:
+                    slice_dic[curr_ent] = (start, i + 1)
+                i += 1
+            pickle.dump(train, open(sorted_file_path, 'rb'))
+            pickle.dump(slice_dic, open(slice_file_path, 'rb'))
+            return train, slice_dic
 
     def eval(
             self, model: KBCModel, split: str, n_queries: int = -1, missing_eval: str = 'both',
