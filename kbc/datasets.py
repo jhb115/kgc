@@ -55,13 +55,14 @@ class Dataset(object):
         copy[:, 1] += self.n_predicates // 2  # has been multiplied by two.
         return np.vstack((self.data['train'], copy))
 
-    def get_sorted_train(self, train):
+    def get_sorted_train(self):
         sorted_file_path = self.root / 'sorted_train.pickle'
         slice_file_path = self.root / 'slice_train.pickle'
         if os.path.exists(sorted_file_path) and os.path.exists(slice_file_path):
             return pickle.load(open(sorted_file_path, 'rb')), \
                     pickle.load(open(slice_file_path, 'rb'))
         else:
+            train = self.get_train()
             train.sort(axis=0)
             i = 0
             curr_ent = train[0, 0]

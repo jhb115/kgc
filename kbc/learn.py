@@ -142,7 +142,12 @@ if args.model == 'ConvE':
 
 # Get Dataset
 dataset = Dataset(args.dataset)
-examples = torch.from_numpy(dataset.get_train().astype('int64'))
+if args.model in ['CP', 'ComplEx', 'ConvE']:  # For non-context model
+    unsorted_examples = torch.from_numpy(dataset.get_train().astype('int64'))
+    examples = unsorted_examples
+else:  # Get sorted examples for context model
+    sorted_examples, slice_dic = dataset.get_sorted_train()
+    examples = torch.from_numpy(sorted_examples.astype('int64'))
 
 print(dataset.get_shape())
 model = {
@@ -150,7 +155,7 @@ model = {
     'ComplEx': lambda: ComplEx(dataset.get_shape(), args.rank, args.init),
     'ConvE': lambda: ConvE(dataset.get_shape(), args.rank, dropouts, args.use_bias, hw, kernel_size,
                            args.output_channel),
-    'Context_CP': lambda: Context_CP(dataset.get_shape(), args.rank, args.init, args.dataset)
+    'Context_CP': lambda: Context_CP(dataset.get_shape(), args.rank, args.init, args.dataset, sorted_examples, slice_dic)
 }[args.model]()
 
 regularizer = {

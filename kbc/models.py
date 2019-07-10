@@ -92,7 +92,8 @@ class KBCModel(nn.Module, ABC):
 class Context_CP(KBCModel):
     def __init__(
             self, sizes: Tuple[int, int, int], rank: int,
-            init_size: float = 1e-3, data_name = 'FB15K'
+            init_size: float = 1e-3, data_name: str = 'FB15K', sorted_examples,
+            slice_dic
     ):
         super(CP, self).__init__()
         self.sizes = sizes
@@ -108,6 +109,8 @@ class Context_CP(KBCModel):
         self.rhs.weight.data *= init_size
 
         self.W = nn.Linear(int(3*rank), rank)  # W for w = [lhs; rel; rhs]^T W
+        self.sorted_examples = sorted_examples
+        self.slice_dic = slice_dic
 
     def score(self, x):
         # Need to change this
@@ -117,10 +120,8 @@ class Context_CP(KBCModel):
         rel = self.rel(x[:, 1])
         rhs = self.rhs(x[:, 2])
 
-        # Calculate context_score
         # For a given lhs (i.e x[:,0]) , get all neighbouring (rel, rhs)
-
-        nb_lhs, nb_rel, nb_rhs = get_neighbor(x[:, 0], self.data_name)  # we need to tell which dataset we are considering.
+        nb_lhs, nb_rel, nb_rhs = self.get_neighbor(x[:, 0])  # we need to tell which dataset we are considering.
         # x.shape == (chunk_size, 1)
         # nb_rhs.shape , nb_rel.shape, nb_rhs.shape == (chunk_size, number_of_nb_to_each_element_in_x == n_nb)
 
@@ -135,6 +136,16 @@ class Context_CP(KBCModel):
         tot_score = torch.sum(lhs * rel * rhs * e_c, 1, keepdim=True)
 
         return tot_score
+
+    def get_emb_E(self, nb_lhs, nb_rel, nb_rhs):
+
+        pass
+
+    def get_neighbor(self, subject):
+        # we wish to find the neighbours of subject
+        start_i, end_i = slice_dic[subject]
+
+        return sorted_data[start_i:end_i]  # returns an array of neighbouring triplets
 
     def forward(self, x):
         # Need to change this

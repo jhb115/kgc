@@ -21,12 +21,6 @@
 # Only consider the training set
 # Need to consider the case when the subject entity in valid/test set does not exist in the train set
 # Move this get_neighbor function to model
-def get_neighbor(sorted_data, subject, slice_dic):
-    # we wish to find the neighbours of subject
-    start_i, end_i = slice_dic[subject]
-
-    return sorted_data[start_i:end_i]  # returns an array of neighbouring triplets
-
 #%%%%
 '''
 class Dataset
