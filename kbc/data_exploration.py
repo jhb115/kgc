@@ -1,26 +1,8 @@
+from pathlib import Path
+import pkg_resources
+import pickle
+from kbc.datasets import Dataset
 
-# Description about this code
-#
-# This file contains models:
-# - create sorted list of (S, R, O) triplets
-# e.g.
-# [S R O] =
-# [
-# [1, ..., ...]
-# [1, ..., ...]
-# [1, ..., ...]
-# [2,
-# [3,
-# [3,
-# [3,
-# [4,
-# ]
-# - create list where [ (start, end), (start, end), ... ]
-# e.g. [ (0, 3), (3, 4), (4, 7), ... ]
-
-# Only consider the training set
-# Need to consider the case when the subject entity in valid/test set does not exist in the train set
-# Move this get_neighbor function to model
 #%%%%
 '''
 class Dataset
@@ -168,27 +150,33 @@ for each_data in data_list:
     print('\n{}'.format(each_data))
 
     root = DATA_PATH / each_data
+    mydata = Dataset(each_data, use_colab=False)
 
     file_dic = {}
-    for each_file in file_type:
-        in_file = open(str((root / (each_file + '.pickle'))), 'rb')
-        file_dic[each_file] = pickle.load(in_file)
+    train = mydata.get_train()
+    org_train = mydata.data['train']
 
+    # Check if all reciprocal relationship exist in train
+    # Yes
+    print('Compare 2 x number of org triplets vs. number of org+reciprocal triplets')
+    if (len(org_train)*2) == len(train):
+        print('Equal')
+    else:
+        print('Not equal')
 
+    print('\nCompare number of relations vs. max(id of rel) + 1')
+    if mydata.n_predicates == max(train[:, 1])+1:
+        print('Equal')
+    else:
+        print('Not Equal')
 
-        train = mydata.get_train()
-        org_train = mydata.data['train']
+#%%%
+'''
+Explore statistics of N_nb (number of neighbours for a given subject)
+'''
 
-        # Check if all reciprocal relationship exist in train
-        # Yes
-        print('Compare 2 x number of org triplets vs. number of org+reciprocal triplets')
-        if (len(org_train)*2) == len(train):
-            print('Equal')
-        else:
-            print('Not equal')
+# Consider only the train set (org + reciprocal)
+mydata = Dataset('FB15K', use_colab=False)
+sorted_train, slice_dic = mydata.get_sorted_train()
 
-        print('\nCompare number of relations vs. max(id of rel) + 1')
-        if mydata.n_predicates == max(train[:, 1])+1:
-            print('Equal')
-        else:
-            print('Not Equal')
+#%%%
