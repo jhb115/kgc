@@ -207,6 +207,192 @@ WN
 Train Data Length =  282884
 WN18RR
 Train Data Length =  173670
+
+suggested max_NB:
+FB15K = 50 ~ 100
+FB237 = 50 ~ 100
+WN = 20
+WN18RR = 20
+YAGO3-10 = 40 ~ 50
 '''
 #%%%
+# Check if score for Context_CP works correctly
 
+from abc import ABC, abstractmethod
+from typing import Tuple
+import torch
+from torch import nn
+import numpy as np
+
+
+class Context_CP(nn.Module):
+    def __init__(
+            self, sizes: Tuple[int, int, int], rank: int,
+            init_size: float = 1e-3, data_name: str = 'FB15K', sorted_data = None,
+            slice_dic = None, max_NB = 50
+    ):
+        super(Context_CP, self).__init__()
+        self.sizes = sizes
+        self.rank = rank
+        self.data_name = data_name
+
+        self.lhs = nn.Embedding(sizes[0], rank, sparse=True)
+        self.rel = nn.Embedding(sizes[1], rank, sparse=True)
+        self.rhs = nn.Embedding(sizes[2], rank, sparse=True)
+
+        self.lhs.weight.data *= init_size
+        self.rel.weight.data *= init_size
+        self.rhs.weight.data *= init_size
+
+        # Context related parameters
+        self.W = nn.Linear(int(3*rank), rank)  # W for w = [lhs; rel; rhs]^T W
+        self.sorted_data = sorted_data
+        self.slice_dic = slice_dic
+        self.max_NB = max_NB
+
+    def score(self, x):
+        # Need to change this
+        # tot_score = local_score + context_score
+
+        tensor_x = torch.from_numpy(x.astype('int64'))
+
+        self.chunk_size = tensor_x.size()[0]
+
+        lhs = self.lhs(tensor_x[:, 0])  # shape == (chunk_size, k)
+        rel = self.rel(tensor_x[:, 1])
+        rhs = self.rhs(tensor_x[:, 2])
+
+        # concatenation of lhs, rel, rhs
+        trp_E = torch.cat((lhs, rel, rhs), dim=1) # trp_E.shape == (chunk_size, 3k)
+
+        # Get attention weight vector, where W.shape == (3k, k)
+        w = self.W(trp_E) # w.shape == (chunk_size, k)
+
+        # Get nb_E = [ nb_E_o ]
+        nb_E = self.get_neighbor(x[:, 0])  # nb_E.shape == (chunk_size, max_NB, k)
+        alpha = torch.softmax(torch.einsum('bk,bmk->bm', w, nb_E), dim = 1)  # matrix multiplication of w^T nb_E
+        # matrix multiplication inside gives (chunk_size x max_NB)
+        # output shape is identical
+
+        # Get context vector
+        e_c = torch.einsum('bm,bmk->bk', alpha, nb_E)  # (chunk_size, k)
+
+        # Get tot_score
+        tot_score = torch.sum(lhs * rel * rhs * e_c, 1, keepdim=True)
+
+        return tot_score
+
+    def get_neighbor(self, subj_list):
+        # Need to find a way to index pytorch tensor
+
+        # return neighbor (N_subject, N_nb_max, k)
+        nb_E = torch.zeros(self.chunk_size, self.max_NB, self.rank)
+        # shape == (batch_size, max_NB, emb_size)
+
+        # Need to consider how to avoid this for loop
+        for i, each_subj in enumerate(subj_list):
+            if each_subj in self.slice_dic:  # since the subject entity in train set may not be present in valid/test set
+                start_i, end_i = self.slice_dic[each_subj]
+                length = end_i - start_i
+                nb_list = torch.from_numpy(self.sorted_data[start_i: end_i, 2].astype('int64'))  # ignore relation for now
+
+                if self.max_NB > length:  # pad with zeros
+                    nb_E[i, :length, :] = self.rhs(nb_list[:])
+                else:  # truncate
+                    nb_E[i, :, :] = self.rhs(nb_list[:self.max_NB])
+
+            # check self.rhs.shape == (self.max_NB, rank)
+
+        return nb_E  # shape == (chunk_size, self.max_NB, rank), yes
+
+    def forward(self, x):
+        # Need to change this
+        tensor_x = torch.from_numpy(x.astype('int64'))
+        self.chunk_size = len(x)
+
+        lhs = self.lhs(tensor_x[:, 0])
+        rel = self.rel(tensor_x[:, 1])
+        rhs = self.rhs(tensor_x[:, 2])
+
+        # concatenation of lhs, rel, rhs
+        trp_E = torch.cat((lhs, rel, rhs), dim=1)  # trp_E.shape == (chunk_size, 3k)
+
+        # Get attention weight vector, where W.shape == (3k, k)
+        w = self.W(trp_E)  # w.shape == (chunk_size, k)
+
+        # Get nb_E
+        nb_E = self.get_neighbor(x[:, 0])  # nb_E.shape == (chunk_size, max_NB, k)
+        alpha = torch.softmax(torch.einsum('bk,bmk->bm', w, nb_E), dim=1)
+        # matrix multiplication inside gives (chunk_size x max_NB)
+        # alpha.shape == (chunk_size, max_NB)
+
+        # Get context vector
+        e_c = torch.einsum('bm,bmk->bk', alpha, nb_E)  # (chunk_size, k)
+
+        # Get tot_score
+        tot_forward = (lhs * rel * e_c) @ self.rhs.weight.t()
+
+        return tot_forward, (lhs, rel, rhs)
+
+    def get_rhs(self, chunk_begin: int, chunk_size: int):
+        return self.rhs.weight.data[
+            chunk_begin:chunk_begin + chunk_size
+        ].transpose(0, 1)
+
+    def get_queries(self, queries: torch.Tensor):
+        return self.lhs(queries[:, 0]).data * self.rel(queries[:, 1]).data
+
+#%%%
+#Test
+
+from kbc.datasets import Dataset
+
+mydata = Dataset('FB15K', use_colab=False)
+sorted_data, slice_dic = mydata.get_sorted_train()
+
+chunk_list = list(set(np.random.randint(low = 2, high = 50, size = 50)))
+print(chunk_list)
+print(len(chunk_list))
+
+x = mydata.get_train()[chunk_list]  # exemplary query
+x_tensor = torch.from_numpy(x.astype('int64'))
+
+#%%%
+# Run this
+test_CP = Context_CP(sizes=mydata.get_shape(),
+                     rank=200, sorted_data=sorted_data,
+                     slice_dic=slice_dic, max_NB=50)
+
+#%%%
+#result = test_CP.score(x)
+for_result, _ = test_CP.forward(x)
+
+#%%%%
+# Run this
+
+lhs = test_CP.lhs(x_tensor[:, 0])  # shape == (chunk_size, rank)
+rel = test_CP.rel(x_tensor[:, 1])
+rhs = test_CP.rhs(x_tensor[:, 2])
+
+# concatenation of lhs, rel, rhs
+trp_E = torch.cat( (lhs, rel, rhs), dim=1) # trp_E.shape == (chunk_size, 3k)
+
+# Get attention weight vector, where W.shape == (3k, k)
+w = test_CP.W(trp_E)
+
+# Get nb_E = [ nb_E_o ]
+nb_E = test_CP.get_neighbor(x[:, 0])  # nb_E.shape == (chunk_size, max_NB, k)
+alpha = torch.softmax(torch.matmul(w, nb_E))  # alpha.shape == (chunk_size, max_NB)
+
+# Get context vector
+e_c = torch.dot(alpha, nb_E)  # (chunk_size, k)
+
+# Get tot_score
+tot_score = torch.sum(lhs * rel * rhs * e_c, 1, keepdim=True)
+
+
+
+
+
+
+#%%%
