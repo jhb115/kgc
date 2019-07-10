@@ -92,8 +92,8 @@ class KBCModel(nn.Module, ABC):
 class Context_CP(KBCModel):
     def __init__(
             self, sizes: Tuple[int, int, int], rank: int,
-            init_size: float = 1e-3, data_name: str = 'FB15K', sorted_examples,
-            slice_dic
+            init_size: float = 1e-3, data_name: str = 'FB15K', sorted_examples = None,
+            slice_dic = None, max_NB = 50
     ):
         super(CP, self).__init__()
         self.sizes = sizes
@@ -108,9 +108,11 @@ class Context_CP(KBCModel):
         self.rel.weight.data *= init_size
         self.rhs.weight.data *= init_size
 
+        # Context related parameters
         self.W = nn.Linear(int(3*rank), rank)  # W for w = [lhs; rel; rhs]^T W
         self.sorted_examples = sorted_examples
         self.slice_dic = slice_dic
+        self.max_NB = max_NB
 
     def score(self, x):
         # Need to change this
@@ -120,32 +122,44 @@ class Context_CP(KBCModel):
         rel = self.rel(x[:, 1])
         rhs = self.rhs(x[:, 2])
 
-        # For a given lhs (i.e x[:,0]) , get all neighbouring (rel, rhs)
-        nb_lhs, nb_rel, nb_rhs = self.get_neighbor(x[:, 0])  # we need to tell which dataset we are considering.
-        # x.shape == (chunk_size, 1)
-        # nb_rhs.shape , nb_rel.shape, nb_rhs.shape == (chunk_size, number_of_nb_to_each_element_in_x == n_nb)
+        # concatenation of lhs, rel, rhs
+        trp_E = torch.cat(lhs, rel, rhs)  # trp_E.shape == (chunk_size, 3k)
 
-        emb_nb_E = get_emb_E(nb_lhs, nb_rel, nb_rhs, self.data_name)  # emb_nb_E.shape == (chunk_size, 3 x k), use torch.cat, k is emb_size == rank
+        # Get attention weight vector, where W.shape == (3k, k)
+        w = torch.matmul(trp_E, self.W)  # w.shape == (chunk_size, k)
 
-        w = torch.matmul(emb_nb_E, self.W)  # w.shape == (chunk_size, k)
+        # Get nb_E = [ nb_E_o ]
+        nb_E = self.get_neighbor(x[:, 0])  # nb_E.shape == (chunk_size, max_NB, k)
+        alpha = torch.softmax(torch.matmul(w, nb_E))  # alpha.shape == (chunk_size, max_NB)
 
-        alpha = torch.softmax( torch.matmul(w, nb_rhs))
+        # Get context vector
+        e_c = torch.dot(alpha, nb_E)  # (chunk_size, k)
 
-        e_c = torch.dot(alpha, nb_rhs)
-
+        # Get tot_score
         tot_score = torch.sum(lhs * rel * rhs * e_c, 1, keepdim=True)
 
         return tot_score
 
-    def get_emb_E(self, nb_lhs, nb_rel, nb_rhs):
+    def get_neighbor(self, subj_list):
+        # return neighbor (N_subject, N_nb_max, k)
 
-        pass
+        nb_E = np.zeros((len(subj_list), self.max_NB, self.rank))
+        # shape == (batch_size, max_NB, emb_size)
 
-    def get_neighbor(self, subject):
-        # we wish to find the neighbours of subject
-        start_i, end_i = slice_dic[subject]
+        # Need to consider how to avoid this for loop
+        for i, each_subj in enumerate(subj_list):
+            start_i, end_i = self.slice_dic[each_subj]
+            length = end_i - start_i
+            nb_list = self.sorted_data[start_i: end_i, 2]  # ignore relation for now
 
-        return sorted_data[start_i:end_i]  # returns an array of neighbouring triplets
+            if self.max_NB > length:  # pad with zeros
+                nb_E[i, :length, :] = self.rhs(nb_list[:])
+            else:  # truncate
+                nb_E[i, :, :] = self.rhs(nb_list[:self.max_NB])
+
+            # check self.rhs.shape == (self.max_NB, rank)
+
+        return nb_E  # shape == (chunk_size, self.max_NB, rank)
 
     def forward(self, x):
         # Need to change this

@@ -79,8 +79,8 @@ class Dataset(object):
                 if i == len(train) - 1:
                     slice_dic[curr_ent] = (start, i + 1)
                 i += 1
-            pickle.dump(train, open(sorted_file_path, 'rb'))
-            pickle.dump(slice_dic, open(slice_file_path, 'rb'))
+            pickle.dump(train, open(sorted_file_path, 'wb'))
+            pickle.dump(slice_dic, open(slice_file_path, 'wb'))
             return train, slice_dic
 
     def eval(

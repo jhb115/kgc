@@ -2,13 +2,14 @@ from pathlib import Path
 import pkg_resources
 import pickle
 from kbc.datasets import Dataset
+import matplotlib.pyplot as plt
+
 
 #%%%%
 '''
 class Dataset
 get_train -> returns train examples (examples include reciprocal triplets)
 '''
-from kbc.datasets import Dataset
 
 data_list = ['FB15K', 'FB237', 'WN', 'WN18RR', 'YAGO3-10']
 file_type = ['train', 'valid', 'test']
@@ -176,7 +177,36 @@ Explore statistics of N_nb (number of neighbours for a given subject)
 '''
 
 # Consider only the train set (org + reciprocal)
-mydata = Dataset('FB15K', use_colab=False)
-sorted_train, slice_dic = mydata.get_sorted_train()
+data_list = ['FB15K', 'FB237', 'WN', 'WN18RR', 'YAGO3-10']
+plt.close('all')
+for each_data in data_list:
 
+    mydata = Dataset(each_data, use_colab=False)
+    sorted_train, slice_dic = mydata.get_sorted_train()
+
+    # Iterate through slice_dic
+    diff_list = [0] * len(slice_dic)
+    for i, each_slice in enumerate(slice_dic.values()):
+        diff_list[i] = each_slice[1] - each_slice[0]
+
+    plt.figure()
+    plt.hist(diff_list, bins=500, range=(min(diff_list), 300))
+    plt.title(each_data)
+
+    print('')
+    print(each_data)
+    print('Train Data Length = ', len(sorted_train))
+plt.show()
+
+'''
+FB15K
+Train Data Length =  966284
+FB237
+Train Data Length =  544230
+WN
+Train Data Length =  282884
+WN18RR
+Train Data Length =  173670
+'''
 #%%%
+
