@@ -139,6 +139,7 @@ args = parser.parse_args()
 # Example Run:
 # !python kbc/learn.py --dataset 'FB15K' --model 'ConvE' --rank 200 --max_epochs 3 --hw 0 0 --kernel_size 3 3 --output_channel 32
 # !python kbc/learn.py --dataset 'FB15K' --model 'ConvE' --rank 200 --max_epochs 3 --hw 0 0 --kernel_size 3 3 --output_channel 32 --regularizer 'N0'
+# !python kbc/learn.py --dataset 'FB15K' --model 'Context_CP' --rank 200 --max_epochs 1 --regularizer 'N3' --max_NB 50
 
 #Choosing --regularizer 'N0' will disable regularization term
 
@@ -154,6 +155,7 @@ if args.model in ['CP', 'ComplEx', 'ConvE']:  # For non-context model
     examples = unsorted_examples
 else:  # Get sorted examples for context model
     sorted_examples, slice_dic = dataset.get_sorted_train()
+    examples = torch.from_numpy(dataset.get_train().astype('int64'))
 
 print(dataset.get_shape())
 model = {
