@@ -202,13 +202,37 @@ class Context_CP(KBCModel):
 
         return tot_forward, (lhs, rel, rhs)
 
+    def get_queries(self, tensor_x):  # need to include context part
+        # x is a numpy array (equivalent to queries)
+
+        x = tensor_x.numpy()
+        self.chunk_size = len(x)
+
+        lhs = self.lhs(tensor_x[:, 0])
+        rel = self.rel(tensor_x[:, 1])
+        rhs = self.rhs(tensor_x[:, 2])
+
+        # concatenation of lhs, rel, rhs
+        trp_E = torch.cat((lhs, rel, rhs), dim=1)  # trp_E.shape == (chunk_size, 3k)
+
+        # Get attention weight vector, where W.shape == (3k, k)
+        w = self.W(trp_E)  # w.shape == (chunk_size, k)
+
+        # Get nb_E
+        nb_E = self.get_neighbor(x[:, 0])  # nb_E.shape == (chunk_size, max_NB, k)
+        alpha = torch.softmax(torch.einsum('bk,bmk->bm', w, nb_E), dim=1)
+        # matrix multiplication inside gives (chunk_size x max_NB)
+        # alpha.shape == (chunk_size, max_NB)
+
+        # Get context vector
+        e_c = torch.einsum('bm,bmk->bk', alpha, nb_E)  # (chunk_size, k)
+
+        return lhs.data * rel.data * e_c
+
     def get_rhs(self, chunk_begin: int, chunk_size: int):
         return self.rhs.weight.data[
             chunk_begin:chunk_begin + chunk_size
         ].transpose(0, 1)
-
-    def get_queries(self, queries: torch.Tensor):
-        return self.lhs(queries[:, 0]).data * self.rel(queries[:, 1]).data
 
 
 class ConvE(KBCModel):
