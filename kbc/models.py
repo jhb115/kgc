@@ -173,9 +173,9 @@ class Context_CP(KBCModel):
 
         return nb_E  # shape == (chunk_size, self.max_NB, rank), yes
 
-    def forward(self, x):
+    def forward(self, tensor_x):
         # Need to change this
-        tensor_x = torch.from_numpy(x.astype('int64'))
+        x = tensor_x.numpy()
         self.chunk_size = len(x)
 
         lhs = self.lhs(tensor_x[:, 0])
