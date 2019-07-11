@@ -99,8 +99,8 @@ class KBCModel(nn.Module, ABC):
 class Context_CP(KBCModel):
     def __init__(
             self, sizes: Tuple[int, int, int], rank: int,
-            init_size: float = 1e-3, data_name: str = 'FB15K', sorted_data = None,
-            slice_dic = None, max_NB = 50
+            init_size: float = 1e-3, data_name: str = 'FB15K', sorted_data=None,
+            slice_dic=None, max_NB=50
     ):
         super(Context_CP, self).__init__()
         self.sizes = sizes

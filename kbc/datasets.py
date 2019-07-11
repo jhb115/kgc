@@ -18,7 +18,7 @@ import os
 DATA_PATH = Path(pkg_resources.resource_filename('kbc', 'data/'))
 
 class Dataset(object):
-    def __init__(self, name: str, use_colab=True):
+    def __init__(self, name: str, use_colab=False):
         self.root = DATA_PATH / name
 
         self.data = {}
