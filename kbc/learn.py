@@ -20,6 +20,8 @@ from kbc.optimizers import KBCOptimizer
 import os
 import numpy as np
 
+# python learn.py --dataset 'FB15K' --models 'Context_CP' --regularizer 'N3' --max_epoch 1 --max_NB 50
+
 #For reproducilibility
 np.random.seed(0)
 torch.manual_seed(0)
@@ -126,6 +128,11 @@ parser.add_argument(
     help="Choose Binary or Multi for cross entropy loss"
 )
 
+parser.add_argument(
+    '--max_NB', default=50, type=int,
+    help="Number of neighbouring nodes to consider for a give subject node"
+)
+
 # Setup parser
 args = parser.parse_args()
 
@@ -155,7 +162,7 @@ model = {
     'ConvE': lambda: ConvE(dataset.get_shape(), args.rank, dropouts, args.use_bias, hw, kernel_size,
                            args.output_channel),
     'Context_CP': lambda: Context_CP(dataset.get_shape(), args.rank, args.init, args.dataset,
-                                     sorted_data=sorted_examples, slice_dic=slice_dic)
+                                     sorted_data=sorted_examples, slice_dic=slice_dic, max_NB=args.max_NB)
 }[args.model]()
 
 regularizer = {
@@ -250,6 +257,8 @@ with open(folder_name + '/config.ini', 'w') as configfile:
 # args.reg, args.init, args.learning_rate
 # if args.model == 'ConvE':
 # args.dropouts, args.use_bias, args.kernel_size, args.output_channel, args.hw
+
+#
 
 for e in range(args.max_epochs):
     print('\n train epoch = ', e+1)
