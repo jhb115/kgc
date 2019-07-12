@@ -157,7 +157,7 @@ class Context_CP(KBCModel):
 
         for i, each_subj in enumerate(subj):
             # since the subject entity in train set may not be present in valid/test set
-            start_i, end_i = self.slice_dic[each_subj]
+            _, start_i, end_i = self.slice_dic[each_subj]
             length = end_i - start_i
 
             if length > 0:
