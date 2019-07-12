@@ -161,7 +161,7 @@ class Context_CP(KBCModel):
             length = end_i - start_i
 
             if length > 0:
-                nb_list = torch.LongTensor(self.sorted_data[start_i: end_i, 2])  # ignore relation for now
+                nb_list = torch.LongTensor(self.sorted_data[start_i: end_i, 2]).cuda()  # ignore relation for now
                 if self.max_NB > length:  # pad with zeros
                     nb_E[i, :length, :] = self.rhs(nb_list[:])
                 else:  # truncate
