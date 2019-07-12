@@ -169,14 +169,14 @@ class Context_CP(KBCModel):
 
         return nb_E  # shape == (chunk_size, self.max_NB, rank), yes
 
-    def forward(self, tensor_x):
+    def forward(self, x: torch.Tensor):
         # Need to change this
-        x = tensor_x.numpy()
+
         self.chunk_size = len(x)
 
-        lhs = self.lhs(tensor_x[:, 0])
-        rel = self.rel(tensor_x[:, 1])
-        rhs = self.rhs(tensor_x[:, 2])
+        lhs = self.lhs(x[:, 0])
+        rel = self.rel(x[:, 1])
+        rhs = self.rhs(x[:, 2])
 
         # concatenation of lhs, rel, rhs
         trp_E = torch.cat((lhs, rel, rhs), dim=1)  # trp_E.shape == (chunk_size, 3k)
@@ -198,15 +198,14 @@ class Context_CP(KBCModel):
 
         return tot_forward, (lhs, rel, rhs)
 
-    def get_queries(self, tensor_x):  # need to include context part
+    def get_queries(self, x: torch.Tensor):  # need to include context part
         # x is a numpy array (equivalent to queries)
 
-        x = tensor_x.numpy()
         self.chunk_size = len(x)
 
-        lhs = self.lhs(tensor_x[:, 0])
-        rel = self.rel(tensor_x[:, 1])
-        rhs = self.rhs(tensor_x[:, 2])
+        lhs = self.lhs(x[:, 0])
+        rel = self.rel(x[:, 1])
+        rhs = self.rhs(x[:, 2])
 
         # concatenation of lhs, rel, rhs
         trp_E = torch.cat((lhs, rel, rhs), dim=1)  # trp_E.shape == (chunk_size, 3k)

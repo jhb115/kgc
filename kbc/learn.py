@@ -20,7 +20,7 @@ from kbc.optimizers import KBCOptimizer
 import os
 import numpy as np
 
-# python learn.py --dataset 'FB15K' --model 'Context_CP' --regularizer 'N3' --max_epoch 1 --max_NB 50
+# python kbc/learn.py --dataset 'FB15K' --model 'Context_CP' --regularizer 'N3' --max_epoch 1 --max_NB 50 --mkdir True
 
 #For reproducilibility
 np.random.seed(0)
