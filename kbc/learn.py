@@ -154,8 +154,12 @@ if args.model in ['CP', 'ComplEx', 'ConvE']:  # For non-context model
     unsorted_examples = torch.from_numpy(dataset.get_train().astype('int64'))
     examples = unsorted_examples
 else:  # Get sorted examples for context model
-    sorted_examples, slice_dic = dataset.get_sorted_train()
-    examples = torch.from_numpy(dataset.get_train().astype('int64'))
+    sorted_data, slice_dic = dataset.get_sorted_train()
+    sorted_data = torch.from_numpy(sorted_data.astype('int64'))
+    slice_dic = torch.from_numpy(slice_dic.astype('int64'))
+    examples = sorted_data
+    # we can use sorted_data as examples (input into optimizer)
+    # since we use randperm(examples) in optimizer
 
 print(dataset.get_shape())
 model = {
@@ -163,8 +167,8 @@ model = {
     'ComplEx': lambda: ComplEx(dataset.get_shape(), args.rank, args.init),
     'ConvE': lambda: ConvE(dataset.get_shape(), args.rank, dropouts, args.use_bias, hw, kernel_size,
                            args.output_channel),
-    'Context_CP': lambda: Context_CP(dataset.get_shape(), args.rank, args.init, args.dataset,
-                                     sorted_data=sorted_examples, slice_dic=slice_dic, max_NB=args.max_NB)
+    'Context_CP': lambda: Context_CP(dataset.get_shape(), args.rank, sorted_data, slice_dic,
+                                     max_NB=args.max_NB, init_size=args.init, data_name=args.dataset)
 }[args.model]()
 
 regularizer = {

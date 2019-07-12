@@ -98,9 +98,9 @@ class KBCModel(nn.Module, ABC):
 
 class Context_CP(KBCModel):
     def __init__(
-            self, sizes: Tuple[int, int, int], rank: int,
-            init_size: float = 1e-3, data_name: str = 'FB15K', sorted_data=None,
-            slice_dic=None, max_NB=50
+            self, sizes: Tuple[int, int, int], rank: int, sorted_data: torch.Tensor,
+            slice_dic=torch.Tensor, max_NB: int = 50, init_size: float = 1e-3,
+            data_name: str = 'FB15K'
     ):
         super(Context_CP, self).__init__()
         self.sizes = sizes
@@ -121,14 +121,13 @@ class Context_CP(KBCModel):
         self.slice_dic = slice_dic
         self.max_NB = max_NB
 
-    def score(self, x): # x must be a numpy
-        tensor_x = torch.from_numpy(x.astype('int64'))
+    def score(self, x: torch.Tensor):
 
         self.chunk_size = len(x)
 
-        lhs = self.lhs(tensor_x[:, 0])
-        rel = self.rel(tensor_x[:, 1])
-        rhs = self.rhs(tensor_x[:, 2])
+        lhs = self.lhs(x[:, 0])
+        rel = self.rel(x[:, 1])
+        rhs = self.rhs(x[:, 2])
 
         # concatenation of lhs, rel, rhs
         trp_E = torch.cat((lhs, rel, rhs), dim=1)  # trp_E.shape == (chunk_size, 3k)
@@ -150,26 +149,23 @@ class Context_CP(KBCModel):
 
         return tot_score
 
-    def get_neighbor(self, subj_list):
+    def get_neighbor(self, subj: torch.Tensor):
         # return neighbor (N_subject, N_nb_max, k)
 
         nb_E = torch.zeros(self.chunk_size, self.max_NB, self.rank)
         # shape == (batch_size, max_NB, emb_size)
 
-        for i, each_subj in enumerate(subj_list):
-            if each_subj in self.slice_dic:
-                # since the subject entity in train set may not be present in valid/test set
-                start_i, end_i = self.slice_dic[each_subj]
-                length = end_i - start_i
-                nb_list = torch.from_numpy(
-                    self.sorted_data[start_i: end_i, 2].astype('int64'))  # ignore relation for now
+        for i, each_subj in enumerate(subj):
+            # since the subject entity in train set may not be present in valid/test set
+            start_i, end_i = self.slice_dic[each_subj]
+            length = end_i - start_i
 
+            if length > 0:
+                nb_list = self.sorted_data[start_i: end_i, 2]  # ignore relation for now
                 if self.max_NB > length:  # pad with zeros
                     nb_E[i, :length, :] = self.rhs(nb_list[:])
                 else:  # truncate
                     nb_E[i, :, :] = self.rhs(nb_list[:self.max_NB])
-
-            # check self.rhs.shape == (self.max_NB, rank)
 
         return nb_E  # shape == (chunk_size, self.max_NB, rank), yes
 

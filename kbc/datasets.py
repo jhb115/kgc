@@ -20,7 +20,7 @@ DATA_PATH = Path(pkg_resources.resource_filename('kbc', 'data/'))
 class Dataset(object):
     def __init__(self, name: str, use_colab=False):
         self.root = DATA_PATH / name
-
+        self.name = name
         self.data = {}
 
         for f in ['train', 'test', 'valid']:
@@ -59,26 +59,41 @@ class Dataset(object):
         sorted_file_path = self.root / 'sorted_train.pickle'
         slice_file_path = self.root / 'slice_train.pickle'
         if os.path.exists(sorted_file_path) and os.path.exists(slice_file_path):
+            # load data if exists
             return pickle.load(open(sorted_file_path, 'rb')), \
                     pickle.load(open(slice_file_path, 'rb'))
-        else:
-            train = self.get_train()
-            train.sort(axis=0)
+        else:  # create data if not exists
+            train = self.get_train().astype('int64')
+            train = train[train[:, 0].argsort()]
             i = 0
             curr_ent = train[0, 0]
-            slice_dic = {}
+
+            print('Min entity id for {} is {}'.format(self.name, curr_ent))
+
+            ent_idx_list = list(range(curr_ent, max(train[:, 0]) + 1 + curr_ent))
+
+            slice_dic = []
             start = 0
             while i < len(train):
                 prev_ent = curr_ent
+                ent_idx = ent_idx_list[len(slice_dic)]
                 curr_ent = train[i, 0]
 
                 if prev_ent != curr_ent:
-                    slice_dic[prev_ent] = (start, i)
+                    while ent_idx_list[len(slice_dic) + 1] != curr_ent:
+                        slice_dic.append([ent_idx_list[len(slice_dic) + 1], start, start])
+                    slice_dic.append([prev_ent, start, i])
                     start = i
+                    ent_idx += 1
 
                 if i == len(train) - 1:
-                    slice_dic[curr_ent] = (start, i + 1)
+                    slice_dic.append([curr_ent, start, i + 1])
+
                 i += 1
+
+            slice_dic = np.array(slice_dic, dtype=np.int64)
+            slice_dic = slice_dic[slice_dic[:, 0].argsort()]
+
             pickle.dump(train, open(sorted_file_path, 'wb'))
             pickle.dump(slice_dic, open(slice_file_path, 'wb'))
             return train, slice_dic
@@ -117,3 +132,23 @@ class Dataset(object):
 
     def get_shape(self):
         return self.n_entities, self.n_predicates, self.n_entities
+
+
+# data_list = ['FB15K', 'FB237', 'WN', 'WN18RR', 'YAGO3-10']
+#
+#     for each_data in data_list:
+#         mydata = Dataset(each_data)
+#         sorted_train, slice_dic = mydata.get_sorted_train()
+#         unsorted_train = mydata.get_train()
+#
+#         for i in slice_dic:
+#             if i[1] == np.nan:
+#                 print('nan exists in {}'.format(mydata.name))
+#
+# '''
+# FB15K: min entity = 0, all entity has neighbor
+# FB237: min entity = 0, some entity does not have neighbour (i.e. entity not observed in train set)
+# WN: min entity = 0, all entity has neighbor
+# WN18RR: min entity = 0, some entity does not have neighbour
+# YAGO3-10: min entity = 0, some entity does not have neighbour
+# '''
