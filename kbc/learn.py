@@ -133,6 +133,11 @@ parser.add_argument(
     help="Number of neighbouring nodes to consider for a give subject node"
 )
 
+parser.add_argument(
+    '--mkdir', default=False, type=bool,
+    help='True if you are running first time (create folders for storing the results)'
+)
+
 # Setup parser
 args = parser.parse_args()
 
@@ -229,6 +234,18 @@ test_hit10 = []
 
 #check if the directory exists
 results_folder = './results/{}/{}'.format(args.model, args.dataset)
+
+# make appropriate directories and folders for storing the results
+if args.mkdir:
+    os.mkdir('./results')
+    model_list = ['ComplEx', 'ConvE', 'CP','Context_CP']
+    dataset_list = ['FB15K', 'FB237', 'WN', 'WN18RR', 'YAGO3-10']
+
+    for each_model in model_list:
+        os.mkdir('./results/{}'.format(each_model))
+
+        for each_data in dataset_list:
+            os.mkdir('./results/{}/{}'.format(each_model, each_data))
 
 if not os.path.exists(results_folder):
     raise Exception('You do not have folder named:{}'.format(results_folder))
