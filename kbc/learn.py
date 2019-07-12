@@ -237,7 +237,8 @@ results_folder = './results/{}/{}'.format(args.model, args.dataset)
 
 # make appropriate directories and folders for storing the results
 if args.mkdir:
-    os.mkdir('./results')
+    if not os.path.exists('./results'):
+        os.mkdir('./results')
     model_list = ['ComplEx', 'ConvE', 'CP','Context_CP']
     dataset_list = ['FB15K', 'FB237', 'WN', 'WN18RR', 'YAGO3-10']
 
