@@ -160,11 +160,8 @@ if args.model in ['CP', 'ComplEx', 'ConvE']:  # For non-context model
     examples = unsorted_examples
 else:  # Get sorted examples for context model
     sorted_data, slice_dic = dataset.get_sorted_train()
-    sorted_data = torch.from_numpy(sorted_data.astype('int64'))
-    slice_dic = torch.from_numpy(slice_dic.astype('int64'))
-    examples = sorted_data
-    # we can use sorted_data as examples (input into optimizer)
-    # since we use randperm(examples) in optimizer
+    examples = torch.from_numpy(dataset.get_train().astype('int64'))
+
 
 print(dataset.get_shape())
 model = {

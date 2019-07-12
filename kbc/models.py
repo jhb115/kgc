@@ -98,8 +98,8 @@ class KBCModel(nn.Module, ABC):
 
 class Context_CP(KBCModel):
     def __init__(
-            self, sizes: Tuple[int, int, int], rank: int, sorted_data: torch.Tensor,
-            slice_dic=torch.Tensor, max_NB: int = 50, init_size: float = 1e-3,
+            self, sizes: Tuple[int, int, int], rank: int, sorted_data: np.ndarray,
+            slice_dic: np.ndarray, max_NB: int = 50, init_size: float = 1e-3,
             data_name: str = 'FB15K'
     ):
         super(Context_CP, self).__init__()
@@ -152,7 +152,7 @@ class Context_CP(KBCModel):
     def get_neighbor(self, subj: torch.Tensor):
         # return neighbor (N_subject, N_nb_max, k)
 
-        nb_E = torch.zeros(self.chunk_size, self.max_NB, self.rank)
+        nb_E = torch.zeros(self.chunk_size, self.max_NB, self.rank).cuda()
         # shape == (batch_size, max_NB, emb_size)
 
         for i, each_subj in enumerate(subj):
@@ -161,7 +161,7 @@ class Context_CP(KBCModel):
             length = end_i - start_i
 
             if length > 0:
-                nb_list = self.sorted_data[start_i: end_i, 2]  # ignore relation for now
+                nb_list = torch.LongTensor(self.sorted_data[start_i: end_i, 2])  # ignore relation for now
                 if self.max_NB > length:  # pad with zeros
                     nb_E[i, :length, :] = self.rhs(nb_list[:])
                 else:  # truncate
