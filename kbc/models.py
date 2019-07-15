@@ -136,7 +136,7 @@ class Context_CP(KBCModel):
         w = self.W(trp_E)  # w.shape == (chunk_size, k)
 
         # Get nb_E
-        nb_E = self.get_neighbor(x[:, 0])  # nb_E.shape == (chunk_size, max_NB, k)
+        nb_E = self.get_neighbor(x[:, 0].numpy())  # nb_E.shape == (chunk_size, max_NB, k)
         alpha = torch.softmax(torch.einsum('bk,bmk->bm', w, nb_E), dim=1)
         # matrix multiplication inside gives (chunk_size x max_NB)
         # alpha.shape == (chunk_size, max_NB)
