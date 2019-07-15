@@ -149,25 +149,45 @@ class Context_CP(KBCModel):
 
         return tot_score
 
-    def get_neighbor(self, subj: torch.Tensor):
+    # def get_neighbor(self, subj: torch.Tensor):
+    #     # return neighbor (N_subject, N_nb_max, k)
+    #
+    #     nb_E = torch.zeros(self.chunk_size, self.max_NB, self.rank).cuda()
+    #     # shape == (batch_size, max_NB, emb_size)
+    #
+    #     for i, each_subj in enumerate(subj):
+    #         # since the subject entity in train set may not be present in valid/test set
+    #         _, start_i, end_i = self.slice_dic[each_subj]
+    #         length = end_i - start_i
+    #
+    #         if length > 0:
+    #             nb_list = torch.LongTensor(self.sorted_data[start_i: end_i, 2]).cuda()  # ignore relation for now
+    #             if self.max_NB > length:  # pad with zeros
+    #                 nb_E[i, :length, :] = self.rhs(nb_list[:])
+    #             else:  # truncate
+    #                 nb_E[i, :, :] = self.rhs(nb_list[:self.max_NB])
+    #
+    #     return nb_E  # shape == (chunk_size, self.max_NB, rank), yes
+
+    def get_neighbor(self, subj: np.ndarray):
         # return neighbor (N_subject, N_nb_max, k)
 
-        nb_E = torch.zeros(self.chunk_size, self.max_NB, self.rank).cuda()
-        # shape == (batch_size, max_NB, emb_size)
+        index_array = np.zeros(shape=(len(subj), self.max_NB), dtype=np.int32)
 
         for i, each_subj in enumerate(subj):
-            # since the subject entity in train set may not be present in valid/test set
             _, start_i, end_i = self.slice_dic[each_subj]
             length = end_i - start_i
 
             if length > 0:
-                nb_list = torch.LongTensor(self.sorted_data[start_i: end_i, 2]).cuda()  # ignore relation for now
-                if self.max_NB > length:  # pad with zeros
-                    nb_E[i, :length, :] = self.rhs(nb_list[:])
-                else:  # truncate
-                    nb_E[i, :, :] = self.rhs(nb_list[:self.max_NB])
+                if self.max_NB > length:
+                    index_array[i, :length] = self.sorted_data[start_i:end_i, 2]
+                else:
+                    index_array[i, :] = self.sorted_data[start_i:self.max_NB, 2]
 
-        return nb_E  # shape == (chunk_size, self.max_NB, rank), yes
+        # Convert index_array into a long tensor for indexing the embedding.
+        index_tensor = torch.LongTensor(index_array).cuda()
+
+        return self.rhs(index_tensor)
 
     def forward(self, x: torch.Tensor):
         # Need to change this
