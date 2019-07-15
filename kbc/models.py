@@ -136,7 +136,7 @@ class Context_CP(KBCModel):
         w = self.W(trp_E)  # w.shape == (chunk_size, k)
 
         # Get nb_E
-        nb_E = self.get_neighbor(x[:, 0].numpy())  # nb_E.shape == (chunk_size, max_NB, k)
+        nb_E = self.get_neighbor(x[:, 0])  # nb_E.shape == (chunk_size, max_NB, k)
         alpha = torch.softmax(torch.einsum('bk,bmk->bm', w, nb_E), dim=1)
         # matrix multiplication inside gives (chunk_size x max_NB)
         # alpha.shape == (chunk_size, max_NB)
@@ -148,26 +148,6 @@ class Context_CP(KBCModel):
         tot_score = torch.sum(lhs * rel * rhs * e_c, 1, keepdim=True)
 
         return tot_score
-
-    # def get_neighbor(self, subj: torch.Tensor):
-    #     # return neighbor (N_subject, N_nb_max, k)
-    #
-    #     nb_E = torch.zeros(self.chunk_size, self.max_NB, self.rank).cuda()
-    #     # shape == (batch_size, max_NB, emb_size)
-    #
-    #     for i, each_subj in enumerate(subj):
-    #         # since the subject entity in train set may not be present in valid/test set
-    #         _, start_i, end_i = self.slice_dic[each_subj]
-    #         length = end_i - start_i
-    #
-    #         if length > 0:
-    #             nb_list = torch.LongTensor(self.sorted_data[start_i: end_i, 2]).cuda()  # ignore relation for now
-    #             if self.max_NB > length:  # pad with zeros
-    #                 nb_E[i, :length, :] = self.rhs(nb_list[:])
-    #             else:  # truncate
-    #                 nb_E[i, :, :] = self.rhs(nb_list[:self.max_NB])
-    #
-    #     return nb_E  # shape == (chunk_size, self.max_NB, rank), yes
 
     def get_neighbor(self, subj: np.ndarray):
         # return neighbor (N_subject, N_nb_max, k)
@@ -182,7 +162,7 @@ class Context_CP(KBCModel):
                 if self.max_NB > length:
                     index_array[i, :length] = self.sorted_data[start_i:end_i, 2]
                 else:
-                    index_array[i, :] = self.sorted_data[start_i:self.max_NB, 2]
+                    index_array[i, :] = self.sorted_data[start_i:start_i+self.max_NB, 2]
 
         # Convert index_array into a long tensor for indexing the embedding.
         index_tensor = torch.LongTensor(index_array).cuda()
