@@ -134,7 +134,7 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    '--mkdir', default=False, type=bool,
+    '--mkdir', default=0, type=int, choices=[0, 1],
     help='True if you are running first time (create folders for storing the results)'
 )
 
