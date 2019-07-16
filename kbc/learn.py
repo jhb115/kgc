@@ -310,61 +310,61 @@ for e in range(args.max_epochs):
         print("\n\t TRAIN: ", train_results)
         # print("\t VALID : ", valid_results)  # change this back
 
-        train_mrr.append(train_results['MRR'])
-
-        hits1310 = train_results['hits@[1,3,10]'].numpy()
-        train_hit1.append(hits1310[0])
-        train_hit3.append(hits1310[1])
-        train_hit10.append(hits1310[2])
-
-        # change this back
-        # valid_mrr.append(valid_results['MRR'])
-        #
-        # hits1310 = valid_results['hits@[1,3,10]'].numpy()
-        # valid_hit1.append(hits1310[0])
-        # valid_hit3.append(hits1310[1])
-        # valid_hit10.append(hits1310[2])
-
-        np.save(folder_name + '/train_mrr', np.array(train_mrr))
-        np.save(folder_name + '/train_hit1', np.array(train_hit1))
-        np.save(folder_name + '/train_hit3', np.array(train_hit3))
-        np.save(folder_name + '/train_hit10', np.array(train_hit10))
-
-        # change this back
-        # np.save(folder_name + '/valid_mrr', np.array(valid_mrr))
-        # np.save(folder_name + '/valid_hit1', np.array(valid_hit1))
-        # np.save(folder_name + '/valid_hit3', np.array(valid_hit3))
-        # np.save(folder_name + '/valid_hit10', np.array(valid_hit10))
-
-#    if (e+1) % args.valid == 0 or (e+1) == args.max_epochs:
-
-        # change this back
-        # results = avg_both(*dataset.eval(model, 'test', -1))
-        #
-        # test_mrr.append(results['MRR'])
-        #
-        # hits1310 = results['hits@[1,3,10]'].numpy()
-        #
-        # test_hit1.append(hits1310[0])
-        # test_hit3.append(hits1310[1])
-        # test_hit10.append(hits1310[2])
-        #
-        # print("\n\nTEST : ", results)
-        #
-        # np.save(folder_name + '/test_mrr', np.array(test_mrr))
-        # np.save(folder_name + '/test_hit1', np.array(test_hit1))
-        # np.save(folder_name + '/test_hit3', np.array(test_hit3))
-        # np.save(folder_name + '/test_hit10', np.array(test_hit10))
-
-        config['e'] = e
-        pickle.dump(config, open(folder_name + '/config.p', 'wb'))
-
-        config_ini['setup']['e'] = str(e)
-
-        with open(folder_name + '/config.ini', 'w') as configfile:
-            config_ini.write(configfile)
-
-        test_i += 1
+#         train_mrr.append(train_results['MRR'])
+#
+#         hits1310 = train_results['hits@[1,3,10]'].numpy()
+#         train_hit1.append(hits1310[0])
+#         train_hit3.append(hits1310[1])
+#         train_hit10.append(hits1310[2])
+#
+#         change this back
+#         valid_mrr.append(valid_results['MRR'])
+#
+#         hits1310 = valid_results['hits@[1,3,10]'].numpy()
+#         valid_hit1.append(hits1310[0])
+#         valid_hit3.append(hits1310[1])
+#         valid_hit10.append(hits1310[2])
+#
+#         np.save(folder_name + '/train_mrr', np.array(train_mrr))
+#         np.save(folder_name + '/train_hit1', np.array(train_hit1))
+#         np.save(folder_name + '/train_hit3', np.array(train_hit3))
+#         np.save(folder_name + '/train_hit10', np.array(train_hit10))
+#
+#         change this back
+#         np.save(folder_name + '/valid_mrr', np.array(valid_mrr))
+#         np.save(folder_name + '/valid_hit1', np.array(valid_hit1))
+#         np.save(folder_name + '/valid_hit3', np.array(valid_hit3))
+#         np.save(folder_name + '/valid_hit10', np.array(valid_hit10))
+#
+# #    if (e+1) % args.valid == 0 or (e+1) == args.max_epochs:
+#
+#         change this back
+#         results = avg_both(*dataset.eval(model, 'test', -1))
+#
+#         test_mrr.append(results['MRR'])
+#
+#         hits1310 = results['hits@[1,3,10]'].numpy()
+#
+#         test_hit1.append(hits1310[0])
+#         test_hit3.append(hits1310[1])
+#         test_hit10.append(hits1310[2])
+#
+#         print("\n\nTEST : ", results)
+#
+#         np.save(folder_name + '/test_mrr', np.array(test_mrr))
+#         np.save(folder_name + '/test_hit1', np.array(test_hit1))
+#         np.save(folder_name + '/test_hit3', np.array(test_hit3))
+#         np.save(folder_name + '/test_hit10', np.array(test_hit10))
+#
+#         config['e'] = e
+#         pickle.dump(config, open(folder_name + '/config.p', 'wb'))
+#
+#         config_ini['setup']['e'] = str(e)
+#
+#         with open(folder_name + '/config.ini', 'w') as configfile:
+#             config_ini.write(configfile)
+#
+#         test_i += 1
 
         # For debugging, delete afterwards
         np.save('./debug/alpha_list', np.array(model.alpha_list))
