@@ -41,6 +41,7 @@ class KBCModel(nn.Module, ABC):
         """
         if chunk_size < 0:
             chunk_size = self.sizes[2]
+
         ranks = torch.ones(len(queries))
         with torch.no_grad():
             c_begin = 0
@@ -130,6 +131,7 @@ class Context_CP(KBCModel):
     def score(self, x: torch.Tensor):
 
         self.chunk_size = len(x)
+        print('Chunk size is ', self.chunk_size)
 
         lhs = self.lhs(x[:, 0])
         rel = self.rel(x[:, 1])
