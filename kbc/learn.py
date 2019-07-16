@@ -138,6 +138,7 @@ parser.add_argument(
     help='True if you are running first time (create folders for storing the results)'
 )
 
+
 # Setup parser
 args = parser.parse_args()
 
@@ -145,6 +146,7 @@ args = parser.parse_args()
 # !python kbc/learn.py --dataset 'FB15K' --model 'ConvE' --rank 200 --max_epochs 3 --hw 0 0 --kernel_size 3 3 --output_channel 32
 # !python kbc/learn.py --dataset 'FB15K' --model 'ConvE' --rank 200 --max_epochs 3 --hw 0 0 --kernel_size 3 3 --output_channel 32 --regularizer 'N0'
 # !python kbc/learn.py --dataset 'FB15K' --model 'Context_CP' --rank 200 --max_epochs 1 --regularizer 'N3' --max_NB 50
+# python kbc/learn.py --dataset 'FB15K' --model 'Context_CP' --regularizer 'N3' --max_epoch 1 --max_NB 50 --mkdir 1
 
 #Choosing --regularizer 'N0' will disable regularization term
 
@@ -244,6 +246,9 @@ if args.mkdir:
 
         for each_data in dataset_list:
             os.mkdir('./results/{}/{}'.format(each_model, each_data))
+
+    if not os.path.exists('./debug'):  # for saving debugging files; delete this at the end
+        os.mkdir('./debug')
 
 if not os.path.exists(results_folder):
     raise Exception('You do not have folder named:{}'.format(results_folder))
@@ -350,6 +355,8 @@ for e in range(args.max_epochs):
 
         test_i += 1
 
-
-
-
+        # For debugging, delete afterwards
+        np.save('./debug/alpha_list', np.array(model.alpha_list))
+        np.save('./debug/e_c_list', np.array(model.e_c_list))
+        np.save('./debug/nb_num', np.array(model.nb_num))
+        np.save('./debug/e_head', model.e_head)

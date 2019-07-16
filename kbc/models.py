@@ -89,7 +89,7 @@ class KBCModel(nn.Module, ABC):
 # This is CP model that combines two components together:
 # local (individual triplet) + global (context of neighbourhood)
 
-# suggested max_NB:
+# suggested max_NB for context_CP:
 # FB15K = 50 ~ 100
 # FB237 = 50 ~ 100
 # WN = 20
@@ -121,6 +121,11 @@ class Context_CP(KBCModel):
         self.slice_dic = slice_dic
         self.max_NB = max_NB
 
+        # Saving local variables for debugging, delete afterwards
+        self.alpha_list = []
+        self.e_c_list = []
+        self.nb_num = []
+
     def score(self, x: torch.Tensor):
 
         self.chunk_size = len(x)
@@ -133,6 +138,7 @@ class Context_CP(KBCModel):
         trp_E = torch.cat((lhs, rel, rhs), dim=1)  # trp_E.shape == (chunk_size, 3k)
 
         # Get attention weight vector, where W.shape == (3k, k)
+        # Linear layer: trp_E @ W
         w = self.W(trp_E)  # w.shape == (chunk_size, k)
 
         # Get nb_E
@@ -146,6 +152,12 @@ class Context_CP(KBCModel):
 
         # Get tot_score
         tot_score = torch.sum(lhs * rel * rhs * e_c, 1, keepdim=True)
+
+        # Saving local variables for debugging, delete below afterwards
+        self.alpha_list.append(alpha.numpy())
+        self.e_c_list.append(e_c.numpy())
+        self.nb_num.append(self.length)
+        self.e_head = lhs.numpy()
 
         return tot_score
 
@@ -163,6 +175,9 @@ class Context_CP(KBCModel):
                     index_array[i, :length] = self.sorted_data[start_i:end_i, 2]
                 else:
                     index_array[i, :] = self.sorted_data[start_i:start_i+self.max_NB, 2]
+
+        # For debugging, delete afterwards
+        self.length = length
 
         # Convert index_array into a long tensor for indexing the embedding.
         index_tensor = torch.LongTensor(index_array).cuda()
