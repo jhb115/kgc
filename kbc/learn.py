@@ -307,10 +307,8 @@ for e in range(args.max_epochs):
             for split in split_name
         ]
 
-
-
         print("\n\t TRAIN: ", train_results)
-        # print("\t VALID : ", valid_results)
+        # print("\t VALID : ", valid_results)  # change this back
 
         train_mrr.append(train_results['MRR'])
 
