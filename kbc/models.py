@@ -131,7 +131,6 @@ class Context_CP(KBCModel):
     def score(self, x: torch.Tensor):
 
         self.chunk_size = len(x)
-        print('Chunk size is ', self.chunk_size)
 
         lhs = self.lhs(x[:, 0])
         rel = self.rel(x[:, 1])
@@ -186,8 +185,6 @@ class Context_CP(KBCModel):
 
         # Convert index_array into a long tensor for indexing the embedding.
         index_tensor = torch.LongTensor(index_array).cuda()
-
-
 
         return self.rhs(index_tensor)
 
