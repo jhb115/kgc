@@ -154,10 +154,10 @@ class Context_CP(KBCModel):
         tot_score = torch.sum(lhs * rel * rhs * e_c, 1, keepdim=True)
 
         # Saving local variables for debugging, delete below afterwards
-        self.alpha_list.append(alpha.numpy())
-        self.e_c_list.append(e_c.numpy())
+        self.alpha_list.append(alpha.cpu().numpy())
+        self.e_c_list.append(e_c.cpu().numpy())
         self.nb_num.append(self.length)
-        self.e_head = lhs.numpy()
+        self.e_head = lhs.cpu().numpy()
 
         return tot_score
 
