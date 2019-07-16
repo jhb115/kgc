@@ -125,6 +125,7 @@ class Context_CP(KBCModel):
         self.alpha_list = []
         self.e_c_list = []
         self.nb_num = []
+        self.e_head = []
 
     def score(self, x: torch.Tensor):
 
@@ -157,7 +158,7 @@ class Context_CP(KBCModel):
         self.alpha_list.append(alpha.cpu().numpy())
         self.e_c_list.append(e_c.cpu().numpy())
         self.nb_num.append(self.length)
-        self.e_head = lhs.cpu().numpy()
+        self.e_head.append(lhs.cpu().numpy())
 
         return tot_score
 
