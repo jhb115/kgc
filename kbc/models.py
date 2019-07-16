@@ -159,7 +159,7 @@ class Context_CP(KBCModel):
         # Saving local variables for debugging, delete below afterwards
         self.alpha_list.append(alpha.cpu().numpy())
         self.e_c_list.append(e_c.cpu().numpy())
-        self.nb_num.append(self.length)
+        self.nb_num.append(self.length_list)
         self.e_head.append(lhs.cpu().numpy())
 
         return tot_score
@@ -167,11 +167,16 @@ class Context_CP(KBCModel):
     def get_neighbor(self, subj: np.ndarray):
         # return neighbor (N_subject, N_nb_max, k)
 
+        # remove this afterwards
+        self.length_list = []
+
         index_array = np.zeros(shape=(len(subj), self.max_NB), dtype=np.int32)
 
         for i, each_subj in enumerate(subj):
             _, start_i, end_i = self.slice_dic[each_subj]
             length = end_i - start_i
+
+            self.length_list.append(length)  # remove this afterwards
 
             if length > 0:
                 if self.max_NB > length:
@@ -179,11 +184,10 @@ class Context_CP(KBCModel):
                 else:
                     index_array[i, :] = self.sorted_data[start_i:start_i+self.max_NB, 2]
 
-        # For debugging, delete afterwards
-        self.length = length
-
         # Convert index_array into a long tensor for indexing the embedding.
         index_tensor = torch.LongTensor(index_array).cuda()
+
+
 
         return self.rhs(index_tensor)
 
