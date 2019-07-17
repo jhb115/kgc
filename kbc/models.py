@@ -157,7 +157,7 @@ class Context_CP(KBCModel):
 
         return tot_score
 
-    def get_neighbor(self, subj: np.ndarray):
+    def get_neighbor(self, subj: torch.Tensor):
         # return neighbor (N_subject, N_nb_max, k)
 
         # remove this afterwards
@@ -209,12 +209,12 @@ class Context_CP(KBCModel):
         # Get tot_score
         tot_forward = (lhs * rel * e_c) @ self.rhs.weight.t()
 
-        # Saving local variables for debugging, delete below afterwards
-        self.alpha_list.append(alpha.cpu().numpy())
-        self.e_c_list.append(e_c.cpu().numpy())
-        self.nb_num.append(self.length_list)
-        self.e_head.append(lhs.cpu().numpy())
-
+        print(alpha)
+        # # Saving local variables for debugging, delete below afterwards
+        # self.alpha_list.append(alpha.cpu().numpy())
+        # self.e_c_list.append(e_c.cpu().numpy())
+        # self.nb_num.append(self.length_list)
+        # self.e_head.append(lhs.cpu().numpy())
 
         return tot_forward, (lhs, rel, rhs)
 
