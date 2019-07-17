@@ -389,10 +389,3 @@ e_c = torch.dot(alpha, nb_E)  # (chunk_size, k)
 
 # Get tot_score
 tot_score = torch.sum(lhs * rel * rhs * e_c, 1, keepdim=True)
-
-
-
-
-
-
-#%%%
