@@ -143,7 +143,7 @@ class Context_CP(KBCModel):
 
         # concatenation of lhs, rel, rhs
         # trp_E = torch.cat((lhs, rel, rhs), dim=1)  # trp_E.shape == (chunk_size, 3k) (previous)
-        trp_E = torch.cate((lhs, rel), dim=1)
+        trp_E = torch.cat((lhs, rel), dim=1)
 
         # Get attention weight vector, where W.shape == (3k, k)
         # Linear layer: trp_E @ W
@@ -198,7 +198,8 @@ class Context_CP(KBCModel):
         rhs = self.rhs(x[:, 2])
 
         # concatenation of lhs, rel, rhs
-        trp_E = torch.cat((lhs, rel, rhs), dim=1)  # trp_E.shape == (chunk_size, 3k)
+        # trp_E = torch.cat((lhs, rel, rhs), dim=1)  # trp_E.shape == (chunk_size, 3k) (previous)
+        trp_E = torch.cat((lhs, rel), dim=1)
 
         # Get attention weight vector, where W.shape == (3k, k)
         w = self.W(trp_E)  # w.shape == (chunk_size, k)
