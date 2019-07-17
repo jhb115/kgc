@@ -238,7 +238,7 @@ results_folder = './results/{}/{}'.format(args.model, args.dataset)
 
 if args.save_pre_train == 1:
     pre_train_folder = './pre_train/{}/{}'.format('Context_' + args.model, args.dataset)
-if args.load_pretrain == 1:
+if args.load_pre_train == 1:
     pre_train_folder = './pre_train/{}/{}'.format(args.model, args.dataset)
     model.lhs.load_state_dict(pre_train_folder + '/lhs.pt')
     model.rel.load_state_dict(pre_train_folder + '/rel.pt')
