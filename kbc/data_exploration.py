@@ -358,34 +358,61 @@ x = mydata.get_train()[chunk_list]  # exemplary query
 x_tensor = torch.from_numpy(x.astype('int64'))
 
 #%%%
-# Run this
-test_CP = Context_CP(sizes=mydata.get_shape(),
-                     rank=200, sorted_data=sorted_data,
-                     slice_dic=slice_dic, max_NB=50)
+'''
+Check save and load functionality of PyTorch
+'''
+
+class my_model(nn.Module):
+    def __init__(self, sizes=(300,20,300), rank=20):
+        super(my_model, self).__init__()
+
+        self.lhs = nn.Embedding(sizes[0], rank, sparse=True)
+        self.rel = nn.Embedding(sizes[1], rank, sparse=True)
+        self.rhs = nn.Embedding(sizes[2], rank, sparse=True)
+
+test_CP = my_model()
 
 #%%%
-#result = test_CP.score(x)
-for_result, _ = test_CP.forward(x)
 
-#%%%%
-# Run this
+from collections import OrderedDict
+type(test_CP.state_dict())
 
-lhs = test_CP.lhs(x_tensor[:, 0])  # shape == (chunk_size, rank)
-rel = test_CP.rel(x_tensor[:, 1])
-rhs = test_CP.rhs(x_tensor[:, 2])
+only_these =
 
-# concatenation of lhs, rel, rhs
-trp_E = torch.cat( (lhs, rel, rhs), dim=1) # trp_E.shape == (chunk_size, 3k)
 
-# Get attention weight vector, where W.shape == (3k, k)
-w = test_CP.W(trp_E)
 
-# Get nb_E = [ nb_E_o ]
-nb_E = test_CP.get_neighbor(x[:, 0])  # nb_E.shape == (chunk_size, max_NB, k)
-alpha = torch.softmax(torch.matmul(w, nb_E))  # alpha.shape == (chunk_size, max_NB)
 
-# Get context vector
-e_c = torch.dot(alpha, nb_E)  # (chunk_size, k)
 
-# Get tot_score
-tot_score = torch.sum(lhs * rel * rhs * e_c, 1, keepdim=True)
+
+
+
+#%%%
+
+torch.save(test_CP.lhs.state_dict(), './scrap_testing/mymodel.pt')
+
+x = torch.load('./scrap_testing/mymodel.pt')
+
+
+#%%%
+
+
+
+'''
+pretrained_dict = ...
+model_dict = model.state_dict()
+
+# 1. filter out unnecessary keys
+pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict}
+# 2. overwrite entries in the existing state dict
+model_dict.update(pretrained_dict) 
+# 3. load the new state dict
+model.load_state_dict(pretrained_dict)
+'''
+
+
+
+mymodel2 = my_model()
+mymodel2.lhs.load_state_dict(x)
+
+
+#%%%

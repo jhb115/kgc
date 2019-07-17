@@ -137,11 +137,14 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    '--pre_train', default=0, type=int, choices=[0,1],
-    help='1 if you wish to pre-train the embedding of Context-based model on non-context-based model first'
+    '--save_pre_train', default=0, type=int, choices=[0,1],
+    help='1 if you wish to pre-train and save the embedding on non-context-based model'
 )
 
-
+parser.add_argument(
+    '--load_pre_train', default=0, type=int, choices=[0,1],
+    help='1 if you wish to load the saved pre-train the embedding for Context-based model'
+)
 
 # Setup parser
 args = parser.parse_args()
@@ -155,10 +158,6 @@ args = parser.parse_args()
 # python kbc/learn.py --dataset 'FB15K' --model 'Context_CP' --rank 200 --max_epochs 1 --regularizer 'N3' --max_NB 50
 # python kbc/learn.py --dataset 'FB15K' --model 'Context_CP' --regularizer 'N3' --max_epoch 1 --max_NB 50 --mkdir 1
 
-if args.model == 'ConvE':
-    hw = tuple(args.hw)
-    kernel_size = tuple(args.kernel_size)
-    dropouts = tuple(args.dropouts)
 
 # Get Dataset
 dataset = Dataset(args.dataset)
@@ -174,8 +173,8 @@ print(dataset.get_shape())
 model = {
     'CP': lambda: CP(dataset.get_shape(), args.rank, args.init),
     'ComplEx': lambda: ComplEx(dataset.get_shape(), args.rank, args.init),
-    'ConvE': lambda: ConvE(dataset.get_shape(), args.rank, dropouts, args.use_bias, hw, kernel_size,
-                           args.output_channel),
+    'ConvE': lambda: ConvE(dataset.get_shape(), args.rank, tuple(args.dropouts), args.use_bias, tuple(args.hw),
+                           tuple(args.kernel_size), args.output_channel),
     'Context_CP': lambda: Context_CP(dataset.get_shape(), args.rank, sorted_data, slice_dic,
                                      max_NB=args.max_NB, init_size=args.init, data_name=args.dataset)
 }[args.model]()
@@ -237,6 +236,14 @@ test_hit10 = []
 #check if the directory exists
 results_folder = './results/{}/{}'.format(args.model, args.dataset)
 
+if args.save_pre_train == 1:
+    pre_train_folder = './pre_train/{}/{}'.format('Context_' + args.model, args.dataset)
+if args.load_pretrain == 1:
+    pre_train_folder = './pre_train/{}/{}'.format(args.model, args.dataset)
+    model.lhs.load_state_dict(pre_train_folder + '/lhs.pt')
+    model.rel.load_state_dict(pre_train_folder + '/rel.pt')
+    model.rhs.load_state_dict(pre_train_folder + '/rhs.pt')
+
 # make appropriate directories and folders for storing the results
 if args.mkdir:
     if not os.path.exists('./results'):
@@ -245,13 +252,25 @@ if args.mkdir:
     dataset_list = ['FB15K', 'FB237', 'WN', 'WN18RR', 'YAGO3-10']
 
     for each_model in model_list:
-        os.mkdir('./results/{}'.format(each_model))
+        os.mkdir('./results/{}'.format('Context_' +each_model))
 
         for each_data in dataset_list:
-            os.mkdir('./results/{}/{}'.format(each_model, each_data))
+            os.mkdir('./results/{}/{}'.format('Context_' +each_model, each_data))
 
     if not os.path.exists('./debug'):  # for saving debugging files; delete this at the end
         os.mkdir('./debug')
+
+    if args.save_pre_train == 1:
+        # this is where the pre-trained emebeddings will be saved
+        os.mkdir('./pre_train')
+        model_list = ['ComplEx', 'ConvE', 'CP']
+        dataset_list = ['FB15K', 'FB237', 'WN', 'WN18RR', 'YAGO3-10']
+
+        for each_model in model_list:
+            os.mkdir('./pre_train/{}'.format('Context_' +each_model))
+
+            for each_data in dataset_list:
+                os.mkdir('./pre_train/{}/{}'.format('Context_' +each_model, each_data))
 
 if not os.path.exists(results_folder):
     raise Exception('You do not have folder named:{}'.format(results_folder))
@@ -296,6 +315,11 @@ for e in range(args.max_epochs):
 
     if (e + 1) % args.valid == 0 or (e+1) == args.max_epochs:
         torch.save(model.state_dict(), folder_name + '/model_state.pt')
+
+        if args.save_pre_train:  #save only the embeddings
+            torch.save(model.lhs.state_dict(), pre_train_folder + '/lhs.pt')
+            torch.save(model.rel.state_dict(), pre_train_folder + '/rel.pt')
+            torch.save(model.rhs.state_dict(), pre_train_folder + '/rhs.pt')
 
         train_results, valid_results = [
             avg_both(*dataset.eval(model, split, -1 if split != 'train' else 50000))
