@@ -371,6 +371,10 @@ class my_model(nn.Module):
         self.rhs = nn.Embedding(sizes[2], rank, sparse=True)
 
 test_CP = my_model()
+
+torch.save(test_CP.lhs.state_dict(), './kbc/scrap_data/lhs.pt')
+
+#%%%
 mymodel2 = my_model()
-mymodel2.lhs.load_state_dict(x)
+mymodel2.lhs.load_state_dict(torch.load('./kbc/scrap_data/lhs.pt'))
 #%%%

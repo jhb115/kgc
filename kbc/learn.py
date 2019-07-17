@@ -241,9 +241,9 @@ if args.save_pre_train == 1:
     pre_train_folder = './pre_train/{}/{}'.format('Context_' + args.model, args.dataset)
 if args.load_pre_train == 1:
     pre_train_folder = './pre_train/{}/{}'.format(args.model, args.dataset)
-    model.lhs.load_state_dict(pre_train_folder + '/lhs.pt')
-    model.rel.load_state_dict(pre_train_folder + '/rel.pt')
-    model.rhs.load_state_dict(pre_train_folder + '/rhs.pt')
+    model.lhs.load_state_dict(torch.load(pre_train_folder + '/lhs.pt'))
+    model.rel.load_state_dict(torch.load(pre_train_folder + '/rel.pt'))
+    model.rhs.load_state_dict(torch.load(pre_train_folder + '/rhs.pt'))
 
 # make appropriate directories and folders for storing the results
 if args.mkdir:
