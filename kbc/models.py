@@ -216,7 +216,7 @@ class Context_CP(KBCModel):
         # self.nb_num.append(self.length_list)
         # self.e_head.append(lhs.cpu().numpy())
 
-        return tot_forward, (lhs, rel, rhs)
+        return tot_forward, (lhs, rel, rhs, e_c)
 
     def get_queries(self, x: torch.Tensor):  # need to include context part
         # x is a numpy array (equivalent to queries)
