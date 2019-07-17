@@ -65,7 +65,7 @@ class KBCModel(nn.Module, ABC):
                                 int(x - c_begin) for x in filter_out
                                 if c_begin <= x < c_begin + chunk_size
                             ]
-                            scores[i, np.array(filter_in_chunk, dtype = np.int64)] = -1e6
+                            scores[i, np.array(filter_in_chunk, dtype=np.int64)] = -1e6
 
                         else:
                             scores[i, np.array(filter_out, dtype=np.int64)] = -1e6

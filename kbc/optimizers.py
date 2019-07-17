@@ -13,6 +13,7 @@ from torch import optim
 from kbc.models import KBCModel
 from kbc.regularizers import Regularizer
 
+# include pre-training functionality
 
 class KBCOptimizer(object):
     def __init__(

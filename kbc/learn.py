@@ -135,7 +135,12 @@ parser.add_argument(
 
 parser.add_argument(
     '--mkdir', default=0, type=int, choices=[0, 1],
-    help='True if you are running first time (create folders for storing the results)'
+    help='1 if you are running first time (create folders for storing the results)'
+)
+
+parser.add_argument(
+    '--pre_train', default=0, type=int,
+    help=('N if you wish to pre-train embedding on non-context model for N number of epochs b4 using the context model ')
 )
 
 
@@ -209,7 +214,6 @@ def avg_both(mrrs: Dict[str, float], hits: Dict[str, torch.FloatTensor]):
 
 
 cur_loss = 0
-train_i = 0
 test_i = 0
 
 hits_name = ['_hits@1', '_hits@3', '_hits@10']
@@ -283,9 +287,7 @@ with open(folder_name + '/config.ini', 'w') as configfile:
 # if args.model == 'ConvE':
 # args.dropouts, args.use_bias, args.kernel_size, args.output_channel, args.hw
 
-
-# split_name = ['train', 'valid']  # change this back
-split_name = ['train']  # delete this
+split_name = ['train', 'valid']  # change this back
 
 for e in range(args.max_epochs):
     print('\n train epoch = ', e+1)
@@ -295,79 +297,69 @@ for e in range(args.max_epochs):
     if (e + 1) % args.valid == 0 or (e+1) == args.max_epochs:
         torch.save(model.state_dict(), folder_name + '/model_state.pt')
 
-        # change this back
-        # train_results, valid_results = [
-        #     avg_both(*dataset.eval(model, split, -1 if split != 'train' else 50000))
-        #     for split in split_name
-        # ]
-
-        # delete this
-        train_results = [
+        train_results, valid_results = [
             avg_both(*dataset.eval(model, split, -1 if split != 'train' else 50000))
             for split in split_name
         ]
 
         print("\n\t TRAIN: ", train_results)
-        # print("\t VALID : ", valid_results)  # change this back
+        print("\t VALID : ", valid_results)  # change this back
 
-#         train_mrr.append(train_results['MRR'])
-#
-#         hits1310 = train_results['hits@[1,3,10]'].numpy()
-#         train_hit1.append(hits1310[0])
-#         train_hit3.append(hits1310[1])
-#         train_hit10.append(hits1310[2])
-#
-#         change this back
-#         valid_mrr.append(valid_results['MRR'])
-#
-#         hits1310 = valid_results['hits@[1,3,10]'].numpy()
-#         valid_hit1.append(hits1310[0])
-#         valid_hit3.append(hits1310[1])
-#         valid_hit10.append(hits1310[2])
-#
-#         np.save(folder_name + '/train_mrr', np.array(train_mrr))
-#         np.save(folder_name + '/train_hit1', np.array(train_hit1))
-#         np.save(folder_name + '/train_hit3', np.array(train_hit3))
-#         np.save(folder_name + '/train_hit10', np.array(train_hit10))
-#
-#         change this back
-#         np.save(folder_name + '/valid_mrr', np.array(valid_mrr))
-#         np.save(folder_name + '/valid_hit1', np.array(valid_hit1))
-#         np.save(folder_name + '/valid_hit3', np.array(valid_hit3))
-#         np.save(folder_name + '/valid_hit10', np.array(valid_hit10))
-#
-# #    if (e+1) % args.valid == 0 or (e+1) == args.max_epochs:
-#
-#         change this back
-#         results = avg_both(*dataset.eval(model, 'test', -1))
-#
-#         test_mrr.append(results['MRR'])
-#
-#         hits1310 = results['hits@[1,3,10]'].numpy()
-#
-#         test_hit1.append(hits1310[0])
-#         test_hit3.append(hits1310[1])
-#         test_hit10.append(hits1310[2])
-#
-#         print("\n\nTEST : ", results)
-#
-#         np.save(folder_name + '/test_mrr', np.array(test_mrr))
-#         np.save(folder_name + '/test_hit1', np.array(test_hit1))
-#         np.save(folder_name + '/test_hit3', np.array(test_hit3))
-#         np.save(folder_name + '/test_hit10', np.array(test_hit10))
-#
-#         config['e'] = e
-#         pickle.dump(config, open(folder_name + '/config.p', 'wb'))
-#
-#         config_ini['setup']['e'] = str(e)
-#
-#         with open(folder_name + '/config.ini', 'w') as configfile:
-#             config_ini.write(configfile)
-#
-#         test_i += 1
+        # Below is Functionality for saving scores but
+        # we switch these off for now (during debugging)
+        # train_mrr.append(train_results['MRR'])
+        #
+        # hits1310 = train_results['hits@[1,3,10]'].numpy()
+        # train_hit1.append(hits1310[0])
+        # train_hit3.append(hits1310[1])
+        # train_hit10.append(hits1310[2])
+        #
+        # valid_mrr.append(valid_results['MRR'])
+        #
+        # hits1310 = valid_results['hits@[1,3,10]'].numpy()
+        # valid_hit1.append(hits1310[0])
+        # valid_hit3.append(hits1310[1])
+        # valid_hit10.append(hits1310[2])
+        #
+        # np.save(folder_name + '/train_mrr', np.array(train_mrr))
+        # np.save(folder_name + '/train_hit1', np.array(train_hit1))
+        # np.save(folder_name + '/train_hit3', np.array(train_hit3))
+        # np.save(folder_name + '/train_hit10', np.array(train_hit10))
+        #
+        # np.save(folder_name + '/valid_mrr', np.array(valid_mrr))
+        # np.save(folder_name + '/valid_hit1', np.array(valid_hit1))
+        # np.save(folder_name + '/valid_hit3', np.array(valid_hit3))
+        # np.save(folder_name + '/valid_hit10', np.array(valid_hit10))
+        #
+        # results = avg_both(*dataset.eval(model, 'test', -1))
+        #
+        # test_mrr.append(results['MRR'])
+        #
+        # hits1310 = results['hits@[1,3,10]'].numpy()
+        #
+        # test_hit1.append(hits1310[0])
+        # test_hit3.append(hits1310[1])
+        # test_hit10.append(hits1310[2])
+        #
+        # print("\n\nTEST : ", results)
+        #
+        # np.save(folder_name + '/test_mrr', np.array(test_mrr))
+        # np.save(folder_name + '/test_hit1', np.array(test_hit1))
+        # np.save(folder_name + '/test_hit3', np.array(test_hit3))
+        # np.save(folder_name + '/test_hit10', np.array(test_hit10))
 
-        # For debugging, delete afterwards
-        np.save('./debug/alpha_list', np.array(model.alpha_list))
-        np.save('./debug/e_c_list', np.array(model.e_c_list))
-        np.save('./debug/nb_num', np.array(model.nb_num))
-        np.save('./debug/e_head', np.array(model.e_head))
+        config['e'] = e
+        pickle.dump(config, open(folder_name + '/config.p', 'wb'))
+
+        config_ini['setup']['e'] = str(e)
+
+        with open(folder_name + '/config.ini', 'w') as configfile:
+            config_ini.write(configfile)
+
+        test_i += 1
+
+        # # For debugging, delete afterwards
+        # np.save('./debug/alpha_list', np.array(model.alpha_list))
+        # np.save('./debug/e_c_list', np.array(model.e_c_list))
+        # np.save('./debug/nb_num', np.array(model.nb_num))
+        # np.save('./debug/e_head', np.array(model.e_head))
