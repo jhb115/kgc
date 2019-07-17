@@ -45,7 +45,7 @@ class N3(Regularizer):
 # For Context model
 # factors = [s, r, o, c]
 class N4(Regularizer):
-    def __init__(self, weight:float):
+    def __init__(self, weight: float):
         super(N4, self).__init__()
         self.weight = weight
 

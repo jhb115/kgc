@@ -68,11 +68,12 @@ parser.add_argument(
 )
 parser.add_argument(
     '--rank', default=1000, type=int,
-    help="Factorization rank."
+    help="Factorization rank i.e. Embedding Size"
 )
+
 parser.add_argument(
     '--batch_size', default=100, type=int,
-    help="Factorization rank."
+    help="Batch Size"
 )
 parser.add_argument(
     '--reg', default=0, type=float,
@@ -120,12 +121,6 @@ parser.add_argument(
 parser.add_argument(
     '--hw', default=(10, 20), nargs='+', type=int,
     help="False or (Height, Width) shape for 2D reshaping entity embedding"
-)
-
-loss_choices = ['Multi', 'Binary']
-parser.add_argument(
-    '--loss', default='Multi', type=str, choices=loss_choices,
-    help="Choose Binary or Multi for cross entropy loss"
 )
 
 parser.add_argument(

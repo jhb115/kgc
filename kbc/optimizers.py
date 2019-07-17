@@ -18,21 +18,18 @@ from kbc.regularizers import Regularizer
 class KBCOptimizer(object):
     def __init__(
             self, model: KBCModel, regularizer: Regularizer, optimizer: optim.Optimizer, batch_size: int = 256,
-            verbose: bool = True, loss_type='Multi'
+            verbose: bool = True
     ):
         self.model = model
         self.regularizer = regularizer
         self.optimizer = optimizer
         self.batch_size = batch_size
         self.verbose = verbose
-        self.loss_type = loss_type
 
     def epoch(self, examples: torch.LongTensor):
         actual_examples = examples[torch.randperm(examples.shape[0]), :]
-        if self.loss_type == 'Multi':
-            loss = nn.CrossEntropyLoss(reduction='mean')
-        else:
-            loss = nn.BCELoss()
+        loss = nn.CrossEntropyLoss(reduction='mean')
+
         with tqdm.tqdm(total=examples.shape[0], unit='ex', disable=not self.verbose) as bar:
             bar.set_description(f'train loss')
             b_begin = 0
