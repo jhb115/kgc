@@ -58,12 +58,13 @@ class Dataset(object):
     def get_sorted_train(self):
         sorted_file_path = self.root / 'sorted_train.pickle'
         slice_file_path = self.root / 'slice_train.pickle'
-        if os.path.exists(sorted_file_path) and os.path.exists(slice_file_path) and False:
+        if os.path.exists(sorted_file_path) and os.path.exists(slice_file_path):
             # load data if exists
             print('Sorted train set loaded')
             return pickle.load(open(sorted_file_path, 'rb')), \
                     pickle.load(open(slice_file_path, 'rb'))
         else:  # create data if not exists
+            print('Create new sorted list')
             train = self.get_train().astype('int64')
 
             train = np.array(list(filter(lambda each_trp: each_trp[0] != each_trp[2], train)))  # removes any self loops
