@@ -117,7 +117,9 @@ class Context_CP(KBCModel):
         self.rhs.weight.data *= init_size
 
         # Context related parameters
-        self.W = nn.Linear(int(3*rank), rank)  # W for w = [lhs; rel; rhs]^T W
+        self.W = nn.Linear(int(3*rank), rank, bias=True)  # W for w = [lhs; rel; rhs]^T W
+        nn.init.xavier_uniform(self.W.weight)  # Xavier initialization
+
         self.sorted_data = sorted_data
         self.slice_dic = slice_dic
         self.max_NB = max_NB
@@ -127,6 +129,7 @@ class Context_CP(KBCModel):
         self.e_c_list = []
         self.nb_num = []
         self.e_head = []
+
 
     def score(self, x: torch.Tensor):
 
