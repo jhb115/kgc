@@ -117,7 +117,9 @@ class Context_CP(KBCModel):
         self.rhs.weight.data *= init_size
 
         # Context related parameters
-        self.W = nn.Linear(int(3*rank), rank, bias=True)  # W for w = [lhs; rel; rhs]^T W
+        # self.W = nn.Linear(int(3*rank), rank, bias=True)  # W for w = [lhs; rel; rhs]^T W (previous)
+        self.W = nn.Linear(int(2 * rank), rank, bias=True)  # W for w = [lhs; rel; rhs]^T W
+
         nn.init.xavier_uniform(self.W.weight)  # Xavier initialization
 
         self.sorted_data = sorted_data
@@ -140,7 +142,8 @@ class Context_CP(KBCModel):
         rhs = self.rhs(x[:, 2])
 
         # concatenation of lhs, rel, rhs
-        trp_E = torch.cat((lhs, rel, rhs), dim=1)  # trp_E.shape == (chunk_size, 3k)
+        # trp_E = torch.cat((lhs, rel, rhs), dim=1)  # trp_E.shape == (chunk_size, 3k) (previous)
+        trp_E = torch.cate((lhs, rel), dim=1)
 
         # Get attention weight vector, where W.shape == (3k, k)
         # Linear layer: trp_E @ W
