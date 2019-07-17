@@ -29,7 +29,6 @@ class N2(Regularizer):
             )
         return norm / factors[0].shape[0]
 
-
 class N3(Regularizer):
     def __init__(self, weight: float):
         super(N3, self).__init__()
@@ -41,4 +40,20 @@ class N3(Regularizer):
             norm += self.weight * torch.sum(
                 torch.abs(f) ** 3
             )
+        return norm / factors[0].shape[0]
+
+# For Context model
+# factors = [s, r, o, c]
+class N4(Regularizer):
+    def __init__(self, weight:float):
+        super(N4, self).__init__()
+        self.weight = weight
+
+    def forward(self, factors):
+        norm = 0
+        for f in factors:
+            norm += self.weight * torch.sum(
+                f ** 4
+            )
+
         return norm / factors[0].shape[0]
