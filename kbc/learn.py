@@ -46,6 +46,7 @@ parser.add_argument(
     help="Model in {}".format(models)
 )
 
+#Choosing --regularizer 'N0' will disable regularization term
 regularizers = ['N0', 'N3', 'N2']
 parser.add_argument(
     '--regularizer', choices=regularizers, default='N3',
@@ -123,32 +124,36 @@ parser.add_argument(
     help="False or (Height, Width) shape for 2D reshaping entity embedding"
 )
 
+# For Context-based models
 parser.add_argument(
     '--max_NB', default=50, type=int,
     help="Number of neighbouring nodes to consider for a give subject node"
 )
 
+# Utility related arguments
 parser.add_argument(
     '--mkdir', default=0, type=int, choices=[0, 1],
     help='1 if you are running first time (create folders for storing the results)'
 )
 
 parser.add_argument(
-    '--pre_train', default=0, type=int,
-    help=('N if you wish to pre-train embedding on non-context model for N number of epochs b4 using the context model ')
+    '--pre_train', default=0, type=int, choices=[0,1],
+    help='1 if you wish to pre-train the embedding of Context-based model on non-context-based model first'
 )
+
 
 
 # Setup parser
 args = parser.parse_args()
 
 # Example Run:
-# !python kbc/learn.py --dataset 'FB15K' --model 'ConvE' --rank 200 --max_epochs 3 --hw 0 0 --kernel_size 3 3 --output_channel 32
-# !python kbc/learn.py --dataset 'FB15K' --model 'ConvE' --rank 200 --max_epochs 3 --hw 0 0 --kernel_size 3 3 --output_channel 32 --regularizer 'N0'
-# !python kbc/learn.py --dataset 'FB15K' --model 'Context_CP' --rank 200 --max_epochs 1 --regularizer 'N3' --max_NB 50
-# python kbc/learn.py --dataset 'FB15K' --model 'Context_CP' --regularizer 'N3' --max_epoch 1 --max_NB 50 --mkdir 1
+# For ConvE
+# python kbc/learn.py --dataset 'FB15K' --model 'ConvE' --rank 200 --max_epochs 3 --hw 0 0 --kernel_size 3 3 --output_channel 32
+# python kbc/learn.py --dataset 'FB15K' --model 'ConvE' --rank 200 --max_epochs 3 --hw 0 0 --kernel_size 3 3 --output_channel 32 --regularizer 'N0'
 
-#Choosing --regularizer 'N0' will disable regularization term
+# For Context_CP
+# python kbc/learn.py --dataset 'FB15K' --model 'Context_CP' --rank 200 --max_epochs 1 --regularizer 'N3' --max_NB 50
+# python kbc/learn.py --dataset 'FB15K' --model 'Context_CP' --regularizer 'N3' --max_epoch 1 --max_NB 50 --mkdir 1
 
 if args.model == 'ConvE':
     hw = tuple(args.hw)
