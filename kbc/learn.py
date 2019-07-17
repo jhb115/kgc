@@ -15,7 +15,7 @@ from torch import optim
 
 from kbc.datasets import Dataset
 from kbc.models import CP, ComplEx, ConvE, Context_CP
-from kbc.regularizers import N2, N3
+from kbc.regularizers import N2, N3, N4
 from kbc.optimizers import KBCOptimizer
 import os
 import numpy as np
@@ -183,6 +183,7 @@ regularizer = {
     'N0': 'N0',
     'N2': N2(args.reg),
     'N3': N3(args.reg),
+    'N4': N4(args.reg)
 }[args.regularizer]
 
 device = 'cuda'
@@ -248,7 +249,7 @@ if args.load_pre_train == 1:
 if args.mkdir:
     if not os.path.exists('./results'):
         os.mkdir('./results')
-    model_list = ['ComplEx', 'ConvE', 'CP','Context_CP']
+    model_list = ['ComplEx', 'ConvE', 'CP', 'Context_CP', 'Context_ComplEx', 'Context_ConvE']
     dataset_list = ['FB15K', 'FB237', 'WN', 'WN18RR', 'YAGO3-10']
 
     for each_model in model_list:
