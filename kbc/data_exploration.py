@@ -371,48 +371,6 @@ class my_model(nn.Module):
         self.rhs = nn.Embedding(sizes[2], rank, sparse=True)
 
 test_CP = my_model()
-
-#%%%
-
-from collections import OrderedDict
-type(test_CP.state_dict())
-
-only_these =
-
-
-
-
-
-
-
-
-#%%%
-
-torch.save(test_CP.lhs.state_dict(), './scrap_testing/mymodel.pt')
-
-x = torch.load('./scrap_testing/mymodel.pt')
-
-
-#%%%
-
-
-
-'''
-pretrained_dict = ...
-model_dict = model.state_dict()
-
-# 1. filter out unnecessary keys
-pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict}
-# 2. overwrite entries in the existing state dict
-model_dict.update(pretrained_dict) 
-# 3. load the new state dict
-model.load_state_dict(pretrained_dict)
-'''
-
-
-
 mymodel2 = my_model()
 mymodel2.lhs.load_state_dict(x)
-
-
 #%%%

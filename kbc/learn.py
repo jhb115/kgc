@@ -47,7 +47,7 @@ parser.add_argument(
 )
 
 #Choosing --regularizer 'N0' will disable regularization term
-regularizers = ['N0', 'N3', 'N2']
+regularizers = ['N0', 'N3', 'N2', 'N4']
 parser.add_argument(
     '--regularizer', choices=regularizers, default='N3',
     help="Regularizer in {}".format(regularizers)
@@ -252,25 +252,25 @@ if args.mkdir:
     dataset_list = ['FB15K', 'FB237', 'WN', 'WN18RR', 'YAGO3-10']
 
     for each_model in model_list:
-        os.mkdir('./results/{}'.format('Context_' +each_model))
+        os.mkdir('./results/{}'.format(each_model))
 
         for each_data in dataset_list:
-            os.mkdir('./results/{}/{}'.format('Context_' +each_model, each_data))
+            os.mkdir('./results/{}/{}'.format(each_model, each_data))
 
     if not os.path.exists('./debug'):  # for saving debugging files; delete this at the end
         os.mkdir('./debug')
 
     if args.save_pre_train == 1:
-        # this is where the pre-trained emebeddings will be saved
+        # this is where the pre-trained emebedding will be saved
         os.mkdir('./pre_train')
         model_list = ['ComplEx', 'ConvE', 'CP']
         dataset_list = ['FB15K', 'FB237', 'WN', 'WN18RR', 'YAGO3-10']
 
         for each_model in model_list:
-            os.mkdir('./pre_train/{}'.format('Context_' +each_model))
+            os.mkdir('./pre_train/{}'.format('Context_'+each_model))
 
             for each_data in dataset_list:
-                os.mkdir('./pre_train/{}/{}'.format('Context_' +each_model, each_data))
+                os.mkdir('./pre_train/{}/{}'.format('Context_'+each_model, each_data))
 
 if not os.path.exists(results_folder):
     raise Exception('You do not have folder named:{}'.format(results_folder))
