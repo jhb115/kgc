@@ -220,13 +220,14 @@ class Context_CP(KBCModel):
 
         if self.i > 0:
             print('lhs = \n', lhs[0])
-            print('magnitude of lhs = \n', torch.norm(lhs[0]))
             print('rhs = \n', rhs[0])
             print('alpha = \n', alpha[0])
             print('nb_E = ', nb_E[0])
             # Get context vector
             print('e_c = \n', e_c[0])
+            print('magnitude of lhs = \n', torch.norm(lhs[0]))
             print('magnitude of e_c = \n', torch.norm(e_c[0]))
+            print('magnitude of rhs = \n', torch.norm(rhs[0]))
 
 
         # # Saving local variables for debugging, delete below afterwards
