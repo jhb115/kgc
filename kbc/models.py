@@ -183,7 +183,8 @@ class Context_CP(KBCModel):
         e_c = torch.einsum('bm,bmk->bk', alpha, nb_E)  # (chunk_size, k)
 
         # Get tot_score
-        tot_score = torch.sum(lhs * rel * rhs, 1, keepdim=True)
+        tot_score = torch.sum(lhs * rel * rhs * e_c, 1, keepdim=True)
+
         return tot_score
 
     def forward(self, x: torch.Tensor):
@@ -212,14 +213,15 @@ class Context_CP(KBCModel):
         e_c = torch.einsum('bm,bmk->bk', alpha, nb_E)  # (chunk_size, k)
 
         # Get tot_score
-        tot_forward = (lhs * rel) @ self.rhs.weight.t()
+        tot_forward = (lhs * rel * e_c) @ self.rhs.weight.t()
 
         # # Saving local variables for debugging, delete below afterwards
         # self.alpha_list.append(alpha.cpu().numpy())
         # self.e_c_list.append(e_c.cpu().numpy())
         # self.nb_num.append(self.length_list)
         # self.e_head.append(lhs.cpu().numpy())
-        return tot_forward, (lhs, rel, rhs)
+
+        return tot_forward, (lhs, rel, rhs, e_c)
 
     def get_queries(self, x: torch.Tensor):  # need to include context part
         # x is a numpy array (equivalent to queries)
@@ -228,6 +230,7 @@ class Context_CP(KBCModel):
 
         lhs = self.lhs(x[:, 0])
         rel = self.rel(x[:, 1])
+        rhs = self.rhs(x[:, 2])
 
         # concatenation of lhs, rel, rhs
         trp_E = torch.cat((lhs, rel), dim=1)  # trp_E.shape == (chunk_size, 3k)
@@ -244,7 +247,7 @@ class Context_CP(KBCModel):
         # Get context vector
         e_c = torch.einsum('bm,bmk->bk', alpha, nb_E)  # (chunk_size, k)
 
-        return lhs.data * rel.data  # * e_c
+        return lhs.data * rel.data * e_c
 
     def get_rhs(self, chunk_begin: int, chunk_size: int):
         return self.rhs.weight.data[
