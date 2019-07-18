@@ -217,7 +217,6 @@ class Context_CP(KBCModel):
         # Get tot_score
         tot_forward = (lhs * rel * e_c) @ self.rhs.weight.t()
 
-
         # if self.i > 0:
         #     print('lhs = \n', lhs[0])
         #     print('rhs = \n', rhs[0])
@@ -228,13 +227,6 @@ class Context_CP(KBCModel):
         #     print('magnitude of lhs = \n', torch.norm(lhs[0]))
         #     print('magnitude of e_c = \n', torch.norm(e_c[0]))
         #     print('magnitude of rhs = \n', torch.norm(rhs[0]))
-
-
-        # # Saving local variables for debugging, delete below afterwards
-        # self.alpha_list.append(alpha.cpu().numpy())
-        # self.e_c_list.append(e_c.cpu().numpy())
-        # self.nb_num.append(self.length_list)
-        # self.e_head.append(lhs.cpu().numpy())
 
         return tot_forward, (lhs, rel, rhs, e_c)
 
@@ -262,7 +254,7 @@ class Context_CP(KBCModel):
         # Get context vector
         e_c = torch.einsum('bm,bmk->bk', alpha, nb_E)  # (chunk_size, k)
 
-        return lhs.data * rel.data * e_c
+        return lhs.data * rel.data * e_c.data
 
     def get_rhs(self, chunk_begin: int, chunk_size: int):
         return self.rhs.weight.data[
