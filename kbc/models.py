@@ -211,7 +211,6 @@ class Context_CP(KBCModel):
         # matrix multiplication inside gives (chunk_size x max_NB)
         # alpha.shape == (chunk_size, max_NB)
 
-        self.i += 1
 
         e_c = torch.einsum('bm,bmk->bk', alpha, nb_E)  # (chunk_size, k)
 
@@ -219,7 +218,7 @@ class Context_CP(KBCModel):
         tot_forward = (lhs * rel * e_c) @ self.rhs.weight.t()
 
 
-        if self.i > 970:
+        if self.i > 0:
             print('lhs = \n', lhs[0])
             print('magnitude of lhs = \n', torch.norm(lhs[0]))
             print('rhs = \n', rhs[0])
