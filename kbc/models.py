@@ -132,6 +132,8 @@ class Context_CP(KBCModel):
         self.nb_num = []
         self.e_head = []
 
+        self.i = 0
+
     def get_neighbor(self, subj: torch.Tensor):
         # return neighbor (N_subject, N_nb_max, k)
 
@@ -208,17 +210,25 @@ class Context_CP(KBCModel):
         alpha = torch.softmax(torch.einsum('bk,bmk->bm', w, nb_E), dim=1)
         # matrix multiplication inside gives (chunk_size x max_NB)
         # alpha.shape == (chunk_size, max_NB)
-        print('lhs = \n', lhs[0])
-        print('magnitude of lhs = \n', torch.abs(lhs[0]))
-        print('rhs = \n', rhs[0])
-        print('alpha = \n', alpha[0])
-        print('nb_E = ', nb_E[0])
-        # Get context vector
+
+        self.i += 1
+
         e_c = torch.einsum('bm,bmk->bk', alpha, nb_E)  # (chunk_size, k)
-        print('e_c = \n', e_c[0])
-        print('magnitude of e_c = \n', torch.abs(e_c[0]))
+
         # Get tot_score
         tot_forward = (lhs * rel * e_c) @ self.rhs.weight.t()
+
+
+        if self.i > 970:
+            print('lhs = \n', lhs[0])
+            print('magnitude of lhs = \n', torch.norm(lhs[0]))
+            print('rhs = \n', rhs[0])
+            print('alpha = \n', alpha[0])
+            print('nb_E = ', nb_E[0])
+            # Get context vector
+            print('e_c = \n', e_c[0])
+            print('magnitude of e_c = \n', torch.norm(e_c[0]))
+
 
         # # Saving local variables for debugging, delete below afterwards
         # self.alpha_list.append(alpha.cpu().numpy())
