@@ -208,10 +208,13 @@ class Context_CP(KBCModel):
         alpha = torch.softmax(torch.einsum('bk,bmk->bm', w, nb_E), dim=1)
         # matrix multiplication inside gives (chunk_size x max_NB)
         # alpha.shape == (chunk_size, max_NB)
-
+        print('lhs = \n', lhs[0])
+        print('rhs = \n', rhs[0])
+        print('alpha = \n', alpha[0])
+        print('nb_E = ', nb_E[0])
         # Get context vector
         e_c = torch.einsum('bm,bmk->bk', alpha, nb_E)  # (chunk_size, k)
-
+        print('e_c = \n', e_c[0])
         # Get tot_score
         tot_forward = (lhs * rel * e_c) @ self.rhs.weight.t()
 
