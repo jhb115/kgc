@@ -132,6 +132,30 @@ class Context_CP(KBCModel):
         self.nb_num = []
         self.e_head = []
 
+    def get_neighbor(self, subj: torch.Tensor):
+        # return neighbor (N_subject, N_nb_max, k)
+
+        # remove this afterwards
+        self.length_list = []
+
+        index_array = np.zeros(shape=(len(subj), self.max_NB), dtype=np.int32)
+
+        for i, each_subj in enumerate(subj):
+            _, start_i, end_i = self.slice_dic[each_subj]
+            length = end_i - start_i
+
+            self.length_list.append(length)  # remove this afterwards
+
+            if length > 0:
+                if self.max_NB > length:
+                    index_array[i, :length] = self.sorted_data[start_i:end_i, 2]
+                else:
+                    index_array[i, :] = self.sorted_data[start_i:start_i+self.max_NB, 2]
+
+        # Convert index_array into a long tensor for indexing the embedding.
+        index_tensor = torch.LongTensor(index_array).cuda()
+
+        return self.rhs(index_tensor)
 
     def score(self, x: torch.Tensor):
 
@@ -163,31 +187,6 @@ class Context_CP(KBCModel):
 
         return tot_score
 
-    def get_neighbor(self, subj: torch.Tensor):
-        # return neighbor (N_subject, N_nb_max, k)
-
-        # remove this afterwards
-        self.length_list = []
-
-        index_array = np.zeros(shape=(len(subj), self.max_NB), dtype=np.int32)
-
-        for i, each_subj in enumerate(subj):
-            _, start_i, end_i = self.slice_dic[each_subj]
-            length = end_i - start_i
-
-            self.length_list.append(length)  # remove this afterwards
-
-            if length > 0:
-                if self.max_NB > length:
-                    index_array[i, :length] = self.sorted_data[start_i:end_i, 2]
-                else:
-                    index_array[i, :] = self.sorted_data[start_i:start_i+self.max_NB, 2]
-
-        # Convert index_array into a long tensor for indexing the embedding.
-        index_tensor = torch.LongTensor(index_array).cuda()
-
-        return self.rhs(index_tensor)
-
     def forward(self, x: torch.Tensor):
         # Need to change this
 
@@ -216,7 +215,6 @@ class Context_CP(KBCModel):
         # Get tot_score
         tot_forward = (lhs * rel * e_c) @ self.rhs.weight.t()
 
-        print(alpha)
         # # Saving local variables for debugging, delete below afterwards
         # self.alpha_list.append(alpha.cpu().numpy())
         # self.e_c_list.append(e_c.cpu().numpy())
@@ -235,7 +233,7 @@ class Context_CP(KBCModel):
         rhs = self.rhs(x[:, 2])
 
         # concatenation of lhs, rel, rhs
-        trp_E = torch.cat((lhs, rel, rhs), dim=1)  # trp_E.shape == (chunk_size, 3k)
+        trp_E = torch.cat((lhs, rel), dim=1)  # trp_E.shape == (chunk_size, 3k)
 
         # Get attention weight vector, where W.shape == (3k, k)
         w = self.W(trp_E)  # w.shape == (chunk_size, k)
