@@ -378,3 +378,23 @@ torch.save(test_CP.lhs.state_dict(), './kbc/scrap_data/lhs.pt')
 mymodel2 = my_model()
 mymodel2.lhs.load_state_dict(torch.load('./kbc/scrap_data/lhs.pt'))
 #%%%
+
+import torch
+
+
+# w: (2, 10), nb_E: (2, 5, 10)
+w = torch.rand(2, 4)
+nb_E = torch.rand(2, 3, 4)
+
+print(torch.einsum('bk,bmk->bm', w, nb_E))
+
+w = w.view(2, 4 ,1)
+print(torch.bmm(nb_E, w).view((2, 4)))
+
+#%%%
+
+alpha = torch.rand(2, 3)
+
+print(alpha)
+print(nb_E)
+print(torch.einsum('bm,bmk->bk', alpha, nb_E))
