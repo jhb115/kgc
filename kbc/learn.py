@@ -311,8 +311,8 @@ split_name = ['train', 'valid']  # change this back
 
 for e in range(args.max_epochs):
     print('\n train epoch = ', e+1)
-    if e >= 1:
-        model.i = 1
+    # if e >= 1:
+    #     model.i = 1
     cur_loss = optimizer.epoch(examples)
 
     if (e + 1) % args.valid == 0 or (e+1) == args.max_epochs:
