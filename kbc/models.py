@@ -121,6 +121,7 @@ class Context_CP(KBCModel):
         self.W2 = nn.Linear(rank, rank, bias=True)
 
         nn.init.xavier_uniform_(self.W.weight)  # Xavier initialization
+        nn.init.xavier_uniform_(self.W2.weight)
 
         self.sorted_data = sorted_data
         self.slice_dic = slice_dic
@@ -218,7 +219,7 @@ class Context_CP(KBCModel):
 
         # Get nb_E
         # nb_E = self.get_neighbor(x[:, 0])  # nb_E.shape == (chunk_size, max_NB, k)
-        nb_E, nb_rel = self.get_neighbor(x[:,0])
+        nb_E, nb_rel = self.get_neighbor(x[:, 0])
 
         context_E = nb_E * nb_rel
 
