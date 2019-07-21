@@ -119,6 +119,7 @@ class Context_CP(KBCModel):
         # Context related parameters
         # self.W = nn.Linear(int(3*rank), rank, bias=True)  # W for w = [lhs; rel; rhs]^T W (previous)
         self.W = nn.Linear(int(2 * rank), rank, bias=True)  # W for w = [lhs; rel; rhs]^T W
+        self.W2 = nn.Linear(rank, rank, bias=True)
 
         nn.init.xavier_uniform_(self.W.weight)  # Xavier initialization
 
@@ -182,7 +183,9 @@ class Context_CP(KBCModel):
         # alpha.shape == (chunk_size, max_NB)
 
         # Get context vector
-        e_c = torch.einsum('bm,bmk->bk', alpha, nb_E)  # (chunk_size, k)
+        # e_c = torch.einsum('bm,bmk->bk', alpha, nb_E)  # (chunk_size, k) (previously)
+        e_c = self.W2(torch.einsum('bm,bmk->bk', alpha, nb_E))
+
 
         # Get tot_score
         tot_score = torch.sum(lhs * rel * rhs * e_c, 1, keepdim=True)
@@ -212,12 +215,13 @@ class Context_CP(KBCModel):
         # alpha.shape == (chunk_size, max_NB)
 
 
-        e_c = torch.einsum('bm,bmk->bk', alpha, nb_E)  # (chunk_size, k)
+        # e_c = torch.einsum('bm,bmk->bk', alpha, nb_E)  # (chunk_size, k) (previously)
+        e_c = self.W2(torch.einsum('bm,bmk->bk', alpha, nb_E))
 
         # Get tot_score
         tot_forward = (lhs * rel * e_c) @ self.rhs.weight.t()
 
-        if self.i > 0:
+        if self.i > 2:
             # print('lhs = \n', lhs[0])
             # print('rhs = \n', rhs[0])
             # print('alpha = \n', alpha[0])
