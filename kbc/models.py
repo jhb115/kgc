@@ -97,6 +97,8 @@ class KBCModel(nn.Module, ABC):
 # WN18RR = 20
 # YAGO3-10 = 40 ~ 50
 
+Sigmoid = nn.Sigmoid()
+
 class Context_CP(KBCModel):
     def __init__(
             self, sizes: Tuple[int, int, int], rank: int, sorted_data: np.ndarray,
@@ -117,9 +119,12 @@ class Context_CP(KBCModel):
         self.rhs.weight.data *= init_size
 
         # Context related parameters
-        # self.W = nn.Linear(int(2 * rank), rank, bias=True)  # W for w = [lhs; rel; rhs]^T W (previous)
         self.W = nn.Linear(int(2 * rank), rank, bias=True)  # W for w = [lhs; rel; rhs]^T W
         self.W2 = nn.Linear(rank, rank, bias=True)
+
+        # Weights for the gate (added)
+        self.Wo = nn.Linear(rank, 1, bias=True)
+        self.Uo = nn.Linear(rank, 1, bias=True)
 
         nn.init.xavier_uniform_(self.W.weight)  # Xavier initialization
         nn.init.xavier_uniform_(self.W2.weight)
@@ -179,8 +184,13 @@ class Context_CP(KBCModel):
         # Get context vector
         e_c = self.W2(torch.einsum('bm,bmk->bk', alpha, nb_E))  # extra linear layer
 
+        # Gate
+        g = Sigmoid(self.Uo(lhs*rel) + self.Wo(e_c))
+        gated_e_c = g * e_c + (torch.ones((self.chunk_size,)) - g) * torch.ones_like(e_c)
+
         # Get tot_score
-        tot_score = torch.sum(lhs * rel * rhs * e_c, 1, keepdim=True)
+        tot_score = torch.sum(lhs * rel * rhs * gated_e_c, 1, keepdim=True)
+        # tot_score = torch.sum(lhs * rel * rhs * e_c, 1, keepdim=True)  # (previous)
 
         return tot_score
 
@@ -208,8 +218,14 @@ class Context_CP(KBCModel):
         # e_c = torch.einsum('bm,bmk->bk', alpha, nb_E)  # (chunk_size, k) (previously)
         e_c = self.W2(torch.einsum('bm,bmk->bk', alpha, nb_E))  # extra linear layer
 
+        # Gate
+        g = Sigmoid(self.Uo(lhs * rel) + self.Wo(e_c))
+        gated_e_c = g * e_c + (torch.ones((self.chunk_size,)) - g) * torch.ones_like(e_c)
+
         # Get tot_score
-        tot_forward = (lhs * rel * e_c) @ self.rhs.weight.t()
+        tot_forward = (lhs * rel * gated_e_c) @ self.rhs.weight.t()
+
+        # tot_forward = (lhs * rel * e_c) @ self.rhs.weight.t()  # (previous)
 
         return tot_forward, (lhs, rel, rhs, e_c)
 
@@ -233,7 +249,11 @@ class Context_CP(KBCModel):
 
         e_c = self.W2(torch.einsum('bm,bmk->bk', alpha, nb_E))
 
-        return lhs.data * rel.data * e_c.data
+        g = Sigmoid(self.Uo(lhs * rel) + self.Wo(e_c))
+        gated_e_c = g * e_c + (torch.ones((self.chunk_size,)) - g) * torch.ones_like(e_c)
+
+        # return lhs.data * rel.data * e_c.data (previous)
+        return lhs.data * rel.data * gated_e_c.data
 
     def get_rhs(self, chunk_begin: int, chunk_size: int):
         return self.rhs.weight.data[
