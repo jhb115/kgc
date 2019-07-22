@@ -186,7 +186,7 @@ class Context_CP(KBCModel):
 
         # Gate
         g = Sigmoid(self.Uo(lhs*rel) + self.Wo(e_c))
-        gated_e_c = g * e_c + (torch.ones((self.chunk_size,)).cuda() - g) * torch.ones_like(e_c).cuda()
+        gated_e_c = g * e_c + (torch.ones((self.chunk_size, 1)).cuda() - g) * torch.ones_like(e_c).cuda()
 
         # Get tot_score
         tot_score = torch.sum(lhs * rel * rhs * gated_e_c, 1, keepdim=True)
@@ -221,7 +221,7 @@ class Context_CP(KBCModel):
         # Gate
         g = Sigmoid(self.Uo(lhs * rel) + self.Wo(e_c))
 
-        gated_e_c = g * e_c + (torch.ones((self.chunk_size,1)).cuda() - g) * torch.ones_like(e_c).cuda()
+        gated_e_c = g * e_c + (torch.ones((self.chunk_size, 1)).cuda() - g) * torch.ones_like(e_c).cuda()
 
         # Get tot_score
         tot_forward = (lhs * rel * gated_e_c) @ self.rhs.weight.t()
@@ -251,7 +251,7 @@ class Context_CP(KBCModel):
         e_c = self.W2(torch.einsum('bm,bmk->bk', alpha, nb_E))
 
         g = Sigmoid(self.Uo(lhs * rel) + self.Wo(e_c))
-        gated_e_c = g * e_c + (torch.ones((self.chunk_size,)).cuda() - g) * torch.ones_like(e_c).cuda()
+        gated_e_c = g * e_c + (torch.ones((self.chunk_size, 1)).cuda() - g) * torch.ones_like(e_c).cuda()
 
         # return lhs.data * rel.data * e_c.data (previous)
         return lhs.data * rel.data * gated_e_c.data
