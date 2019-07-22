@@ -117,7 +117,8 @@ class Context_CP(KBCModel):
         self.rhs.weight.data *= init_size
 
         # Context related parameters
-        self.W = nn.Linear(int(2 * rank), rank, bias=True)  # W for w = [lhs; rel; rhs]^T W
+        # self.W = nn.Linear(int(2 * rank), rank, bias=True)  # W for w = [lhs; rel; rhs]^T W (previous)
+        self.W = nn.Linear(int(1* rank), rank, bias=True)  # W for w = [lhs; rel; rhs]^T W
         self.W2 = nn.Linear(rank, rank, bias=True)
 
         nn.init.xavier_uniform_(self.W.weight)  # Xavier initialization
@@ -150,7 +151,6 @@ class Context_CP(KBCModel):
                 else:
                     index_array[i, :] = self.sorted_data[start_i:start_i+self.max_NB, 2]
 
-
         # Convert index_array into a long tensor for indexing the embedding.
         index_tensor = torch.LongTensor(index_array).cuda()
 
@@ -165,11 +165,10 @@ class Context_CP(KBCModel):
         rhs = self.rhs(x[:, 2])
 
         # concatenation of lhs, rel, rhs
-        # trp_E = torch.cat((lhs, rel, rhs), dim=1)  # trp_E.shape == (chunk_size, 3k) (previous)
-        trp_E = torch.cat((lhs, rel), dim=1)
+        # trp_E = torch.cat((lhs, rel), dim=1)  # (previous)
+        trp_E = lhs
 
         # Get attention weight vector, where W.shape == (3k, k)
-        # Linear layer: trp_E @ W
         w = self.W(trp_E)  # w.shape == (chunk_size, k)
 
         # Get nb_E
@@ -178,9 +177,7 @@ class Context_CP(KBCModel):
         alpha = torch.softmax(torch.einsum('bk,bmk->bm', w, nb_E), dim=1)
         # alpha.shape == (chunk_size, max_NB)
 
-
         # Get context vector
-        # e_c = torch.einsum('bm,bmk->bk', alpha, nb_E)  # (chunk_size, k) (previously)
         e_c = self.W2(torch.einsum('bm,bmk->bk', alpha, nb_E))  # extra linear layer
 
         # Get tot_score
@@ -198,7 +195,8 @@ class Context_CP(KBCModel):
         rhs = self.rhs(x[:, 2])
 
         # concatenation of lhs, rel, rhs
-        trp_E = torch.cat((lhs, rel), dim=1)
+        # trp_E = torch.cat((lhs, rel), dim=1)  # (previous)
+        trp_E = lhs
 
         # Get attention weight vector, where W.shape == (3k, k)
         w = self.W(trp_E)  # w.shape == (chunk_size, k)
@@ -206,10 +204,7 @@ class Context_CP(KBCModel):
         # Get nb_E
         nb_E = self.get_neighbor(x[:, 0])  # nb_E.shape == (chunk_size, max_NB, k)
 
-
-
         alpha = torch.softmax(torch.einsum('bk,bmk->bm', w, nb_E), dim=1)
-        # matrix multiplication inside gives (chunk_size x max_NB)
         # alpha.shape == (chunk_size, max_NB)
 
         # e_c = torch.einsum('bm,bmk->bk', alpha, nb_E)  # (chunk_size, k) (previously)
@@ -217,11 +212,6 @@ class Context_CP(KBCModel):
 
         # Get tot_score
         tot_forward = (lhs * rel * e_c) @ self.rhs.weight.t()
-
-        # if self.i > 1:
-        #     print('magnitude of lhs = \n', torch.norm(lhs[0]))
-        #     print('magnitude of e_c = \n', torch.norm(e_c[0]))
-        #     print('magnitude of rhs = \n', torch.norm(rhs[0]))
 
         return tot_forward, (lhs, rel, rhs, e_c)
 
@@ -234,20 +224,16 @@ class Context_CP(KBCModel):
         rel = self.rel(x[:, 1])
 
         # concatenation of lhs, rel, rhs
-        trp_E = torch.cat((lhs, rel), dim=1)  # trp_E.shape == (chunk_size, 3k)
+        # trp_E = torch.cat((lhs, rel), dim=1)  # trp_E.shape == (chunk_size, 3k) previous
+        trp_E = lhs
 
-        # Get attention weight vector, where W.shape == (3k, k)
         w = self.W(trp_E)  # w.shape == (chunk_size, k)
 
-        # Get nb_E
         nb_E = self.get_neighbor(x[:, 0])  # nb_E.shape == (chunk_size, max_NB, k)
 
         alpha = torch.softmax(torch.einsum('bk,bmk->bm', w, nb_E), dim=1)
-        # matrix multiplication inside gives (chunk_size x max_NB)
         # alpha.shape == (chunk_size, max_NB)
 
-        # Get context vector
-        # e_c = torch.einsum('bm,bmk->bk', alpha, nb_E)  # (chunk_size, k)
         e_c = self.W2(torch.einsum('bm,bmk->bk', alpha, nb_E))
 
         return lhs.data * rel.data * e_c.data
