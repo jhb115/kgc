@@ -118,7 +118,7 @@ class Context_CP(KBCModel):
 
         # Context related parameters
         # self.W = nn.Linear(int(2 * rank), rank, bias=True)  # W for w = [lhs; rel; rhs]^T W (previous)
-        self.W = nn.Linear(int(1* rank), rank, bias=True)  # W for w = [lhs; rel; rhs]^T W
+        self.W = nn.Linear(int(2 * rank), rank, bias=True)  # W for w = [lhs; rel; rhs]^T W
         self.W2 = nn.Linear(rank, rank, bias=True)
 
         nn.init.xavier_uniform_(self.W.weight)  # Xavier initialization
@@ -165,8 +165,7 @@ class Context_CP(KBCModel):
         rhs = self.rhs(x[:, 2])
 
         # concatenation of lhs, rel, rhs
-        # trp_E = torch.cat((lhs, rel), dim=1)  # (previous)
-        trp_E = lhs
+        trp_E = torch.cat((lhs, rel), dim=1)  # (previous)
 
         # Get attention weight vector, where W.shape == (3k, k)
         w = self.W(trp_E)  # w.shape == (chunk_size, k)
@@ -195,8 +194,7 @@ class Context_CP(KBCModel):
         rhs = self.rhs(x[:, 2])
 
         # concatenation of lhs, rel, rhs
-        # trp_E = torch.cat((lhs, rel), dim=1)  # (previous)
-        trp_E = lhs
+        trp_E = torch.cat((lhs, rel), dim=1)  # (previous)
 
         # Get attention weight vector, where W.shape == (3k, k)
         w = self.W(trp_E)  # w.shape == (chunk_size, k)
@@ -224,8 +222,7 @@ class Context_CP(KBCModel):
         rel = self.rel(x[:, 1])
 
         # concatenation of lhs, rel, rhs
-        # trp_E = torch.cat((lhs, rel), dim=1)  # trp_E.shape == (chunk_size, 3k) previous
-        trp_E = lhs
+        trp_E = torch.cat((lhs, rel), dim=1)  # trp_E.shape == (chunk_size, 3k) previous
 
         w = self.W(trp_E)  # w.shape == (chunk_size, k)
 
