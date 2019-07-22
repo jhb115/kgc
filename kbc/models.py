@@ -138,9 +138,7 @@ class Context_CP(KBCModel):
     def get_neighbor(self, subj: torch.Tensor):
         # return neighbor (N_subject, N_nb_max, k)
 
-        # index_array = np.zeros(shape=(len(subj), self.max_NB), dtype=np.int32)
-        index_array_rhs = np.zeros(shape=(len(subj), self.max_NB), dtype=np.int32)
-        index_array_rel = np.zeros(shape=(len(subj), self.max_NB), dtype=np.int32)
+        index_array = np.zeros(shape=(len(subj), self.max_NB), dtype=np.int32)
 
         for i, each_subj in enumerate(subj):
             _, start_i, end_i = self.slice_dic[each_subj]
@@ -148,21 +146,15 @@ class Context_CP(KBCModel):
 
             if length > 0:
                 if self.max_NB > length:
-                    # index_array[i, :length] = self.sorted_data[start_i:end_i, 2]
-                    index_array_rhs[i, :length] = self.sorted_data[start_i:end_i, 2]
-                    index_array_rel[i, :length] = self.sorted_data[start_i:end_i, 1]
+                    index_array[i, :length] = self.sorted_data[start_i:end_i, 2]
                 else:
-                    # index_array[i, :] = self.sorted_data[start_i:start_i+self.max_NB, 2]
-                    index_array_rhs[i, :] = self.sorted_data[start_i:start_i+self.max_NB, 2]
-                    index_array_rel[i, :] = self.sorted_data[start_i:start_i+self.max_NB, 1]
+                    index_array[i, :] = self.sorted_data[start_i:start_i+self.max_NB, 2]
+
 
         # Convert index_array into a long tensor for indexing the embedding.
-        # index_tensor = torch.LongTensor(index_array).cuda()
-        index_tensor_rhs = torch.LongTensor(index_array_rhs).cuda()
-        index_tensor_rel = torch.LongTensor(index_array_rel).cuda()
+        index_tensor = torch.LongTensor(index_array).cuda()
 
-        # return self.rhs(index_tensor)
-        return self.rhs(index_tensor_rhs), self.rel(index_tensor_rel)
+        return self.rhs(index_tensor)
 
     def score(self, x: torch.Tensor):
 
@@ -181,21 +173,15 @@ class Context_CP(KBCModel):
         w = self.W(trp_E)  # w.shape == (chunk_size, k)
 
         # Get nb_E
-        # nb_E = self.get_neighbor(x[:, 0])  # nb_E.shape == (chunk_size, max_NB, k)
-        nb_E, nb_rel = self.get_neighbor(x[:, 0])
+        nb_E = self.get_neighbor(x[:, 0])  # nb_E.shape == (chunk_size, max_NB, k)
 
-        context_E = nb_E * nb_rel
-
-        # alpha = torch.softmax(torch.einsum('bk,bmk->bm', w, nb_E), dim=1)
-        # matrix multiplication inside gives (chunk_size x max_NB)
+        alpha = torch.softmax(torch.einsum('bk,bmk->bm', w, nb_E), dim=1)
         # alpha.shape == (chunk_size, max_NB)
 
-        alpha = torch.softmax(torch.einsum('bk,bmk->bm', w, context_E), dim=1)
 
         # Get context vector
         # e_c = torch.einsum('bm,bmk->bk', alpha, nb_E)  # (chunk_size, k) (previously)
-        # e_c = self.W2(torch.einsum('bm,bmk->bk', alpha, nb_E))  # extra linear layer
-        e_c = self.W2(torch.einsum('bm,bmk->bk', alpha, context_E))
+        e_c = self.W2(torch.einsum('bm,bmk->bk', alpha, nb_E))  # extra linear layer
 
         # Get tot_score
         tot_score = torch.sum(lhs * rel * rhs * e_c, 1, keepdim=True)
@@ -218,24 +204,16 @@ class Context_CP(KBCModel):
         w = self.W(trp_E)  # w.shape == (chunk_size, k)
 
         # Get nb_E
-        # nb_E = self.get_neighbor(x[:, 0])  # nb_E.shape == (chunk_size, max_NB, k)
-        nb_E, nb_rel = self.get_neighbor(x[:, 0])
-
-        context_E = nb_E * nb_rel
+        nb_E = self.get_neighbor(x[:, 0])  # nb_E.shape == (chunk_size, max_NB, k)
 
 
-        # alpha = torch.softmax(torch.einsum('bk,bmk->bm', w, nb_E), dim=1)
+
+        alpha = torch.softmax(torch.einsum('bk,bmk->bm', w, nb_E), dim=1)
         # matrix multiplication inside gives (chunk_size x max_NB)
         # alpha.shape == (chunk_size, max_NB)
 
-        alpha = torch.softmax(torch.einsum('bk,bmk->bm', w, context_E), dim=1)
-
-
         # e_c = torch.einsum('bm,bmk->bk', alpha, nb_E)  # (chunk_size, k) (previously)
-        # e_c = self.W2(torch.einsum('bm,bmk->bk', alpha, nb_E))  # extra linear layer
-
-        e_c = self.W2(torch.einsum('bm,bmk->bk', alpha, context_E))
-
+        e_c = self.W2(torch.einsum('bm,bmk->bk', alpha, nb_E))  # extra linear layer
 
         # Get tot_score
         tot_forward = (lhs * rel * e_c) @ self.rhs.weight.t()
@@ -262,26 +240,17 @@ class Context_CP(KBCModel):
         w = self.W(trp_E)  # w.shape == (chunk_size, k)
 
         # Get nb_E
-        # nb_E = self.get_neighbor(x[:, 0])  # nb_E.shape == (chunk_size, max_NB, k)
+        nb_E = self.get_neighbor(x[:, 0])  # nb_E.shape == (chunk_size, max_NB, k)
 
-        nb_E, nb_rel = self.get_neighbor(x[:, 0])
-        context_E = nb_E * nb_rel
-
-        # alpha = torch.softmax(torch.einsum('bk,bmk->bm', w, nb_E), dim=1)
+        alpha = torch.softmax(torch.einsum('bk,bmk->bm', w, nb_E), dim=1)
         # matrix multiplication inside gives (chunk_size x max_NB)
         # alpha.shape == (chunk_size, max_NB)
 
-        alpha = torch.softmax(torch.einsum('bk,bmk->bm', w, context_E), dim=1)
-
         # Get context vector
         # e_c = torch.einsum('bm,bmk->bk', alpha, nb_E)  # (chunk_size, k)
-        # e_c = self.W2(torch.einsum('bm,bmk->bk', alpha, nb_E))
-
-        e_c = self.W2(torch.einsum('bm,bmk->bk', alpha, context_E))
+        e_c = self.W2(torch.einsum('bm,bmk->bk', alpha, nb_E))
 
         return lhs.data * rel.data * e_c.data
-
-
 
     def get_rhs(self, chunk_begin: int, chunk_size: int):
         return self.rhs.weight.data[
