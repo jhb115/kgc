@@ -221,9 +221,7 @@ class Context_CP(KBCModel):
         # Gate
         g = Sigmoid(self.Uo(lhs * rel) + self.Wo(e_c))
 
-        print('g size', g.size())
-        print('ones size', torch.ones((self.chunk_size,)).size())
-        gated_e_c = g * e_c + (torch.ones((self.chunk_size,)).cuda() - g) * torch.ones_like(e_c).cuda()
+        gated_e_c = g * e_c + (torch.ones((self.chunk_size,1)).cuda() - g) * torch.ones_like(e_c).cuda()
 
         # Get tot_score
         tot_forward = (lhs * rel * gated_e_c) @ self.rhs.weight.t()
