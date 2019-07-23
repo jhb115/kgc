@@ -192,7 +192,6 @@ model.to(device)
 if args.model == "ConvE":
     model.init()
 
-
 optim_method = {
     'Adagrad': lambda: optim.Adagrad(model.parameters(), lr=args.learning_rate),
     'Adam': lambda: optim.Adam(model.parameters(), lr=args.learning_rate, betas=(args.decay1, args.decay2)),

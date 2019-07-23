@@ -7,8 +7,8 @@ import torch
 from torch import optim
 
 from kbc.datasets import Dataset
-from kbc.models import CP, ComplEx, ConvE
-from kbc.regularizers import N2, N3
+from kbc.models import CP, ComplEx, ConvE, Context_CP
+from kbc.regularizers import N2, N3, N4
 from kbc.optimizers import KBCOptimizer
 import os
 import numpy as np
@@ -24,7 +24,7 @@ parser = argparse.ArgumentParser()
 datasets = ['FB15K', 'WN', 'WN18RR', 'FB237', 'YAGO3-10']
 parser.add_argument('--dataset', choices=datasets)
 
-models = ['CP', 'ComplEx', 'ConvE']
+models = ['CP', 'ComplEx', 'ConvE', 'Context_CP']
 parser.add_argument('--model', choices=models)
 
 parser.add_argument('--train_no')
@@ -43,23 +43,33 @@ config = pickle.load(open(folder_path + '/config.p', 'rb'))
 
 # Get Dataset
 dataset = Dataset(config['dataset'])
-examples = torch.from_numpy(dataset.get_train().astype('int64'))
+
+dataset = Dataset(args.dataset)
+if args.model in ['CP', 'ComplEx', 'ConvE']:  # For non-context model
+    unsorted_examples = torch.from_numpy(dataset.get_train().astype('int64'))
+    examples = unsorted_examples
+else:  # Get sorted examples for context model
+    sorted_data, slice_dic = dataset.get_sorted_train()
+    examples = torch.from_numpy(dataset.get_train().astype('int64'))
 
 rank, init = [int(config['rank']), float(config['init'])]
 
 print(dataset.get_shape())
 
 model = {
-    'CP': lambda: CP(dataset.get_shape(), config['rank'], config['init']),
-    'ComplEx': lambda: ComplEx(dataset.get_shape(), config['rank'], config['init']),
-    'ConvE': lambda: ConvE(dataset.get_shape(), config['rank'], config['dropouts'], config['use_bias'],
-                           config['hw'], config['kernel_size'], config['output_channel'])
+    'CP': lambda: CP(dataset.get_shape(),rank, init),
+    'ComplEx': lambda: ComplEx(dataset.get_shape(), rank, init),
+    'ConvE': lambda: ConvE(dataset.get_shape(), rank, config['dropouts'], config['use_bias'],
+                           config['hw'], config['kernel_size'], config['output_channel']),
+    'Context_CP': lambda: Context_CP(dataset.get_shape(), rank, sorted_date, slice_dic,
+                                     max_NB=config['max_NB'], init_size=config['init'], data_name=config['dataset'])
 }[config['model']]()
 
 regularizer = {
     'N0': 'N0',
     'N2': N2(config['reg']),
     'N3': N3(config['reg']),
+    'N4':N4(config['reg'])
 }[config['regularizer']]
 
 device = 'cuda'
@@ -74,7 +84,7 @@ optim_method = {
     'SGD': lambda: optim.SGD(model.parameters(), lr=config['learning_rate'])
 }[config['optimizer']]()
 
-optimizer = KBCOptimizer(model, regularizer, optim_method, config['batch_size'], loss_type=config['loss'])
+optimizer = KBCOptimizer(model, regularizer, optim_method, config['batch_size'])
 
 model.load_state_dict(torch.load(folder_path + '/model_state.pt'))
 
