@@ -369,3 +369,5 @@ for e in range(args.max_epochs):
         # np.save('./debug/e_c_list', np.array(model.e_c_list))
         # np.save('./debug/nb_num', np.array(model.nb_num))
         # np.save('./debug/e_head', np.array(model.e_head))
+        np.save('./debug/forward_g', np.array(model.forward_g))
+        np.save('./debug/valid_g', np.array(model.valid_g))
