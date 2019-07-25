@@ -304,9 +304,9 @@ for e in range(args.max_epochs):
             torch.save(model.rhs.state_dict(), pre_train_folder + '/rhs.pt')
 
         model.i = 0
-        train_results = avg_both(dataset.eval(model, 'train', 50000))
+        train_results = avg_both(*dataset.eval(model, 'train', 50000))
         model.i = 1
-        valid_results = avg_both(dataset.eval(model, 'valid', -1))
+        valid_results = avg_both(*dataset.eval(model, 'valid', -1))
 
         print("\n\t TRAIN: ", train_results)
         print("\t VALID : ", valid_results)  # change this back
