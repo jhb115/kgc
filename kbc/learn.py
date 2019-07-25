@@ -149,15 +149,6 @@ parser.add_argument(
 # Setup parser
 args = parser.parse_args()
 
-# Example Run:
-# For ConvE
-# python kbc/learn.py --dataset 'FB15K' --model 'ConvE' --rank 200 --max_epochs 3 --hw 0 0 --kernel_size 3 3 --output_channel 32
-# python kbc/learn.py --dataset 'FB15K' --model 'ConvE' --rank 200 --max_epochs 3 --hw 0 0 --kernel_size 3 3 --output_channel 32 --regularizer 'N0'
-
-# For Context_CP
-# python kbc/learn.py --dataset 'FB15K' --model 'Context_CP' --rank 200 --max_epochs 1 --regularizer 'N3' --max_NB 50
-# python kbc/learn.py --dataset 'FB15K' --model 'Context_CP' --regularizer 'N3' --max_epoch 1 --max_NB 50 --mkdir 1
-
 
 # Get Dataset
 dataset = Dataset(args.dataset)
@@ -234,7 +225,7 @@ test_hit3 = []
 test_hit10 = []
 
 #check if the directory exists
-results_folder = './results/{}/{}'.format(args.model, args.dataset)
+results_folder = '../results/{}/{}'.format(args.model, args.dataset)
 
 if args.save_pre_train == 1:
     pre_train_folder = './pre_train/{}/{}'.format('Context_' + args.model, args.dataset)
@@ -246,16 +237,16 @@ if args.load_pre_train == 1:
 
 # make appropriate directories and folders for storing the results
 if args.mkdir:
-    if not os.path.exists('./results'):
-        os.mkdir('./results')
+    if not os.path.exists('../results'):
+        os.mkdir('../results')
     model_list = ['ComplEx', 'ConvE', 'CP', 'Context_CP', 'Context_ComplEx', 'Context_ConvE']
     dataset_list = ['FB15K', 'FB237', 'WN', 'WN18RR', 'YAGO3-10']
 
     for each_model in model_list:
-        os.mkdir('./results/{}'.format(each_model))
+        os.mkdir('../results/{}'.format(each_model))
 
         for each_data in dataset_list:
-            os.mkdir('./results/{}/{}'.format(each_model, each_data))
+            os.mkdir('../results/{}/{}'.format(each_model, each_data))
 
     if not os.path.exists('./debug'):  # for saving debugging files; delete this at the end
         os.mkdir('./debug')
@@ -294,24 +285,14 @@ config_ini['setup'] = {}
 for key in config.keys():
     config_ini['setup'][str(key)] = str(config[key])
 
-#config_ini['setup'] = config
 with open(folder_name + '/config.ini', 'w') as configfile:
     config_ini.write(configfile)
 
-# Save the configuration file and txt file description.
-# What to include in the configuration file and txt file:
-# Config: args.model, args.dataset,
-# args.max_epochs, e, args.regularizer, args.optimizer, args.rank, args.batch_size,
-# args.reg, args.init, args.learning_rate
-# if args.model == 'ConvE':
-# args.dropouts, args.use_bias, args.kernel_size, args.output_channel, args.hw
 
-split_name = ['train', 'valid']  # change this back
+split_name = ['train', 'valid']
 
 for e in range(args.max_epochs):
     print('\n train epoch = ', e+1)
-    # if e >= 1:
-    #     model.i = 1
     cur_loss = optimizer.epoch(examples)
 
     if (e + 1) % args.valid == 0 or (e+1) == args.max_epochs:
@@ -322,10 +303,10 @@ for e in range(args.max_epochs):
             torch.save(model.rel.state_dict(), pre_train_folder + '/rel.pt')
             torch.save(model.rhs.state_dict(), pre_train_folder + '/rhs.pt')
 
-        train_results, valid_results = [
-            avg_both(*dataset.eval(model, split, -1 if split != 'train' else 50000))
-            for split in split_name
-        ]
+        model.i = 0
+        train_results = avg_both(dataset.eval(model, 'train', 50000))
+        model.i = 1
+        valid_results = avg_both(dataset.eval(model, 'valid', -1))
 
         print("\n\t TRAIN: ", train_results)
         print("\t VALID : ", valid_results)  # change this back

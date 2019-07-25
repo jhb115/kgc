@@ -134,10 +134,13 @@ class Context_CP(KBCModel):
         self.max_NB = max_NB
 
         # Saving local variables for debugging, delete afterwards
-        self.alpha_list = []
-        self.e_c_list = []
-        self.nb_num = []
-        self.e_head = []
+        # self.alpha_list = []
+        # self.e_c_list = []
+        # self.nb_num = []
+        # self.e_head = []
+        self.forward_g = []
+        self.valid_g = []
+
 
         self.i = 0
 
@@ -186,6 +189,10 @@ class Context_CP(KBCModel):
 
         # Gate
         g = Sigmoid(self.Uo(lhs*rel) + self.Wo(e_c))
+
+        if self.i > 0:
+            self.valid_g.append(g.clone().data.cpu().numpy())  # examine g
+
         gated_e_c = g * e_c + (torch.ones((self.chunk_size, 1)).cuda() - g) * torch.ones_like(e_c).cuda()
 
         # Get tot_score
@@ -221,6 +228,8 @@ class Context_CP(KBCModel):
         # Gate
         g = Sigmoid(self.Uo(lhs * rel) + self.Wo(e_c))
 
+        self.forward_g.append(g.clone().data.cpu().numpy())  # examine g for debugging, delete afterwards
+
         gated_e_c = g * e_c + (torch.ones((self.chunk_size, 1)).cuda() - g) * torch.ones_like(e_c).cuda()
 
         # Get tot_score
@@ -251,6 +260,10 @@ class Context_CP(KBCModel):
         e_c = self.W2(torch.einsum('bm,bmk->bk', alpha, nb_E))
 
         g = Sigmoid(self.Uo(lhs * rel) + self.Wo(e_c))
+
+        if self.i > 0:
+            self.valid_g.append(g.clone().data.cpu().numpy())  # examine g
+
         gated_e_c = g * e_c + (torch.ones((self.chunk_size, 1)).cuda() - g) * torch.ones_like(e_c).cuda()
 
         # return lhs.data * rel.data * e_c.data (previous)
