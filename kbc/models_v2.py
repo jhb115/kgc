@@ -4,7 +4,10 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 
-# Using s, r, o, e_c embedding for context CP
+# Using s, r, o embedding
+#
+#
+
 
 from abc import ABC, abstractmethod
 from typing import Tuple, List, Dict
@@ -79,6 +82,24 @@ class KBCModel(nn.Module, ABC):
 
                 c_begin += chunk_size
         return ranks
+
+# Customizable parameters for ConvE:
+# dropouts ( = (0.3,0.3,0.3) )
+# kernel_size ( = (3,3) )
+# output_channel ( = 32 )
+# rank ( = embedding_dim = 200)
+# HW = (10, 20)
+
+
+# This is CP model that combines two components together:
+# local (individual triplet) + global (context of neighbourhood)
+
+# suggested max_NB for context_CP:
+# FB15K = 50 ~ 100
+# FB237 = 50 ~ 100
+# WN = 20
+# WN18RR = 20
+# YAGO3-10 = 40 ~ 50
 
 Sigmoid = nn.Sigmoid()
 
