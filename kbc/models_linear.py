@@ -210,12 +210,10 @@ class Context_CP(KBCModel):
 
         self.forward_g.append(g.clone().data.cpu().numpy())  # examine g for debugging, delete afterwards
 
-        gated_e_c = g * e_c + (torch.ones((self.chunk_size, 1)).cuda() - g) * torch.ones_like(e_c).cuda()
-
         # Get tot_score
-        tot_forward = (lhs * rel * gated_e_c) @ self.rhs.weight.t()
+        tot_forward = ((1-g)*lhs*rel + g*e_c) @ self.rhs.weight.t()
 
-        return tot_forward, (lhs, rel, rhs, gated_e_c)
+        return tot_forward, (lhs, rel, rhs, e_c)
 
     def get_queries(self, x: torch.Tensor):  # need to include context part
         # x is a numpy array (equivalent to queries)
@@ -242,9 +240,7 @@ class Context_CP(KBCModel):
         if self.i > 0:
             self.valid_g.append(g.clone().data.cpu().numpy())  # examine g
 
-        gated_e_c = g * e_c + (torch.ones((self.chunk_size, 1)).cuda() - g) * torch.ones_like(e_c).cuda()
-
-        return lhs.data * rel.data * gated_e_c.data
+        return (1-g)*(lhs.data * rel.data) + g*e_c.data
 
     def get_rhs(self, chunk_begin: int, chunk_size: int):
         return self.rhs.weight.data[
@@ -253,29 +249,41 @@ class Context_CP(KBCModel):
 
 
 
+class CP(KBCModel):
+    def __init__(
+            self, sizes: Tuple[int, int, int], rank: int,
+            init_size: float = 1e-3
+    ):
+        super(CP, self).__init__()
+        self.sizes = sizes
+        self.rank = rank
 
+        self.lhs = nn.Embedding(sizes[0], rank, sparse=True)
+        self.rel = nn.Embedding(sizes[1], rank, sparse=True)
+        self.rhs = nn.Embedding(sizes[2], rank, sparse=True)
 
+        self.lhs.weight.data *= init_size
+        self.rel.weight.data *= init_size
+        self.rhs.weight.data *= init_size
 
+    def score(self, x):
+        lhs = self.lhs(x[:, 0])
+        rel = self.rel(x[:, 1])
+        rhs = self.rhs(x[:, 2])
 
+        return torch.sum(lhs * rel * rhs, 1, keepdim=True)
 
+    def forward(self, x):
+        lhs = self.lhs(x[:, 0])
+        rel = self.rel(x[:, 1])
+        rhs = self.rhs(x[:, 2])
+        return (lhs * rel) @ self.rhs.weight.t(), (lhs, rel, rhs)
 
+    def get_rhs(self, chunk_begin: int, chunk_size: int):
+        return self.rhs.weight.data[
+            chunk_begin:chunk_begin + chunk_size
+        ].transpose(0, 1)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    def get_queries(self, queries: torch.Tensor):
+        return self.lhs(queries[:, 0]).data * self.rel(queries[:, 1]).data
 
