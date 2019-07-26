@@ -298,8 +298,6 @@ with open(folder_name + '/config.ini', 'w') as configfile:
     config_ini.write(configfile)
 
 
-split_name = ['train', 'valid']
-
 for e in range(args.max_epochs):
     print('\n train epoch = ', e+1)
     cur_loss = optimizer.epoch(examples)
