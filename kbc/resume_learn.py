@@ -152,10 +152,10 @@ for e in range(config['e']+1, config['max_epochs']):
             with open(pre_train_folder + '/config.ini', 'w') as configfile:
                 config_ini.write(configfile)
 
-        train_results, valid_results = [
-            avg_both(*dataset.eval(model, split, -1 if split != 'train' else 50000))
-            for split in split_name
-        ]
+        model.i = 0
+        train_results = avg_both(*dataset.eval(model, 'train', 50000))
+        model.i = 1
+        valid_results = avg_both(*dataset.eval(model, 'valid', -1))
 
         print("\n\t TRAIN: ", train_results)
         print("\t VALID : ", valid_results)
@@ -184,7 +184,6 @@ for e in range(config['e']+1, config['max_epochs']):
         np.save(folder_path + '/valid_hit3', np.array(valid_hit3))
         np.save(folder_path + '/valid_hit10', np.array(valid_hit10))
 
-#    if (e+1) % config['valid'] == 0 or (e+1) == config['max_epochs']:
 
         results = avg_both(*dataset.eval(model, 'test', -1))
 
@@ -209,5 +208,9 @@ for e in range(config['e']+1, config['max_epochs']):
 
         with open(folder_path + '/config.ini', 'w') as configfile:
             config_ini.write(configfile)
+
+        if args.model in ['Context_CP', 'Context_ConvE', 'Context_ComplEx']:
+            np.save('./debug/forward_g', np.array(model.forward_g))
+            np.save('./debug/valid_g', np.array(model.valid_g))
 
 
