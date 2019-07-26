@@ -110,7 +110,7 @@ class Context_CP(KBCModel):
         self.W2 = nn.Linear(rank, rank, bias=True)
         self.bn2 = nn.BatchNorm1d(rank)
 
-        self.drop_layer = nn.Dropout(p=0.3)
+        self.drop_layer1 = nn.Dropout(p=0.3)  # apply dropout to only forward
         self.drop_layer2 = nn.Dropout(p=0.3)
 
         # Weights for the gate (added)
@@ -166,7 +166,7 @@ class Context_CP(KBCModel):
         trp_E = torch.cat((lhs, rel), dim=1)  # (previous)
 
         # Get attention weight vector, where W.shape == (3k, k)
-        w = self.bn1(self.W( trp_E ))  # w.shape == (chunk_size, k) and batch-norm
+        w = self.bn1(self.W(trp_E))  # w.shape == (chunk_size, k) and batch-norm
 
         # Get nb_E
         nb_E = self.get_neighbor(x[:, 0])  # nb_E.shape == (chunk_size, max_NB, k)
@@ -203,7 +203,8 @@ class Context_CP(KBCModel):
         trp_E = torch.cat((lhs, rel), dim=1)  # (previous)
 
         # Get attention weight vector, where W.shape == (3k, k)
-        w = self.bn1(self.W(self.drop_layer(trp_E)))  # w.shape == (chunk_size, k) and batch-normalization
+        w = self.bn1(self.W(self.drop_layer1(trp_E)))
+        # w.shape == (chunk_size, k) and batch-norm, dropout
 
         # Get nb_E
         nb_E = self.get_neighbor(x[:, 0])  # nb_E.shape == (chunk_size, max_NB, k)
@@ -211,7 +212,8 @@ class Context_CP(KBCModel):
         alpha = torch.softmax(torch.einsum('bk,bmk->bm', w, nb_E), dim=1)
         # alpha.shape == (chunk_size, max_NB)
 
-        e_c = self.bn2(self.W2(self.drop_layer2(torch.einsum('bm,bmk->bk', alpha, nb_E))))  # extra linear layer and batch-normalization
+        e_c = self.bn2(self.W2(self.drop_layer2(torch.einsum('bm,bmk->bk', alpha, nb_E))))
+        # extra linear layer and batch-normalization
 
         # Gate
         g = Sigmoid(self.Uo(lhs * rel) + self.Wo(e_c))
