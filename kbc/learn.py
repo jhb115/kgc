@@ -227,6 +227,8 @@ test_hit10 = []
 #check if the directory exists
 results_folder = '../results/{}/{}'.format(args.model, args.dataset)
 
+
+# Load pre-trained embeddings
 if args.save_pre_train == 1:
     pre_train_folder = './pre_train/{}/{}'.format('Context_' + args.model, args.dataset)
 if args.load_pre_train == 1:
@@ -298,7 +300,7 @@ for e in range(args.max_epochs):
     if (e + 1) % args.valid == 0 or (e+1) == args.max_epochs:
         torch.save(model.state_dict(), folder_name + '/model_state.pt')
 
-        if args.save_pre_train:  #save only the embeddings
+        if args.save_pre_train:  # save only the embeddings (for pre-training)
             torch.save(model.lhs.state_dict(), pre_train_folder + '/lhs.pt')
             torch.save(model.rel.state_dict(), pre_train_folder + '/rel.pt')
             torch.save(model.rhs.state_dict(), pre_train_folder + '/rhs.pt')

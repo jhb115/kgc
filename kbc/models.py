@@ -218,7 +218,7 @@ class Context_CP(KBCModel):
         # Get tot_score
         tot_forward = (lhs * rel * gated_e_c) @ self.rhs.weight.t()
 
-        return tot_forward, (lhs, rel, rhs, e_c)
+        return tot_forward, (lhs, rel, rhs, gated_e_c)
 
     def get_queries(self, x: torch.Tensor):  # need to include context part
         # x is a numpy array (equivalent to queries)
