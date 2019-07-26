@@ -107,7 +107,6 @@ cur_loss = 0
 train_i = 0
 test_i = 0
 
-split_name = ['train', 'valid']
 hits_name = ['_hits@1', '_hits@3', '_hits@10']
 
 train_mrr = list(np.load(folder_path + '/train_mrr.npy'))
@@ -126,13 +125,6 @@ test_hit1 = list(np.load(folder_path + '/train_hit1.npy'))
 test_hit3 = list(np.load(folder_path + '/train_hit3.npy'))
 test_hit10 = list(np.load(folder_path + '/train_hit10.npy'))
 
-# Save the configuration file and txt file description.
-# What to include in the configuration file and txt file:
-# Config: args.model, args.dataset,
-# config['max_epochs'], e, config['regularizer'], config['optimizer'], config['rank'], config['batch_size'],
-# config['reg'], config['init'], config['learning_rate']
-# if args.model == 'ConvE':
-# args.dropouts, config['use_bias'], args.kernel_size, config['output_channel'], config['hw']
 
 config_ini = configparser.ConfigParser()
 config_ini.read(folder_path + '/config.ini')
