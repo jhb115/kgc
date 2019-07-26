@@ -311,6 +311,8 @@ for e in range(args.max_epochs):
             torch.save(model.lhs.state_dict(), pre_train_folder + '/lhs.pt')
             torch.save(model.rel.state_dict(), pre_train_folder + '/rel.pt')
             torch.save(model.rhs.state_dict(), pre_train_folder + '/rhs.pt')
+            with open(pre_train_folder + '/config.ini', 'w') as configfile:
+                config_ini.write(configfile)
 
         model.i = 0
         train_results = avg_both(*dataset.eval(model, 'train', 50000))
