@@ -14,7 +14,6 @@ import torch
 from torch import optim
 
 from kbc.datasets import Dataset
-# from kbc.models import CP, ComplEx, ConvE, Context_CP
 from kbc.models import CP, ComplEx, ConvE, Context_CP
 from kbc.regularizers import N2, N3, N4
 from kbc.optimizers import KBCOptimizer
