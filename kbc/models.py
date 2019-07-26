@@ -106,7 +106,9 @@ class Context_CP(KBCModel):
 
         # Context related parameters
         self.W = nn.Linear(int(2 * rank), rank, bias=True)  # W for w = [lhs; rel; rhs]^T W
+        self.bn1 = nn.BatchNorm1d(rank)
         self.W2 = nn.Linear(rank, rank, bias=True)
+        self.bn2 = nn.BatchNorm1d(rank)
 
         # Weights for the gate (added)
         self.Wo = nn.Linear(rank, 1, bias=True)
@@ -157,11 +159,11 @@ class Context_CP(KBCModel):
         rel = self.rel(x[:, 1])
         rhs = self.rhs(x[:, 2])
 
-        # concatenation of lhs, rel, rhs
+        # concatenation of lhs, rel
         trp_E = torch.cat((lhs, rel), dim=1)  # (previous)
 
         # Get attention weight vector, where W.shape == (3k, k)
-        w = self.W(trp_E)  # w.shape == (chunk_size, k)
+        w = self.bn1(self.W(trp_E))  # w.shape == (chunk_size, k) and batch-norm
 
         # Get nb_E
         nb_E = self.get_neighbor(x[:, 0])  # nb_E.shape == (chunk_size, max_NB, k)
@@ -170,7 +172,7 @@ class Context_CP(KBCModel):
         # alpha.shape == (chunk_size, max_NB)
 
         # Get context vector
-        e_c = self.W2(torch.einsum('bm,bmk->bk', alpha, nb_E))  # extra linear layer
+        e_c = self.bn2(self.W2(torch.einsum('bm,bmk->bk', alpha, nb_E)))  # extra linear layer and batch-norm
 
         # Gate
         g = Sigmoid(self.Uo(lhs*rel) + self.Wo(e_c))
@@ -186,7 +188,6 @@ class Context_CP(KBCModel):
         return tot_score
 
     def forward(self, x: torch.Tensor):
-        # Need to change this
 
         self.chunk_size = len(x)
 
@@ -198,7 +199,7 @@ class Context_CP(KBCModel):
         trp_E = torch.cat((lhs, rel), dim=1)  # (previous)
 
         # Get attention weight vector, where W.shape == (3k, k)
-        w = self.W(trp_E)  # w.shape == (chunk_size, k)
+        w = self.bn1(self.W(trp_E))  # w.shape == (chunk_size, k) and batch-normalization
 
         # Get nb_E
         nb_E = self.get_neighbor(x[:, 0])  # nb_E.shape == (chunk_size, max_NB, k)
@@ -206,7 +207,7 @@ class Context_CP(KBCModel):
         alpha = torch.softmax(torch.einsum('bk,bmk->bm', w, nb_E), dim=1)
         # alpha.shape == (chunk_size, max_NB)
 
-        e_c = self.W2(torch.einsum('bm,bmk->bk', alpha, nb_E))  # extra linear layer
+        e_c = self.bn2(self.W2(torch.einsum('bm,bmk->bk', alpha, nb_E)))  # extra linear layer and batch-normalization
 
         # Gate
         g = Sigmoid(self.Uo(lhs * rel) + self.Wo(e_c))
@@ -231,14 +232,14 @@ class Context_CP(KBCModel):
         # concatenation of lhs, rel, rhs
         trp_E = torch.cat((lhs, rel), dim=1)  # trp_E.shape == (chunk_size, 3k) previous
 
-        w = self.W(trp_E)  # w.shape == (chunk_size, k)
+        w = self.bn1(self.W(trp_E))  # w.shape == (chunk_size, k) and added batch-norm
 
         nb_E = self.get_neighbor(x[:, 0])  # nb_E.shape == (chunk_size, max_NB, k)
 
         alpha = torch.softmax(torch.einsum('bk,bmk->bm', w, nb_E), dim=1)
         # alpha.shape == (chunk_size, max_NB)
 
-        e_c = self.W2(torch.einsum('bm,bmk->bk', alpha, nb_E))
+        e_c = self.bn2(self.W2(torch.einsum('bm,bmk->bk', alpha, nb_E)))  # added batch-norm
 
         g = Sigmoid(self.Uo(lhs * rel) + self.Wo(e_c))
 
