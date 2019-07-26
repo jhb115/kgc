@@ -96,10 +96,14 @@ class Context_CP(KBCModel):
         self.lhs = nn.Embedding(sizes[0], rank, sparse=True)
         self.rel = nn.Embedding(sizes[1], rank, sparse=True)
         self.rhs = nn.Embedding(sizes[2], rank, sparse=True)
+        self.ctxt = nn.Embedding(sizes[2], rank, sparse=True)
+        # Embedding for context
 
         self.lhs.weight.data *= init_size
         self.rel.weight.data *= init_size
         self.rhs.weight.data *= init_size
+        self.ctxt.weight.data *= init_size
+
 
         # Context related parameters
         self.W = nn.Linear(int(2 * rank), rank, bias=True)  # W for w = [lhs; rel; rhs]^T W
