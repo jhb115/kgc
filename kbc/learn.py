@@ -231,9 +231,9 @@ results_folder = '../results/{}/{}'.format(args.model, args.dataset)
 
 # Load pre-trained embeddings
 if args.save_pre_train == 1:
-    pre_train_folder = './pre_train/{}/{}'.format('Context_' + args.model, args.dataset)
+    pre_train_folder = '../pre_train/{}/{}'.format('Context_' + args.model, args.dataset)
 if args.load_pre_train == 1:
-    pre_train_folder = './pre_train/{}/{}'.format(args.model, args.dataset)
+    pre_train_folder = '../pre_train/{}/{}'.format(args.model, args.dataset)
     model.lhs.load_state_dict(torch.load(pre_train_folder + '/lhs.pt'))
     model.rel.load_state_dict(torch.load(pre_train_folder + '/rel.pt'))
     model.rhs.load_state_dict(torch.load(pre_train_folder + '/rhs.pt'))
@@ -258,19 +258,19 @@ if args.mkdir:
 
     if args.save_pre_train == 1:
         # this is where the pre-trained emebedding will be saved
-        if not os.path.exists('./pre_train'):
-            os.mkdir('./pre_train')
+        if not os.path.exists('../pre_train'):
+            os.mkdir('../pre_train')
 
         model_list = ['ComplEx', 'ConvE', 'CP']
         dataset_list = ['FB15K', 'FB237', 'WN', 'WN18RR', 'YAGO3-10']
 
         for each_model in model_list:
-            if not os.path.exists('./pre_train/{}'.format('Context_'+each_model)):
-                os.mkdir('./pre_train/{}'.format('Context_'+each_model))
+            if not os.path.exists('../pre_train/{}'.format('Context_'+each_model)):
+                os.mkdir('../pre_train/{}'.format('Context_'+each_model))
 
             for each_data in dataset_list:
-                if not os.path.exists('./pre_train/{}/{}'.format('Context_'+each_model, each_data)):
-                    os.mkdir('./pre_train/{}/{}'.format('Context_'+each_model, each_data))
+                if not os.path.exists('../pre_train/{}/{}'.format('Context_'+each_model, each_data)):
+                    os.mkdir('../pre_train/{}/{}'.format('Context_'+each_model, each_data))
 
 if not os.path.exists(results_folder):
     raise Exception('You do not have folder named:{}'.format(results_folder))
