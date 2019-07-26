@@ -13,7 +13,7 @@ from kbc.optimizers import KBCOptimizer
 import os
 import numpy as np
 
-#For reproducilibility
+# For reproducilibility
 np.random.seed(0)
 torch.manual_seed(0)
 torch.backends.cudnn.deterministic = True
@@ -41,6 +41,9 @@ if not os.path.exists(folder_path):
 # Get the configuration
 config = pickle.load(open(folder_path + '/config.p', 'rb'))
 
+if config['save_pre_train'] == 1:
+    pre_train_folder = '../pre_train/{}/{}'.format('Context_' + args.model, args.dataset)
+
 # Get Dataset
 dataset = Dataset(config['dataset'])
 
@@ -61,7 +64,7 @@ model = {
     'ComplEx': lambda: ComplEx(dataset.get_shape(), rank, init),
     'ConvE': lambda: ConvE(dataset.get_shape(), rank, config['dropouts'], config['use_bias'],
                            config['hw'], config['kernel_size'], config['output_channel']),
-    'Context_CP': lambda: Context_CP(dataset.get_shape(), rank, sorted_date, slice_dic,
+    'Context_CP': lambda: Context_CP(dataset.get_shape(), rank, sorted_data, slice_dic,
                                      max_NB=config['max_NB'], init_size=config['init'], data_name=config['dataset'])
 }[config['model']]()
 
@@ -69,7 +72,7 @@ regularizer = {
     'N0': 'N0',
     'N2': N2(config['reg']),
     'N3': N3(config['reg']),
-    'N4':N4(config['reg'])
+    'N4': N4(config['reg'])
 }[config['regularizer']]
 
 device = 'cuda'
@@ -141,6 +144,13 @@ for e in range(config['e']+1, config['max_epochs']):
     if (e + 1) % config['valid'] == 0 or (e+1) == config['max_epochs']:
 
         torch.save(model.state_dict(), folder_path + '/model_state.pt')
+
+        if args.save_pre_train:  # save only the embeddings (for pre-training)
+            torch.save(model.lhs.state_dict(), pre_train_folder + '/lhs.pt')
+            torch.save(model.rel.state_dict(), pre_train_folder + '/rel.pt')
+            torch.save(model.rhs.state_dict(), pre_train_folder + '/rhs.pt')
+            with open(pre_train_folder + '/config.ini', 'w') as configfile:
+                config_ini.write(configfile)
 
         train_results, valid_results = [
             avg_both(*dataset.eval(model, split, -1 if split != 'train' else 50000))
