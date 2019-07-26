@@ -294,6 +294,9 @@ config_ini['setup'] = {}
 for key in config.keys():
     config_ini['setup'][str(key)] = str(config[key])
 
+# Flag that we use batch-norm and dropout
+config_ini['setup']['batch_norm and dropout'] = True
+
 with open(folder_name + '/config.ini', 'w') as configfile:
     config_ini.write(configfile)
 
