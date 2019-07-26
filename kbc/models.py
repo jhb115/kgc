@@ -104,7 +104,6 @@ class Context_CP(KBCModel):
         self.rhs.weight.data *= init_size
         self.ctxt.weight.data *= init_size
 
-
         # Context related parameters
         self.W = nn.Linear(int(2 * rank), rank, bias=True)  # W for w = [lhs; rel; rhs]^T W
         self.W2 = nn.Linear(rank, rank, bias=True)
@@ -128,7 +127,6 @@ class Context_CP(KBCModel):
         self.forward_g = []
         self.valid_g = []
 
-
         self.i = 0
 
     def get_neighbor(self, subj: torch.Tensor):
@@ -149,7 +147,7 @@ class Context_CP(KBCModel):
         # Convert index_array into a long tensor for indexing the embedding.
         index_tensor = torch.LongTensor(index_array).cuda()
 
-        return self.rhs(index_tensor)
+        return self.ctxt(index_tensor)
 
     def score(self, x: torch.Tensor):
 
@@ -184,7 +182,6 @@ class Context_CP(KBCModel):
 
         # Get tot_score
         tot_score = torch.sum(lhs * rel * rhs * gated_e_c, 1, keepdim=True)
-        # tot_score = torch.sum(lhs * rel * rhs * e_c, 1, keepdim=True)  # (previous)
 
         return tot_score
 
