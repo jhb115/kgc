@@ -206,7 +206,6 @@ class Context_CP(KBCModel):
         alpha = torch.softmax(torch.einsum('bk,bmk->bm', w, nb_E), dim=1)
         # alpha.shape == (chunk_size, max_NB)
 
-        # e_c = torch.einsum('bm,bmk->bk', alpha, nb_E)  # (chunk_size, k) (previously)
         e_c = self.W2(torch.einsum('bm,bmk->bk', alpha, nb_E))  # extra linear layer
 
         # Gate
@@ -218,8 +217,6 @@ class Context_CP(KBCModel):
 
         # Get tot_score
         tot_forward = (lhs * rel * gated_e_c) @ self.rhs.weight.t()
-
-        # tot_forward = (lhs * rel * e_c) @ self.rhs.weight.t()  # (previous)
 
         return tot_forward, (lhs, rel, rhs, e_c)
 
@@ -250,7 +247,6 @@ class Context_CP(KBCModel):
 
         gated_e_c = g * e_c + (torch.ones((self.chunk_size, 1)).cuda() - g) * torch.ones_like(e_c).cuda()
 
-        # return lhs.data * rel.data * e_c.data (previous)
         return lhs.data * rel.data * gated_e_c.data
 
     def get_rhs(self, chunk_begin: int, chunk_size: int):
