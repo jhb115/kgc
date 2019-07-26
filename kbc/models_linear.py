@@ -178,10 +178,7 @@ class Context_CP(KBCModel):
         if self.i > 0:
             self.valid_g.append(g.clone().data.cpu().numpy())  # examine g
 
-        gated_e_c = g * e_c + (torch.ones((self.chunk_size, 1)).cuda() - g) * torch.ones_like(e_c).cuda()
-
-        # Get tot_score
-        tot_score = torch.sum(lhs * rel * rhs * gated_e_c, 1, keepdim=True)
+        tot_score = torch.sum(((1-g)*lhs*rel + g * e_c)*rhs, 1, keepdim=True)
 
         return tot_score
 
