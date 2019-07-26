@@ -6,4 +6,5 @@ build
 kbc/lib/bindings.cpp
 dist
 kbc/data
+kbc/results
 **/.nfs*
