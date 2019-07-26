@@ -365,6 +365,9 @@ for e in range(args.max_epochs):
         np.save(folder_name + '/test_hit3', np.array(test_hit3))
         np.save(folder_name + '/test_hit10', np.array(test_hit10))
 
+        if args.save_pre_train:
+            np.save(pre_train_folder + '/test_mrr', np.array(test_mrr))
+
         config['e'] = e
         pickle.dump(config, open(folder_name + '/config.p', 'wb'))
 
