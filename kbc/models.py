@@ -106,9 +106,9 @@ class Context_CP(KBCModel):
 
         # Context related parameters
         self.W = nn.Linear(int(2 * rank), rank, bias=True)  # W for w = [lhs; rel; rhs]^T W
-        self.bn1 = nn.BatchNorm1d(rank).cuda()
+        # self.bn1 = nn.BatchNorm1d(rank).cuda()
         self.W2 = nn.Linear(rank, rank, bias=True)
-        self.bn2 = nn.BatchNorm1d(rank).cuda()
+        # self.bn2 = nn.BatchNorm1d(rank).cuda()
 
         self.drop_layer1 = nn.Dropout(p=0.3)  # apply dropout to only forward
         self.drop_layer2 = nn.Dropout(p=0.3)
@@ -166,8 +166,8 @@ class Context_CP(KBCModel):
         trp_E = torch.cat((lhs, rel), dim=1)  # (previous)
 
         # Get attention weight vector, where W.shape == (3k, k)
-        w = self.bn1(self.W(trp_E))  # w.shape == (chunk_size, k) and batch-norm
-
+        # w = self.bn1(self.W(trp_E))  # w.shape == (chunk_size, k) and batch-norm
+        w = self.W(trp_E)  # w.shape == (chunk_size, k) and batch-norm
         # Get nb_E
         nb_E = self.get_neighbor(x[:, 0])  # nb_E.shape == (chunk_size, max_NB, k)
 
@@ -175,7 +175,8 @@ class Context_CP(KBCModel):
         # alpha.shape == (chunk_size, max_NB)
 
         # Get context vector
-        e_c = self.bn2(self.W2(torch.einsum('bm,bmk->bk', alpha, nb_E)))
+        # e_c = self.bn2(self.W2(torch.einsum('bm,bmk->bk', alpha, nb_E)))
+        e_c = self.W2(torch.einsum('bm,bmk->bk', alpha, nb_E))
         # extra linear layer and batch-norm
 
         # Gate
@@ -203,7 +204,8 @@ class Context_CP(KBCModel):
         trp_E = torch.cat((lhs, rel), dim=1)  # (previous)
 
         # Get attention weight vector, where W.shape == (3k, k)
-        w = self.bn1(self.W(self.drop_layer1(trp_E)))
+        # w = self.bn1(self.W(self.drop_layer1(trp_E)))
+        w = self.W(self.drop_layer1(trp_E))
         # w.shape == (chunk_size, k) and batch-norm, dropout
 
         # Get nb_E
@@ -212,7 +214,8 @@ class Context_CP(KBCModel):
         alpha = torch.softmax(torch.einsum('bk,bmk->bm', w, nb_E), dim=1)
         # alpha.shape == (chunk_size, max_NB)
 
-        e_c = self.bn2(self.W2(self.drop_layer2(torch.einsum('bm,bmk->bk', alpha, nb_E))))
+        # e_c = self.bn2(self.W2(self.drop_layer2(torch.einsum('bm,bmk->bk', alpha, nb_E))))
+        e_c = self.W2(self.drop_layer2(torch.einsum('bm,bmk->bk', alpha, nb_E)))
         # extra linear layer and batch-normalization
 
         # Gate
@@ -238,15 +241,15 @@ class Context_CP(KBCModel):
         # concatenation of lhs, rel, rhs
         trp_E = torch.cat((lhs, rel), dim=1)  # trp_E.shape == (chunk_size, 3k) previous
 
-        w = self.bn1(self.W(trp_E))  # w.shape == (chunk_size, k) and added batch-norm
-
+        # w = self.bn1(self.W(trp_E))  # w.shape == (chunk_size, k) and added batch-norm
+        w = self.W(trp_E)  # w.shape == (chunk_size, k) and added batch-norm
         nb_E = self.get_neighbor(x[:, 0])  # nb_E.shape == (chunk_size, max_NB, k)
 
         alpha = torch.softmax(torch.einsum('bk,bmk->bm', w, nb_E), dim=1)
         # alpha.shape == (chunk_size, max_NB)
 
-        e_c = self.bn2(self.W2(torch.einsum('bm,bmk->bk', alpha, nb_E)))  # added batch-norm
-
+        # e_c = self.bn2(self.W2(torch.einsum('bm,bmk->bk', alpha, nb_E)))  # added batch-norm
+        e_c = self.W2(torch.einsum('bm,bmk->bk', alpha, nb_E))
         g = Sigmoid(self.Uo(lhs * rel) + self.Wo(e_c))
 
         if self.i > 0:
