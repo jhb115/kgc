@@ -270,8 +270,8 @@ if args.mkdir:
                 if not os.path.exists('../pre_train/{}/{}'.format('Context_'+each_model, each_data)):
                     os.mkdir('../pre_train/{}/{}'.format('Context_'+each_model, each_data))
 
-            if not os.path.exists('../pre_train/{}/{}/{}'.format('Context_'+each_model, args.dataset, str(args.rank))):
-                os.mkdir('../pre_train/{}/{}/{}'.format('Context_'+each_model, args.dataset, str(args.rank)))
+        if not os.path.exists('../pre_train/{}/{}/{}'.format('Context_'+args.model, args.dataset, str(args.rank))):
+            os.mkdir('../pre_train/{}/{}/{}'.format('Context_'+args.model, args.dataset, str(args.rank)))
 
 if not os.path.exists(results_folder):
     raise Exception('You do not have folder named:{}'.format(results_folder))
