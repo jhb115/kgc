@@ -292,8 +292,9 @@ config_ini['setup'] = {}
 for key in config.keys():
     config_ini['setup'][str(key)] = str(config[key])
 
+# Comments about the model
 # Flag that we use batch-norm and dropout
-config_ini['setup']['batch_norm and dropout'] = 'True'
+config_ini['setup']['only dropout no batch norm'] = 'True'
 config_ini['setup']['product score function'] = 'True'
 
 with open(folder_name + '/config.ini', 'w') as configfile:
