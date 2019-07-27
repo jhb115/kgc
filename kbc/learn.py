@@ -229,9 +229,9 @@ results_folder = '../results/{}/{}'.format(args.model, args.dataset)
 
 # Load pre-trained embeddings
 if args.save_pre_train == 1:
-    pre_train_folder = '../pre_train/{}/{}'.format('Context_' + args.model, args.dataset)
+    pre_train_folder = '../pre_train/{}/{}/{}'.format('Context_' + args.model, args.dataset, args.rank)
 if args.load_pre_train == 1:
-    pre_train_folder = '../pre_train/{}/{}'.format(args.model, args.dataset)
+    pre_train_folder = '../pre_train/{}/{}/{}'.format(args.model, args.dataset, args.rank)
     model.lhs.load_state_dict(torch.load(pre_train_folder + '/lhs.pt'))
     model.rel.load_state_dict(torch.load(pre_train_folder + '/rel.pt'))
     model.rhs.load_state_dict(torch.load(pre_train_folder + '/rhs.pt'))
