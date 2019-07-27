@@ -106,9 +106,9 @@ class Context_CP(KBCModel):
 
         # Context related parameters
         self.W = nn.Linear(int(2 * rank), rank, bias=True)  # W for w = [lhs; rel; rhs]^T W
-        self.bn1 = nn.BatchNorm1d(rank)
+        self.bn1 = nn.BatchNorm1d(rank).cuda()
         self.W2 = nn.Linear(rank, rank, bias=True)
-        self.bn2 = nn.BatchNorm1d(rank)
+        self.bn2 = nn.BatchNorm1d(rank).cuda()
 
         self.drop_layer1 = nn.Dropout(p=0.3)  # apply dropout to only forward
         self.drop_layer2 = nn.Dropout(p=0.3)
