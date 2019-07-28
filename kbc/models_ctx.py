@@ -190,7 +190,17 @@ class Context_ComplEx(KBCModel):
         e_c = e_c_R, e_c_I
 
         # calculation of g
-        g_R =
+        g = Sigmoid(torch.einsum('', self.Uo[0], lhs[0]*rel[0]-lhs[1]*rel[1])
+                    - torch.einsum('', self.Uo[1], lhs[1]*rel[0]+lhs[0]*rel[1]))
+
+        gated_e_c = g * e_c[0] + (torch.ones((self.chunk_size, 1)).cuda() - g)*torch.ones_like(e_c[0]), g * e_c[1]
+
+        rror_rioi = rel[0]*rhs[0]+rel[1]*rhs[1]
+        rior = rel[1]*rhs[0]
+        rroi = rel[0]*rhs[1]
+
+        return torch.sum((lhs[0]*rror_rioi + lhs[1]*(rior + rroi))*gated_e_c[0]
+                          + (lhs[1]*rror_rioi + lhs[0]*(rior - rroi))*gated_e_c[1], 1, keepdim=True)
 
 
 
