@@ -102,6 +102,7 @@ class Context_ComplEx(KBCModel):
         nn.init.xavier_uniform_(self.W2[0])
         nn.init.xavier_uniform_(self.W[1])
         nn.init.xavier_uniform_(self.W2[1])
+
         nn.init.xavier_uniform_(self.b_w[0])
         nn.init.xavier_uniform_(self.b_w[1])
         nn.init.xavier_uniform_(self.b_w2[0])
@@ -111,12 +112,19 @@ class Context_ComplEx(KBCModel):
         self.drop_layer2 = nn.Dropout(p=0.3)
 
         self.Wo = torch.randn((rank, 1)).cuda(), torch.randn((rank, 1)).cuda()
+        self.b_wo = torch.randn((1, 1)).cuda(), torch.randn((1, 1)).cuda()
         self.Uo = torch.randn((rank, 1)).cuda(), torch.randn((rank, 1)).cuda()
+        self.b_uo = torch.randn((1, 1)).cuda(), torch.randn((1, 1)).cuda()
 
         nn.init.xavier_uniform_(self.Wo[0])
         nn.init.xavier_uniform_(self.Uo[0])
         nn.init.xavier_uniform_(self.Wo[1])
         nn.init.xavier_uniform_(self.Uo[1])
+
+        nn.init.xavier_uniform_(self.b_wo[0])
+        nn.init.xavier_uniform_(self.b_wo[1])
+        nn.init.xavier_uniform_(self.b_uo[0])
+        nn.init.xavier_uniform_(self.b_uo[1])
 
         self.sorted_data = sorted_data
         self.slice_dic = slice_dic
@@ -161,7 +169,11 @@ class Context_ComplEx(KBCModel):
 
         # Get attention weight vector, linear projection of trp_E
         # w = self.W(trp_E)
-        w = trp_E
+        w_R = torch.einsum('', self.W[0], trp_E[0]) - torch.einsum(''. self.W[1], self.trp_E[1]) + self.b_w[0]
+        w_I = torch.einsum('', self.W[1], trp_E[0]) + torch.einsum('', self.W[0], trp_E[1]) + self.b_w[1]
+
+        w = w_R, w_I
+
 
 
 
