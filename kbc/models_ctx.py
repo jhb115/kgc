@@ -74,7 +74,7 @@ class KBCModel(nn.Module, ABC):
 
 Sigmoid = nn.Sigmoid()
 
-class ComplEx(KBCModel):
+class Context_ComplEx(KBCModel):
     def __init__(
             self, sizes: Tuple[int, int, int], rank: int, sorted_data:np.ndarray,
             slice_dic: np.ndarray, max_NB: int=50, init_size: float=1e-3,
