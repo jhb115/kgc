@@ -170,8 +170,10 @@ class Context_ComplEx(KBCModel):
         # Get attention weight vector, linear projection of trp_E
         # w = self.W(trp_E)
 
-        w = (torch.einsum('jk,bj->bk', self.W[0], trp_E[0]) - torch.einsum('jk,bj->bk'. self.W[1], self.trp_E[1]) + self.b_w[0],
-             torch.einsum('jk,bj->bk', self.W[1], trp_E[0]) + torch.einsum('jk,bj->bk', self.W[0], trp_E[1]) + self.b_w[1])
+        w = (torch.einsum('jk,bj->bk', self.W[0], trp_E[0])
+             - torch.einsum('jk,bj->bk', self.W[1], self.trp_E[1]) + self.b_w[0],
+             torch.einsum('jk,bj->bk', self.W[1], trp_E[0])
+             + torch.einsum('jk,bj->bk', self.W[0], trp_E[1]) + self.b_w[1])
 
         nb_E = self.get_neighbor(x[:, 0])
         nb_E = nb_E[:, :, :self.rank], nb_E[:, :, self.rank:]  # check on this
@@ -182,8 +184,10 @@ class Context_ComplEx(KBCModel):
         e_c = torch.einsum('bm,bmk->bk', alpha, nb_E[0]), torch.einsum('bm,bmk->bk', alpha, nb_E[1])
 
         # Linear matrix multiplication
-        e_c = (torch.einsum('bk,kj->bj', e_c[0], self.W2[0]) - torch.einsum('bk,kj->bj', e_c[1], self.W2[1]) + self.b_w2[0],
-               torch.einsum('bk,kj->bj', e_c[0], self.W2[1]) + torch.einsum('bk,kj->bj', e_c[1], self.W2[0]) + self.b_w2[1])
+        e_c = (torch.einsum('bk,kj->bj', e_c[0], self.W2[0])
+               - torch.einsum('bk,kj->bj', e_c[1], self.W2[1]) + self.b_w2[0],
+               torch.einsum('bk,kj->bj', e_c[0], self.W2[1])
+               + torch.einsum('bk,kj->bj', e_c[1], self.W2[0]) + self.b_w2[1])
 
         # calculation of g
         g = Sigmoid(torch.einsum('jk,bk->bj', self.Uo[0], lhs[0]*rel[0]-lhs[1]*rel[1])
@@ -206,6 +210,58 @@ class Context_ComplEx(KBCModel):
         lhs = lhs[:, :self.rank], lhs[:, self.rank:]
         rel = rel[:, :self.rank], rel[:, self.rank:]
         rhs = rhs[:, :self.rank], rhs[:, self.rank:]
+
+        # Concatenation of lhs, rel
+        trp_E = torch.cat((lhs[0], rel[0]), dim=1), torch.cat((lhs[1], rel[1]), dim=1)
+
+        w = (torch.einsum('jk,bj->bk', self.W[0], trp_E[0])
+             - torch.einsum('jk,bj->bk', self.W[1], self.trp_E[1]) + self.b_w[0],
+             torch.einsum('jk,bj->bk', self.W[1], trp_E[0])
+             + torch.einsum('jk,bj->bk', self.W[0], trp_E[1]) + self.b_w[1])
+
+        nb_E = self.get_neighbor(x[:, 0])
+        nb_E = nb_E[:, :, :self.rank], nb_E[:, :, self.rank:]  # check on this
+
+        # Take the real part of w @ nb_E
+        alpha = torch.softmax(torch.einsum('bk,bmk->bm', w[0], nb_E[0]) - torch.einsum('bk,bmk,bm', w[1], nb_E[1]),
+                              dim=1)
+
+        e_c = torch.einsum('bm,bmk->bk', alpha, nb_E[0]), torch.einsum('bm,bmk->bk', alpha, nb_E[1])
+
+        # Linear matrix multiplication
+        e_c = (torch.einsum('bk,kj->bj', e_c[0], self.W2[0])
+               - torch.einsum('bk,kj->bj', e_c[1], self.W2[1]) + self.b_w2[0],
+               torch.einsum('bk,kj->bj', e_c[0], self.W2[1])
+               + torch.einsum('bk,kj->bj', e_c[1], self.W2[0]) + self.b_w2[1])
+
+        # calculation of g
+        g = Sigmoid(torch.einsum('jk,bk->bj', self.Uo[0], lhs[0] * rel[0] - lhs[1] * rel[1])
+                    - torch.einsum('jk,bk->bj', self.Uo[1], lhs[1] * rel[0] + lhs[0] * rel[1]))
+
+        gated_e_c = g * e_c[0] + (torch.ones((self.chunk_size, 1)).cuda() - g) * torch.ones_like(e_c[0]), g * e_c[1]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         to_score = self.embeddings[0].weight
         to_score = to_score[:, :self.rank], to_score[:, self.rank:]
