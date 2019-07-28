@@ -174,11 +174,23 @@ class Context_ComplEx(KBCModel):
 
         w = w_R, w_I
 
+        nb_E = self.get_neighbor(x[:, 0])
+        nb_E = nb_E[:, :, :self.rank], nb_E[:, :, self.rank:]  # check on this
 
+        # Take the real part of w @ nb_E
+        alpha = torch.softmax(torch.einsum('', w[0], nb_E[0]) - torch.einsum('', w[1], nb_E[1]), dim=1)
 
+        # e_c = self.W2(torch.einsum('bm,bmk->bk', alpha, nb_E))
+        e_c = torch.einsum('', alpha, nb_E[0]), torch.einsum('', alpha, nb_E[1])
 
+        # Linear matrix multiplication
+        e_c_R = torch.einsum('', e_c[0], self.W2[0]) - torch.einsum('', e_c[1], self.W2[1]) + self.b_w2[0]
+        e_c_I = torch.einsum('', e_c[0], self.W2[1]) + torch.einsum('', e_c[1], self.W2[0]) + self.b_w2[1]
 
+        e_c = e_c_R, e_c_I
 
+        # calculation of g
+        g_R =
 
 
 
