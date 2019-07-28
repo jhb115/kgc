@@ -169,10 +169,9 @@ class Context_ComplEx(KBCModel):
 
         # Get attention weight vector, linear projection of trp_E
         # w = self.W(trp_E)
-        w_R = torch.einsum('', self.W[0], trp_E[0]) - torch.einsum(''. self.W[1], self.trp_E[1]) + self.b_w[0]
-        w_I = torch.einsum('', self.W[1], trp_E[0]) + torch.einsum('', self.W[0], trp_E[1]) + self.b_w[1]
 
-        w = w_R, w_I
+        w = (torch.einsum('', self.W[0], trp_E[0]) - torch.einsum(''. self.W[1], self.trp_E[1]) + self.b_w[0],
+             torch.einsum('', self.W[1], trp_E[0]) + torch.einsum('', self.W[0], trp_E[1]) + self.b_w[1])
 
         nb_E = self.get_neighbor(x[:, 0])
         nb_E = nb_E[:, :, :self.rank], nb_E[:, :, self.rank:]  # check on this
@@ -184,10 +183,8 @@ class Context_ComplEx(KBCModel):
         e_c = torch.einsum('', alpha, nb_E[0]), torch.einsum('', alpha, nb_E[1])
 
         # Linear matrix multiplication
-        e_c_R = torch.einsum('', e_c[0], self.W2[0]) - torch.einsum('', e_c[1], self.W2[1]) + self.b_w2[0]
-        e_c_I = torch.einsum('', e_c[0], self.W2[1]) + torch.einsum('', e_c[1], self.W2[0]) + self.b_w2[1]
-
-        e_c = e_c_R, e_c_I
+        e_c = (torch.einsum('', e_c[0], self.W2[0]) - torch.einsum('', e_c[1], self.W2[1]) + self.b_w2[0],
+               torch.einsum('', e_c[0], self.W2[1]) + torch.einsum('', e_c[1], self.W2[0]) + self.b_w2[1])
 
         # calculation of g
         g = Sigmoid(torch.einsum('', self.Uo[0], lhs[0]*rel[0]-lhs[1]*rel[1])
@@ -200,44 +197,7 @@ class Context_ComplEx(KBCModel):
         rroi = rel[0]*rhs[1]
 
         return torch.sum((lhs[0]*rror_rioi + lhs[1]*(rior + rroi))*gated_e_c[0]
-                          + (lhs[1]*rror_rioi + lhs[0]*(rior - rroi))*gated_e_c[1], 1, keepdim=True)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    def score(self, x):
-        lhs = self.embeddings[0](x[:, 0])
-        rel = self.embeddings[1](x[:, 1])
-        rhs = self.embeddings[0](x[:, 2])
-
-        lhs = lhs[:, :self.rank], lhs[:, self.rank:]
-        rel = rel[:, :self.rank], rel[:, self.rank:]
-        rhs = rhs[:, :self.rank], rhs[:, self.rank:]
-
-        return torch.sum(
-            (lhs[0] * rel[0] - lhs[1] * rel[1]) * rhs[0] +
-            (lhs[0] * rel[1] + lhs[1] * rel[0]) * rhs[1],
-            1, keepdim=True
-        )
+                         + (lhs[1]*rror_rioi + lhs[0]*(rior - rroi))*gated_e_c[1], 1, keepdim=True)
 
     def forward(self, x):
         lhs = self.embeddings[0](x[:, 0])
