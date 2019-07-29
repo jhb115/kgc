@@ -240,8 +240,38 @@ class Context_ComplEx(KBCModel):
 
         gated_e_c = g * e_c[0] + (torch.ones((self.chunk_size, 1)).cuda() - g) * torch.ones_like(e_c[0]), g * e_c[1]
 
+        srrr = lhs[0] * rel[0]
+        siri = lhs[1] * rel[1]
+        sirr = lhs[1] * rel[0]
+        srri = lhs[0] * rel[1]
+
         to_score = self.embeddings[0].weight
         to_score = to_score[:, :self.rank], to_score[:, self.rank:]
+
+        return (
+                ((srrr + siri) * gated_e_c[0] + (sirr + srri) * gated_e_c[1]) @ to_score[0].transpose(0, 1) +
+                ((srri + sirr) * gated_e_c[0] + (siri - srrr) * gated_e_c[1]) @ to_score[1].transpose(0, 1)
+        ), (
+            torch.sqrt(lhs[0]**2 + lhs[1]**2),
+            torch.sqrt(rel[0]**2 + rel[1]**2),
+            torch.sqrt(rhs[0]**2 + rhs[1]**2),
+            torch.sqrt(gated_e_c[0]**2 + gated_e_c[1])
+        )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
