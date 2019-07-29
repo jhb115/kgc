@@ -168,7 +168,7 @@ model = {
     'Context_CP': lambda: Context_CP(dataset.get_shape(), args.rank, sorted_data, slice_dic,
                                      max_NB=args.max_NB, init_size=args.init, data_name=args.dataset),
     'Context_ComplEx': lambda: Context_ComplEx(dataset.get_shape(), args.rank, sorted_data, slice_dic,
-                                               max_NB=config['max_NB'], init_size=config['init'], data_name=args.dataset)
+                                               max_NB=args.max_NB, init_size=args.init, data_name=args.dataset)
 }[args.model]()
 
 regularizer = {
