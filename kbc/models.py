@@ -695,7 +695,7 @@ class Context_ComplEx(KBCModel):
             torch.sqrt(lhs[0]**2 + lhs[1]**2),
             torch.sqrt(rel[0]**2 + rel[1]**2),
             torch.sqrt(rhs[0]**2 + rhs[1]**2),
-            torch.sqrt(gated_e_c[0]**2 + gated_e_c[1])
+            torch.sqrt(gated_e_c[0]**2 + gated_e_c[1]**2)
         )
 
     def get_queries(self, queries: torch.Tensor):
