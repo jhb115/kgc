@@ -120,10 +120,8 @@ class Context_ComplEx(KBCModel):
         nn.init.xavier_uniform_(self.Wo[1])
         nn.init.xavier_uniform_(self.Uo[1])
 
-        nn.init.xavier_uniform_(self.b_wo[0])
-        nn.init.xavier_uniform_(self.b_wo[1])
-        nn.init.xavier_uniform_(self.b_uo[0])
-        nn.init.xavier_uniform_(self.b_uo[1])
+        nn.init.xavier_uniform_(self.b_g[0])
+        nn.init.xavier_uniform_(self.b_g[1])
 
         self.sorted_data = sorted_data
         self.slice_dic = slice_dic
