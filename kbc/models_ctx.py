@@ -258,64 +258,82 @@ class Context_ComplEx(KBCModel):
             torch.sqrt(gated_e_c[0]**2 + gated_e_c[1])
         )
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        return (
-            (lhs[0] * rel[0] - lhs[1] * rel[1]) @ to_score[0].transpose(0, 1) +
-            (lhs[0] * rel[1] + lhs[1] * rel[0]) @ to_score[1].transpose(0, 1)
-        ), (
-            torch.sqrt(lhs[0] ** 2 + lhs[1] ** 2),
-            torch.sqrt(rel[0] ** 2 + rel[1] ** 2),
-            torch.sqrt(rhs[0] ** 2 + rhs[1] ** 2)
-        )
-
-    def get_rhs(self, chunk_begin: int, chunk_size: int):
-        return self.embeddings[0].weight.data[
-            chunk_begin:chunk_begin + chunk_size
-        ].transpose(0, 1)
-
     def get_queries(self, queries: torch.Tensor):
         lhs = self.embeddings[0](queries[:, 0])
         rel = self.embeddings[1](queries[:, 1])
+
         lhs = lhs[:, :self.rank], lhs[:, self.rank:]
         rel = rel[:, :self.rank], rel[:, self.rank:]
 
-        return torch.cat([
-            lhs[0] * rel[0] - lhs[1] * rel[1],
-            lhs[0] * rel[1] + lhs[1] * rel[0]
-        ], 1)
+        # Concatenation of lhs, rel
+        trp_E = torch.cat((lhs[0], rel[0]), dim=1), torch.cat((lhs[1], rel[1]), dim=1)
+
+        w = (torch.einsum('jk,bj->bk', self.W[0], trp_E[0])
+             - torch.einsum('jk,bj->bk', self.W[1], self.trp_E[1]) + self.b_w[0],
+             torch.einsum('jk,bj->bk', self.W[1], trp_E[0])
+             + torch.einsum('jk,bj->bk', self.W[0], trp_E[1]) + self.b_w[1])
+
+        nb_E = self.get_neighbor(queries[:, 0])
+        nb_E = nb_E[:, :, :self.rank], nb_E[:, :, self.rank:]  # check on this
+
+        # Take the real part of w @ nb_E
+        alpha = torch.softmax(torch.einsum('bk,bmk->bm', w[0], nb_E[0]) - torch.einsum('bk,bmk,bm', w[1], nb_E[1]),
+                              dim=1)
+
+        e_c = torch.einsum('bm,bmk->bk', alpha, nb_E[0]), torch.einsum('bm,bmk->bk', alpha, nb_E[1])
+
+        # Linear matrix multiplication
+        e_c = (torch.einsum('bk,kj->bj', e_c[0], self.W2[0])
+               - torch.einsum('bk,kj->bj', e_c[1], self.W2[1]) + self.b_w2[0],
+               torch.einsum('bk,kj->bj', e_c[0], self.W2[1])
+               + torch.einsum('bk,kj->bj', e_c[1], self.W2[0]) + self.b_w2[1])
+
+        # calculation of g
+        g = Sigmoid(torch.einsum('jk,bk->bj', self.Uo[0], lhs[0] * rel[0] - lhs[1] * rel[1])
+                    - torch.einsum('jk,bk->bj', self.Uo[1], lhs[1] * rel[0] + lhs[0] * rel[1]))
+
+        gated_e_c = g * e_c[0] + (torch.ones((self.chunk_size, 1)).cuda() - g) * torch.ones_like(e_c[0]), g * e_c[1]
+
+        srrr = lhs[0] * rel[0]
+        siri = lhs[1] * rel[1]
+        sirr = lhs[1] * rel[0]
+        srri = lhs[0] * rel[1]
+
+        return torch.cat((srrr + siri) * gated_e_c[0] + (sirr + srri) * gated_e_c[1],
+                (srri + sirr) * gated_e_c[0] + (siri - srrr) * gated_e_c[1], 1)
+
+    def get_rhs(self, chunk_begin: int, chunk_size: int):
+        return self.embeddings[0].weight.data[
+               chunk_begin:chunk_begin + chunk_size
+               ].transpose(0, 1)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
