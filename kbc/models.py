@@ -524,6 +524,7 @@ class Context_ComplEx(KBCModel):
         n_s, n_r, n_o = sizes
         self.sizes = [n_s, n_r, n_o, n_o]  #append another n_o for nb_o
         self.rank = rank
+        self.data_name = data_name
 
         self.embeddings = nn.ModuleList([
             nn.Embedding(s, 2 * rank, sparse=True)
