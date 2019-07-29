@@ -590,6 +590,9 @@ class Context_ComplEx(KBCModel):
         return self.embeddings[2](index_tensor)
 
     def score(self, x: torch.Tensor):
+
+        self.chunk_size = len(x)
+
         lhs = self.embeddings[0](x[:, 0])
         rel = self.embeddings[1](x[:, 1])
         rhs = self.embeddings[0](x[:, 2])
@@ -641,6 +644,9 @@ class Context_ComplEx(KBCModel):
                          + (lhs[1]*rror_rioi + lhs[0]*(rior - rroi))*gated_e_c[1], 1, keepdim=True)
 
     def forward(self, x):
+
+        self.chunk_size = len(x)
+
         lhs = self.embeddings[0](x[:, 0])
         rel = self.embeddings[1](x[:, 1])
         rhs = self.embeddings[0](x[:, 2])
@@ -693,6 +699,9 @@ class Context_ComplEx(KBCModel):
         )
 
     def get_queries(self, queries: torch.Tensor):
+
+        self.chunk_size = len(x)
+
         lhs = self.embeddings[0](queries[:, 0])
         rel = self.embeddings[1](queries[:, 1])
 
