@@ -290,7 +290,6 @@ class Context_ComplEx(KBCModel):
                     lhs[1] * rel[0] + lhs[0] * rel[1]) + self.b_g
                     + self.Wo[0] @ e_c[0])
 
-
         gated_e_c = g * e_c[0] + (torch.ones((self.chunk_size, 1)).cuda() - g) * torch.ones_like(e_c[0]), g * e_c[1]
 
         srrr = lhs[0] * rel[0]
