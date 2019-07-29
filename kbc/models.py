@@ -574,8 +574,6 @@ class Context_ComplEx(KBCModel):
         self.i = 0
 
     def get_neighbor(self, subj: torch.Tensor):
-        # return neighbor (N_subject, N_nb_max, k)
-
         index_array = np.zeros(shape=(len(subj), self.max_NB), dtype=np.int32)
 
         for i, each_subj in enumerate(subj):
@@ -588,7 +586,6 @@ class Context_ComplEx(KBCModel):
                 else:
                     index_array[i, :] = self.sorted_data[start_i:start_i+self.max_NB, 2]
 
-        # Convert index_array into a long tensor for indexing the embedding.
         index_tensor = torch.LongTensor(index_array).cuda()
 
         return self.embeddings[2](index_tensor)
@@ -607,7 +604,6 @@ class Context_ComplEx(KBCModel):
 
         # Get attention weight vector, linear projection of trp_E
         # Equivalent to w = self.W(trp_E)
-
         w = (trp_E[0] @ self.W[0] - trp_E[1] @ self.W[1] + self.b_w[0],
              trp_E[0] @ self.W[1] + trp_E[1] @ self.W[0] + self.b_w[1])
 
@@ -710,11 +706,6 @@ class Context_ComplEx(KBCModel):
         w = (trp_E[0] @ self.W[0] - trp_E[1] @ self.W[1] + self.b_w[0],
              trp_E[0] @ self.W[1] + trp_E[1] @ self.W[0] + self.b_w[1])
 
-        # w = (torch.einsum('jk,bj->bk', self.W[0], trp_E[0])
-        #      - torch.einsum('jk,bj->bk', self.W[1], self.trp_E[1]) + self.b_w[0],
-        #      torch.einsum('jk,bj->bk', self.W[1], trp_E[0])
-        #      + torch.einsum('jk,bj->bk', self.W[0], trp_E[1]) + self.b_w[1])
-
         nb_E = self.get_neighbor(queries[:, 0])
         nb_E = nb_E[:, :, :self.rank], nb_E[:, :, self.rank:]  # check on this
 
@@ -747,27 +738,4 @@ class Context_ComplEx(KBCModel):
         return self.embeddings[0].weight.data[
                chunk_begin:chunk_begin + chunk_size
                ].transpose(0, 1)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
