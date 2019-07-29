@@ -231,9 +231,9 @@ results_folder = '../results/{}/{}'.format(args.model, args.dataset)
 
 # Load pre-trained embeddings
 if args.save_pre_train == 1:
-    pre_train_folder = '../pre_train/{}/{}/{}'.format('Context_' + args.model, args.dataset, args.rank)
+    pre_train_folder = '../pre_train/{}/{}/{}'.format('Context_' + args.model, args.dataset, str(args.rank))
 if args.load_pre_train == 1:
-    pre_train_folder = '../pre_train/{}/{}/{}'.format(args.model, args.dataset, args.rank)
+    pre_train_folder = '../pre_train/{}/{}/{}'.format(args.model, args.dataset, str(args.rank))
     model.lhs.load_state_dict(torch.load(pre_train_folder + '/lhs.pt'))
     model.rel.load_state_dict(torch.load(pre_train_folder + '/rel.pt'))
     model.rhs.load_state_dict(torch.load(pre_train_folder + '/rhs.pt'))
@@ -304,7 +304,6 @@ config_ini['setup']['product score function'] = 'True'
 
 with open(folder_name + '/config.ini', 'w') as configfile:
     config_ini.write(configfile)
-
 
 for e in range(args.max_epochs):
     print('\n train epoch = ', e+1)
