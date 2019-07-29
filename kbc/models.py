@@ -655,7 +655,10 @@ class Context_ComplEx(KBCModel):
         # Concatenation of lhs, rel
         trp_E = (torch.cat((lhs[0], rel[0]), dim=1), torch.cat((lhs[1], rel[1]), dim=1))
 
-        print('trp_E size = ', trp_E[0].size())
+        print('trp_E 0 size = ', trp_E[0].size())
+        print('trp_E 1 size = ', trp_E[1].size())
+        print('b w size = ', self.b_w[0])
+
 
         w = (trp_E[0] @ self.W[0] - trp_E[1] @ self.W[1] + self.b_w[0],
              trp_E[0] @ self.W[1] + trp_E[1] @ self.W[0] + self.b_w[1])
