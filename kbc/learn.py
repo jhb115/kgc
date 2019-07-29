@@ -13,7 +13,7 @@ import configparser
 import torch
 from torch import optim
 from kbc.datasets import Dataset
-from kbc.models import CP, ComplEx, ConvE, Context_CP
+from kbc.models import CP, ComplEx, ConvE, Context_CP, Context_ComplEx
 from kbc.regularizers import N2, N3, N4
 from kbc.optimizers import KBCOptimizer
 import os
@@ -39,7 +39,7 @@ parser.add_argument(
     help="Dataset in {}".format(datasets)
 )
 
-models = ['CP', 'ComplEx', 'ConvE', 'Context_CP']
+models = ['CP', 'ComplEx', 'ConvE', 'Context_CP', 'Context_ComplEx']
 parser.add_argument(
     '--model', choices=models,
     help="Model in {}".format(models)
@@ -166,7 +166,9 @@ model = {
     'ConvE': lambda: ConvE(dataset.get_shape(), args.rank, tuple(args.dropouts), args.use_bias, tuple(args.hw),
                            tuple(args.kernel_size), args.output_channel),
     'Context_CP': lambda: Context_CP(dataset.get_shape(), args.rank, sorted_data, slice_dic,
-                                     max_NB=args.max_NB, init_size=args.init, data_name=args.dataset)
+                                     max_NB=args.max_NB, init_size=args.init, data_name=args.dataset),
+    'Context_ComplEx': lambda: Context_ComplEx(dataset.get_shape(), args.rank, sorted_data, slice_dic,
+                                               max_NB=config['max_NB'], init_size=config['init'], data_name=args.dataset)
 }[args.model]()
 
 regularizer = {
