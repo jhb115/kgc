@@ -526,7 +526,7 @@ class Context_ComplEx(KBCModel):
         self.rank = rank
 
         self.embeddings = nn.ModuleList([
-            nn.Embedding(s, 3 * rank, sparse=True)
+            nn.Embedding(s, 2 * rank, sparse=True)
             for s in self.sizes[:3]
         ])
         self.embeddings[0].weight.data *= init_size
@@ -653,11 +653,11 @@ class Context_ComplEx(KBCModel):
         rhs = rhs[:, :self.rank], rhs[:, self.rank:]
 
         # Concatenation of lhs, rel
-        trp_E = (torch.cat((lhs[0], rel[0]), dim=1), torch.cat((lhs[1], rel[1]), dim=1))
+        trp_E = torch.cat((lhs[0], rel[0]), dim=1), torch.cat((lhs[1], rel[1]), dim=1)
 
         print('trp_E 0 size = ', trp_E[0].size())
         print('trp_E 1 size = ', trp_E[1].size())
-        print('b w size = ', self.b_w[0])
+        print('b w size = ', self.b_w[0].size())
 
 
         w = (trp_E[0] @ self.W[0] - trp_E[1] @ self.W[1] + self.b_w[0],
