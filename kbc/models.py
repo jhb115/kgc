@@ -700,7 +700,7 @@ class Context_ComplEx(KBCModel):
 
     def get_queries(self, queries: torch.Tensor):
 
-        self.chunk_size = len(x)
+        self.chunk_size = len(queries)
 
         lhs = self.embeddings[0](queries[:, 0])
         rel = self.embeddings[1](queries[:, 1])
