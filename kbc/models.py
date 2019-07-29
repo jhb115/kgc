@@ -739,8 +739,8 @@ class Context_ComplEx(KBCModel):
         sirr = lhs[1] * rel[0]
         srri = lhs[0] * rel[1]
 
-        return torch.cat((srrr + siri) * gated_e_c[0] + (sirr + srri) * gated_e_c[1],
-                         (srri + sirr) * gated_e_c[0] + (siri - srrr) * gated_e_c[1], 1)
+        return torch.cat(((srrr + siri) * gated_e_c[0] + (sirr + srri) * gated_e_c[1],
+                         (srri + sirr) * gated_e_c[0] + (siri - srrr) * gated_e_c[1]), 1)
 
     def get_rhs(self, chunk_begin: int, chunk_size: int):
         return self.embeddings[0].weight.data[
