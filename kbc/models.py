@@ -628,8 +628,8 @@ class Context_ComplEx(KBCModel):
                e_c[0] @ self.W2[1] + e_c[1] @ self.W2[0] + self.b_w2[1])
 
         # calculation of g
-        g = Sigmoid((lhs[0]*rel[0]-lhs[1]*rel[1]) @ self.Uo[0] - (lhs[1]*rel[0]+lhs[0]*rel[1]) @  self.Uo[1]
-                    +  self.Wo[0] @ e_c[0] + self.b_g)
+        g = Sigmoid((lhs[0]*rel[0]-lhs[1]*rel[1]) @ self.Uo[0] - (lhs[1]*rel[0]+lhs[0]*rel[1]) @ self.Uo[1]
+                    + e_c[0] @ self.Wo[0] + self.b_g)
 
         # g = Sigmoid(torch.einsum('kj,bk->bj', self.Uo[0], lhs[0]*rel[0]-lhs[1]*rel[1])
         #             - torch.einsum('kj,bk->bj', self.Uo[1], lhs[1]*rel[0]+lhs[0]*rel[1]))
