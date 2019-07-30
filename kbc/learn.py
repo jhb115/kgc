@@ -239,7 +239,10 @@ if args.load_pre_train == 1:
         model.rel.load_state_dict(torch.load(pre_train_folder + '/rel.pt'))
         model.rhs.load_state_dict(torch.load(pre_train_folder + '/rhs.pt'))
     elif args.model == 'Context_ComplEx':
-        model.embeddings = torch.load(pre_train_folder + '/embeddings.pt')
+        # model.embeddings = torch.load(pre_train_folder + '/embeddings.pt')
+        tmp_embedding = torch.load(pre_train_folder + '/embeddings.pt')
+        model.embeddings[0].load_state_dict(torch.load(torch.load(pre_train_folder + '/entity.pt')))
+        model.embeddings[1].load_state_dict(torch.load(torch.load(pre_train_folder + '/relation.pt')))
 
 # make appropriate directories and folders for storing the results
 if args.mkdir:
@@ -323,8 +326,9 @@ for e in range(args.max_epochs):
                 with open(pre_train_folder + '/config.ini', 'w') as configfile:
                     config_ini.write(configfile)
             elif args.model == 'ComplEx':
-                torch.save(model.embeddings, pre_train_folder + '/embeddings.pt')
-
+                # torch.save(model.embeddings, pre_train_folder + '/embeddings.pt')
+                torch.save(model.embeddings[0], pre_train_folder+'/entity.pt')
+                torch.save(model.embeddings[1], pre_train_folder+'/relation.pt')
         model.i = 0
         train_results = avg_both(*dataset.eval(model, 'train', 50000))
         model.i = 1
