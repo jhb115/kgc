@@ -240,7 +240,6 @@ if args.load_pre_train == 1:
         model.rhs.load_state_dict(torch.load(pre_train_folder + '/rhs.pt'))
     elif args.model == 'Context_ComplEx':
         # model.embeddings = torch.load(pre_train_folder + '/embeddings.pt')
-        tmp_embedding = torch.load(pre_train_folder + '/embeddings.pt')
         model.embeddings[0].load_state_dict(torch.load(torch.load(pre_train_folder + '/entity.pt')))
         model.embeddings[1].load_state_dict(torch.load(torch.load(pre_train_folder + '/relation.pt')))
 
