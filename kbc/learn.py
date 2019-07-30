@@ -234,9 +234,12 @@ if args.save_pre_train == 1:
     pre_train_folder = '../pre_train/{}/{}/{}'.format('Context_' + args.model, args.dataset, str(args.rank))
 if args.load_pre_train == 1:
     pre_train_folder = '../pre_train/{}/{}/{}'.format(args.model, args.dataset, str(args.rank))
-    model.lhs.load_state_dict(torch.load(pre_train_folder + '/lhs.pt'))
-    model.rel.load_state_dict(torch.load(pre_train_folder + '/rel.pt'))
-    model.rhs.load_state_dict(torch.load(pre_train_folder + '/rhs.pt'))
+    if args.model == 'Context_CP':
+        model.lhs.load_state_dict(torch.load(pre_train_folder + '/lhs.pt'))
+        model.rel.load_state_dict(torch.load(pre_train_folder + '/rel.pt'))
+        model.rhs.load_state_dict(torch.load(pre_train_folder + '/rhs.pt'))
+    elif args.model == 'Context_ComplEx':
+        model.embeddings = torch.load(pre_train_folder + '/embeddings.pt')
 
 # make appropriate directories and folders for storing the results
 if args.mkdir:
@@ -313,11 +316,14 @@ for e in range(args.max_epochs):
         torch.save(model.state_dict(), folder_name + '/model_state.pt')
 
         if args.save_pre_train:  # save only the embeddings (for pre-training)
-            torch.save(model.lhs.state_dict(), pre_train_folder + '/lhs.pt')
-            torch.save(model.rel.state_dict(), pre_train_folder + '/rel.pt')
-            torch.save(model.rhs.state_dict(), pre_train_folder + '/rhs.pt')
-            with open(pre_train_folder + '/config.ini', 'w') as configfile:
-                config_ini.write(configfile)
+            if args.model == 'CP':
+                torch.save(model.lhs.state_dict(), pre_train_folder + '/lhs.pt')
+                torch.save(model.rel.state_dict(), pre_train_folder + '/rel.pt')
+                torch.save(model.rhs.state_dict(), pre_train_folder + '/rhs.pt')
+                with open(pre_train_folder + '/config.ini', 'w') as configfile:
+                    config_ini.write(configfile)
+            elif args.model == 'ComplEx':
+                torch.save(model.embeddings, pre_train_folder + '/embeddings.pt')
 
         model.i = 0
         train_results = avg_both(*dataset.eval(model, 'train', 50000))
