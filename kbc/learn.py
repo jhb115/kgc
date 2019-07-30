@@ -326,8 +326,8 @@ for e in range(args.max_epochs):
                     config_ini.write(configfile)
             elif args.model == 'ComplEx':
                 # torch.save(model.embeddings, pre_train_folder + '/embeddings.pt')
-                torch.save(model.embeddings[0], pre_train_folder+'/entity.pt')
-                torch.save(model.embeddings[1], pre_train_folder+'/relation.pt')
+                torch.save(model.embeddings[0].state_dict(), pre_train_folder+'/entity.pt')
+                torch.save(model.embeddings[1].state_dict(), pre_train_folder+'/relation.pt')
         model.i = 0
         train_results = avg_both(*dataset.eval(model, 'train', 50000))
         model.i = 1
