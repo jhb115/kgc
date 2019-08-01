@@ -56,12 +56,12 @@ class N4(Regularizer):
         self.weight = weight
         self.g_weight = 0.01
 
-    def forward(self, factors, g=0):
+    def forward(self, factors, g=torch.Tensor([0])):
         norm = 0
         for f in factors:
             norm += self.weight * torch.sum(
                 f ** 3
             )
         norm /= factors[0].shape[0]
-        norm += self.g_weight * g
+        norm += self.g_weight * torch.sum(g ** 2)
         return norm
