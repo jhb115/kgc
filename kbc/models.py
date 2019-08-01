@@ -182,12 +182,12 @@ class Context_CP(KBCModel):
         # extra linear layer and batch-norm
 
         # Gate
-        g = Sigmoid(self.Uo(lhs*rel) + self.Wo(e_c))
+        self.g = Sigmoid(self.Uo(lhs*rel) + self.Wo(e_c))
 
         if self.i > 0 and self.flag % 200:
-            self.valid_g.append(g.clone().data.cpu().numpy())  # examine g
+            self.valid_g.append(self.g.clone().data.cpu().numpy())  # examine g
 
-        gated_e_c = g * e_c + (torch.ones((self.chunk_size, 1)).cuda() - g) * torch.ones_like(e_c).cuda()
+        gated_e_c = self.g * e_c + (torch.ones((self.chunk_size, 1)).cuda() - self.g) * torch.ones_like(e_c).cuda()
 
         # Get tot_score
         tot_score = torch.sum(lhs * rel * rhs * gated_e_c, 1, keepdim=True)
@@ -222,12 +222,12 @@ class Context_CP(KBCModel):
         # extra linear layer and batch-normalization
 
         # Gate
-        g = Sigmoid(self.Uo(lhs * rel) + self.Wo(e_c))
+        self.g = Sigmoid(self.Uo(lhs * rel) + self.Wo(e_c))
 
         if self.flag % 1000:
-            self.forward_g.append(g.clone().data.cpu().numpy())  # examine g for debugging, delete afterwards
+            self.forward_g.append(self.g.clone().data.cpu().numpy())  # examine g for debugging, delete afterwards
 
-        gated_e_c = g * e_c + (torch.ones((self.chunk_size, 1)).cuda() - g) * torch.ones_like(e_c).cuda()
+        gated_e_c = self.g * e_c + (torch.ones((self.chunk_size, 1)).cuda() - self.g) * torch.ones_like(e_c).cuda()
 
         # Get tot_score
         tot_forward = (lhs * rel * gated_e_c) @ self.rhs.weight.t()
@@ -255,12 +255,12 @@ class Context_CP(KBCModel):
 
         # e_c = self.bn2(self.W2(torch.einsum('bm,bmk->bk', alpha, nb_E)))  # added batch-norm
         e_c = self.W2(torch.einsum('bm,bmk->bk', alpha, nb_E))
-        g = Sigmoid(self.Uo(lhs * rel) + self.Wo(e_c))
+        self.g = Sigmoid(self.Uo(lhs * rel) + self.Wo(e_c))
 
-        if self.i > 0 and self.flag % 200:
-            self.valid_g.append(g.clone().data.cpu().numpy())  # examine g
+        if self.i > 0 and self.flag % 50:
+            self.valid_g.append(self.g.clone().data.cpu().numpy())  # examine g
 
-        gated_e_c = g * e_c + (torch.ones((self.chunk_size, 1)).cuda() - g) * torch.ones_like(e_c).cuda()
+        gated_e_c = self.g * e_c + (torch.ones((self.chunk_size, 1)).cuda() - self.g) * torch.ones_like(e_c).cuda()
 
         return lhs.data * rel.data * gated_e_c.data
 
@@ -598,6 +598,7 @@ class Context_ComplEx(KBCModel):
     def score(self, x: torch.Tensor):
 
         self.chunk_size = len(x)
+        self.flag += 1
 
         lhs = self.embeddings[0](x[:, 0])
         rel = self.embeddings[1](x[:, 1])
@@ -610,15 +611,8 @@ class Context_ComplEx(KBCModel):
         # Concatenation of lhs, rel
         trp_E = torch.cat((lhs[0], rel[0]), dim=1), torch.cat((lhs[1], rel[1]), dim=1)
 
-        # Get attention weight vector, linear projection of trp_E
-        # Equivalent to w = self.W(trp_E)
         w = (trp_E[0] @ self.W[0] - trp_E[1] @ self.W[1] + self.b_w[0],
              trp_E[0] @ self.W[1] + trp_E[1] @ self.W[0] + self.b_w[1])
-
-        # w = (torch.einsum('jk,bj->bk', self.W[0], trp_E[0])
-        #      - torch.einsum('jk,bj->bk', self.W[1], trp_E[1]) + self.b_w[0],
-        #      torch.einsum('jk,bj->bk', self.W[1], trp_E[0])
-        #      + torch.einsum('jk,bj->bk', self.W[0], trp_E[1]) + self.b_w[1])
 
         nb_E = self.get_neighbor(x[:, 0])
         nb_E = nb_E[:, :, :self.rank], nb_E[:, :, self.rank:]  # check on this
@@ -634,13 +628,14 @@ class Context_ComplEx(KBCModel):
                e_c[0] @ self.W2[1] + e_c[1] @ self.W2[0] + self.b_w2[1])
 
         # calculation of g
-        g = Sigmoid((lhs[0]*rel[0]-lhs[1]*rel[1]) @ self.Uo[0] - (lhs[1]*rel[0]+lhs[0]*rel[1]) @ self.Uo[1]
+        self.g = Sigmoid((lhs[0]*rel[0]-lhs[1]*rel[1]) @ self.Uo[0] - (lhs[1]*rel[0]+lhs[0]*rel[1]) @ self.Uo[1]
                     + e_c[0] @ self.Wo[0] + self.b_g)
 
-        # g = Sigmoid(torch.einsum('kj,bk->bj', self.Uo[0], lhs[0]*rel[0]-lhs[1]*rel[1])
-        #             - torch.einsum('kj,bk->bj', self.Uo[1], lhs[1]*rel[0]+lhs[0]*rel[1]))
+        if self.i > 0 and self.flag % 50:
+            self.valid_g.append(self.g.clone().data.cpu().numpy())  # examine g
 
-        gated_e_c = g * e_c[0] + (torch.ones((self.chunk_size, 1)).cuda() - g)*torch.ones_like(e_c[0]), g * e_c[1]
+        gated_e_c = (self.g * e_c[0] + (torch.ones((self.chunk_size, 1)).cuda() - self.g)*torch.ones_like(e_c[0]),
+                     self.g * e_c[1])
 
         rror_rioi = rel[0]*rhs[0]+rel[1]*rhs[1]
         rior = rel[1]*rhs[0]
@@ -652,6 +647,7 @@ class Context_ComplEx(KBCModel):
     def forward(self, x):
 
         self.chunk_size = len(x)
+        self.flag += 1
 
         lhs = self.embeddings[0](x[:, 0])
         rel = self.embeddings[1](x[:, 1])
@@ -687,10 +683,14 @@ class Context_ComplEx(KBCModel):
                e_c[0] @ self.W2[1] + e_c[1] @ self.W2[0] + self.b_w2[1])
 
         # calculation of g
-        g = Sigmoid((lhs[0]*rel[0]-lhs[1]*rel[1])@ self.Uo[0] - (lhs[1]*rel[0]+lhs[0]*rel[1])@ self.Uo[1]
+        self.g = Sigmoid((lhs[0]*rel[0]-lhs[1]*rel[1])@ self.Uo[0] - (lhs[1]*rel[0]+lhs[0]*rel[1])@ self.Uo[1]
                     + e_c[0] @ self.Wo[0] + self.b_g)
 
-        gated_e_c = g * e_c[0] + (torch.ones((self.chunk_size, 1)).cuda() - g) * torch.ones_like(e_c[0]), g * e_c[1]
+        if self.flag % 1000:
+            self.forward_g.append(self.g.clone().data.cpu().numpy())  # examine g for debugging, delete afterwards
+
+        gated_e_c = (self.g * e_c[0] + (torch.ones((self.chunk_size, 1)).cuda() - self.g) * torch.ones_like(e_c[0]),
+                     self.g * e_c[1])
 
         srrr = lhs[0] * rel[0]
         siri = lhs[1] * rel[1]
@@ -713,6 +713,7 @@ class Context_ComplEx(KBCModel):
     def get_queries(self, queries: torch.Tensor):
 
         self.chunk_size = len(queries)
+        self.flag += 1
 
         lhs = self.embeddings[0](queries[:, 0])
         rel = self.embeddings[1](queries[:, 1])
@@ -740,11 +741,15 @@ class Context_ComplEx(KBCModel):
                e_c[0] @ self.W2[1] + e_c[1] @ self.W2[0] + self.b_w2[1])
 
         # calculation of g
-        g = Sigmoid((lhs[0] * rel[0] - lhs[1] * rel[1]) @ self.Uo[0]
+        self.g = Sigmoid((lhs[0] * rel[0] - lhs[1] * rel[1]) @ self.Uo[0]
                     - (lhs[1] * rel[0] + lhs[0] * rel[1]) @ self.Uo[1]
                     + e_c[0] @ self.Wo[0] + self.b_g)
 
-        gated_e_c = g * e_c[0] + (torch.ones((self.chunk_size, 1)).cuda() - g) * torch.ones_like(e_c[0]), g * e_c[1]
+        if self.i > 0 and self.flag % 50:
+            self.valid_g.append(self.g.clone().data.cpu().numpy())  # examine g
+
+        gated_e_c = (self.g * e_c[0] + (torch.ones((self.chunk_size, 1)).cuda() - self.g) * torch.ones_like(e_c[0]),
+                     self.g * e_c[1])
 
         srrr = lhs[0] * rel[0]
         siri = lhs[1] * rel[1]
