@@ -145,6 +145,11 @@ parser.add_argument(
     help='1 if you wish to load the saved pre-train the embedding for Context-based model'
 )
 
+parser.add_argument(
+    '--g_weight', default=0, type=float,
+    help='regularization weight on the g'
+)
+
 # Setup parser
 args = parser.parse_args()
 
