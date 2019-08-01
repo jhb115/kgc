@@ -535,6 +535,7 @@ class Context_ComplEx(KBCModel):
         self.rank = rank
         self.data_name = data_name
         self.context_flag = 1
+        self.flag = 0
 
         self.embeddings = nn.ModuleList([
             nn.Embedding(s, 2 * rank, sparse=True)
