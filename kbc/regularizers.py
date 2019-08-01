@@ -55,5 +55,21 @@ class N4(Regularizer):
             norm += self.weight * torch.sum(
                 f ** 3
             )
-
         return norm / factors[0].shape[0]
+
+class N5(Regularizer):
+    # This is regularizer including penalty term on g
+    def __init__(self, weight: float):
+        super(N4, self).__init__()
+        self.weight = weight
+        self.g_weight = 0.01
+
+    def forward(self, factors, g):
+        norm = 0
+        for f in factors:
+            norm += self.weight * torch.sum(
+                f ** 3
+            )
+        norm /= factors[0].shape[0]
+        norm += self.g_weight * g
+        return norm
