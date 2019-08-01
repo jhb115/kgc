@@ -44,6 +44,9 @@ class KBCOptimizer(object):
                 l_fit = loss(predictions, truth)
                 if self.regularizer == 'N0':
                     l = l_fit
+                elif self.model.context_flag:
+                    l_reg = self.regularizer.forward(factors, g=self.model.g)
+                    l = l_fit + l_reg
                 else:
                     l_reg = self.regularizer.forward(factors)
                     l = l_fit + l_reg

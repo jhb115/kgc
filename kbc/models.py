@@ -92,6 +92,7 @@ class Context_CP(KBCModel):
         self.sizes = sizes
         self.rank = rank
         self.data_name = data_name
+        self.context_flag = 1
 
         self.lhs = nn.Embedding(sizes[0], rank, sparse=True)
         self.rel = nn.Embedding(sizes[1], rank, sparse=True)
@@ -278,6 +279,7 @@ class ConvE(KBCModel):
     ):
         super(ConvE, self).__init__()
         self.sizes = sizes
+        self.context_flag = 0
         self.output_channel = output_channel
         self.kernel_size = kernel_size
         self.embedding_dim = rank  # For ConvE, we shall refer rank as the embedding dimension
@@ -421,6 +423,7 @@ class CP(KBCModel):
         super(CP, self).__init__()
         self.sizes = sizes
         self.rank = rank
+        self.context_flag = 0
 
         self.lhs = nn.Embedding(sizes[0], rank, sparse=True)
         self.rel = nn.Embedding(sizes[1], rank, sparse=True)
@@ -460,6 +463,7 @@ class ComplEx(KBCModel):
         super(ComplEx, self).__init__()
         self.sizes = sizes
         self.rank = rank
+        self.context_flag = 0
 
         self.embeddings = nn.ModuleList([
             nn.Embedding(s, 2 * rank, sparse=True)
@@ -530,6 +534,7 @@ class Context_ComplEx(KBCModel):
         self.sizes = [n_s, n_r, n_o, n_o]  #append another n_o for nb_o
         self.rank = rank
         self.data_name = data_name
+        self.context_flag = 1
 
         self.embeddings = nn.ModuleList([
             nn.Embedding(s, 2 * rank, sparse=True)
