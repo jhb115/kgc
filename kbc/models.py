@@ -664,10 +664,8 @@ class Context_ComplEx(KBCModel):
         rhs = rhs[:, :self.rank], rhs[:, self.rank:]
 
         # Concatenation of lhs, rel
-        trp_E = torch.cat((lhs[0], rel[0]), dim=1), torch.cat((lhs[1], rel[1]), dim=1)
-
-        # Need dropout applied to trp_E
-        trp_E[0], trp_E[1] = self.drop_layer1(trp_E[0]), self.drop_layer1(trp_E[1])
+        trp_E = (self.drop_layer1(torch.cat((lhs[0], rel[0]), dim=1)),
+                 self.drop_layer1(torch.cat((lhs[1], rel[1]), dim=1)))
 
         w = (trp_E[0] @ self.W[0] - trp_E[1] @ self.W[1] + self.b_w[0],
              trp_E[0] @ self.W[1] + trp_E[1] @ self.W[0] + self.b_w[1])
@@ -679,10 +677,10 @@ class Context_ComplEx(KBCModel):
         alpha = torch.softmax(torch.einsum('bk,bmk->bm', w[0], nb_E[0]) - torch.einsum('bk,bmk->bm', w[1], nb_E[1]),
                               dim=1)
 
-        e_c = torch.einsum('bm,bmk->bk', alpha, nb_E[0]), torch.einsum('bm,bmk->bk', alpha, nb_E[1])
+        e_c = (self.drop_layer2(torch.einsum('bm,bmk->bk', alpha, nb_E[0])),
+               self.drop_layer2(torch.einsum('bm,bmk->bk', alpha, nb_E[1])))
 
         # Need dropout applied to e_c
-        e_c[0], e_c[1] = self.drop_layer2(e_c[0]), self.drop_layer2(e_c[1])
 
         # Linear matrix multiplication
         e_c = (e_c[0] @ self.W2[0] - e_c[1] @ self.W2[1] + self.b_w2[0],
