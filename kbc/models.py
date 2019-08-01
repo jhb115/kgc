@@ -549,8 +549,8 @@ class Context_ComplEx(KBCModel):
         nn.init.xavier_uniform_(self.b_w2[0])
         nn.init.xavier_uniform_(self.b_w2[1])
 
-        self.drop_layer1 = nn.Dropout(p=0.3)
-        self.drop_layer2 = nn.Dropout(p=0.3)
+        self.drop_layer1 = nn.Dropout(p=0.5)
+        self.drop_layer2 = nn.Dropout(p=0.5)
 
         self.Wo = torch.randn((rank, 1)).cuda(), torch.randn((rank, 1)).cuda()
         self.b_g = torch.randn((1, 1)).cuda()
@@ -658,6 +658,9 @@ class Context_ComplEx(KBCModel):
         # Concatenation of lhs, rel
         trp_E = torch.cat((lhs[0], rel[0]), dim=1), torch.cat((lhs[1], rel[1]), dim=1)
 
+        # Need dropout applied to trp_E
+        trp_E[0], trp_E[1] = self.drop_layer1(trp_E[0]), self.drop_layer1(trp_E[1])
+
         w = (trp_E[0] @ self.W[0] - trp_E[1] @ self.W[1] + self.b_w[0],
              trp_E[0] @ self.W[1] + trp_E[1] @ self.W[0] + self.b_w[1])
 
@@ -669,6 +672,9 @@ class Context_ComplEx(KBCModel):
                               dim=1)
 
         e_c = torch.einsum('bm,bmk->bk', alpha, nb_E[0]), torch.einsum('bm,bmk->bk', alpha, nb_E[1])
+
+        # Need dropout applied to e_c
+        e_c[0], e_c[1] = self.drop_layer2(e_c[0]), self.drop_layer2(e_c[1])
 
         # Linear matrix multiplication
         e_c = (e_c[0] @ self.W2[0] - e_c[1] @ self.W2[1] + self.b_w2[0],
