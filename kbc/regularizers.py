@@ -53,7 +53,7 @@ class N4(Regularizer):
         norm = 0
         for f in factors:
             norm += self.weight * torch.sum(
-                f ** 4
+                f ** 3
             )
 
         return norm / factors[0].shape[0]
