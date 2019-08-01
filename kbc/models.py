@@ -125,7 +125,7 @@ class Context_CP(KBCModel):
         self.max_NB = max_NB
 
         # Saving local variables for debugging, delete afterwards
-        # self.alpha_list = []
+        self.alpha_list = []
         # self.e_c_list = []
         # self.nb_num = []
         # self.e_head = []
@@ -133,6 +133,7 @@ class Context_CP(KBCModel):
         self.valid_g = []
 
         self.i = 0
+        self.flag = 0
 
     def get_neighbor(self, subj: torch.Tensor):
         # return neighbor (N_subject, N_nb_max, k)
@@ -157,6 +158,7 @@ class Context_CP(KBCModel):
     def score(self, x: torch.Tensor):
 
         self.chunk_size = len(x)
+        self.flag += 1
 
         lhs = self.lhs(x[:, 0])
         rel = self.rel(x[:, 1])
@@ -182,7 +184,7 @@ class Context_CP(KBCModel):
         # Gate
         g = Sigmoid(self.Uo(lhs*rel) + self.Wo(e_c))
 
-        if self.i > 0:
+        if self.i > 0 and self.flag % 200:
             self.valid_g.append(g.clone().data.cpu().numpy())  # examine g
 
         gated_e_c = g * e_c + (torch.ones((self.chunk_size, 1)).cuda() - g) * torch.ones_like(e_c).cuda()
@@ -195,6 +197,7 @@ class Context_CP(KBCModel):
     def forward(self, x: torch.Tensor):
 
         self.chunk_size = len(x)
+        self.flag += 1
 
         lhs = self.lhs(x[:, 0])
         rel = self.rel(x[:, 1])
@@ -221,7 +224,8 @@ class Context_CP(KBCModel):
         # Gate
         g = Sigmoid(self.Uo(lhs * rel) + self.Wo(e_c))
 
-        self.forward_g.append(g.clone().data.cpu().numpy())  # examine g for debugging, delete afterwards
+        if self.flag % 1000:
+            self.forward_g.append(g.clone().data.cpu().numpy())  # examine g for debugging, delete afterwards
 
         gated_e_c = g * e_c + (torch.ones((self.chunk_size, 1)).cuda() - g) * torch.ones_like(e_c).cuda()
 
@@ -234,6 +238,7 @@ class Context_CP(KBCModel):
         # x is a numpy array (equivalent to queries)
 
         self.chunk_size = len(x)
+        self.flag += 1
 
         lhs = self.lhs(x[:, 0])
         rel = self.rel(x[:, 1])
@@ -252,7 +257,7 @@ class Context_CP(KBCModel):
         e_c = self.W2(torch.einsum('bm,bmk->bk', alpha, nb_E))
         g = Sigmoid(self.Uo(lhs * rel) + self.Wo(e_c))
 
-        if self.i > 0:
+        if self.i > 0 and self.flag % 200:
             self.valid_g.append(g.clone().data.cpu().numpy())  # examine g
 
         gated_e_c = g * e_c + (torch.ones((self.chunk_size, 1)).cuda() - g) * torch.ones_like(e_c).cuda()
@@ -567,6 +572,7 @@ class Context_ComplEx(KBCModel):
         self.slice_dic = slice_dic
         self.max_NB = max_NB
 
+        self.alpha_list = []
         self.forward_g = []
         self.valid_g = []
 

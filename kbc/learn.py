@@ -400,3 +400,4 @@ for e in range(args.max_epochs):
         if args.model in ['Context_CP', 'Context_ConvE', 'Context_ComplEx']:
             np.save(folder_name + '/forward_g', np.array(model.forward_g))
             np.save(folder_name + '/valid_g', np.array(model.valid_g))
+            np.save(folder_name + '/alpha_list', np.array(model.alpha_list))
