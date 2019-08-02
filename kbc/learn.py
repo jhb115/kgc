@@ -36,7 +36,7 @@ parser = argparse.ArgumentParser(
 
 #Maybe we don't need this
 parser.add_argument(
-    '--g_weight', type=float, default=0.02,
+    '--g_weight', type=float, default=0.,
     help='weights on the g regularization term'
 )
 
@@ -187,7 +187,7 @@ regularizer = {
     'N0': 'N0',
     'N2': N2(args.reg),
     'N3': N3(args.reg),
-    'N4': N4(args.reg)
+    'N4': N4(args.reg, g_weight=args.g_weight)
 }[args.regularizer]
 
 device = 'cuda'
