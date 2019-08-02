@@ -108,8 +108,8 @@ class Context_ComplEx(KBCModel):
         nn.init.xavier_uniform_(self.b_w2[0])
         nn.init.xavier_uniform_(self.b_w2[1])
 
-        self.drop_layer1 = nn.Dropout(p=0.3)
-        self.drop_layer2 = nn.Dropout(p=0.3)
+        self.drop_layer1 = nn.Dropout(p=0.4)
+        self.drop_layer2 = nn.Dropout(p=0.4)
 
         self.Wo = torch.randn((rank, 1)).cuda(), torch.randn((rank, 1)).cuda()
         self.b_g = torch.randn((1, 1)).cuda(), torch.randn((1, 1)).cuda()
