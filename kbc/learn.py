@@ -35,6 +35,11 @@ parser = argparse.ArgumentParser(
 )
 
 parser.add_argument(
+    '--use_colab', choices=[0, 1],
+    help='Either to use colab or not'
+)
+
+parser.add_argument(
     '--dataset', choices=datasets,
     help="Dataset in {}".format(datasets)
 )
