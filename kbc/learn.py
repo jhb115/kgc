@@ -35,7 +35,7 @@ parser = argparse.ArgumentParser(
 )
 
 parser.add_argument(
-    '--use_colab', choices=[0, 1],
+    '--use_colab', choices=[0, 1], default=0,
     help='Either to use colab or not'
 )
 
@@ -160,7 +160,7 @@ args = parser.parse_args()
 
 
 # Get Dataset
-dataset = Dataset(args.dataset)
+dataset = Dataset(args.dataset, use_colab=args.use_colab)
 if args.model in ['CP', 'ComplEx', 'ConvE']:  # For non-context model
     unsorted_examples = torch.from_numpy(dataset.get_train().astype('int64'))
     examples = unsorted_examples
