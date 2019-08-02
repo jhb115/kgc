@@ -34,9 +34,10 @@ parser = argparse.ArgumentParser(
     description="Relational learning contraption"
 )
 
+#Maybe we don't need this
 parser.add_argument(
-    '--use_colab', choices=[0, 1], default=0,
-    help='Either to use colab or not'
+    '--g_weight', type=float, default=0.02,
+    help='weights on the g regularization term'
 )
 
 parser.add_argument(
@@ -160,7 +161,8 @@ args = parser.parse_args()
 
 
 # Get Dataset
-dataset = Dataset(args.dataset, use_colab=args.use_colab)
+# maybe we don't need the argument for use_colab
+dataset = Dataset(args.dataset)
 if args.model in ['CP', 'ComplEx', 'ConvE']:  # For non-context model
     unsorted_examples = torch.from_numpy(dataset.get_train().astype('int64'))
     examples = unsorted_examples
@@ -237,7 +239,6 @@ test_hit10 = []
 
 #check if the directory exists
 results_folder = '../results/{}/{}'.format(args.model, args.dataset)
-
 
 # Load pre-trained embeddings
 if args.save_pre_train == 1:

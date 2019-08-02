@@ -51,10 +51,10 @@ class N3(Regularizer):
 # factors = [s, r, o, c]
 class N4(Regularizer):
 
-    def __init__(self, weight: float):
+    def __init__(self, weight: float, g_weight = 0.02):
         super(N4, self).__init__()
         self.weight = weight
-        self.g_weight = 0.3
+        self.g_weight = g_weight
 
     def forward(self, factors, g=torch.Tensor([0.])):
         norm = 0
