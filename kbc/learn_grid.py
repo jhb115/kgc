@@ -107,26 +107,6 @@ parser.add_argument(
     '--dropouts', default=(0.3, 0.3, 0.3), type=float,
     help="Dropout rates for each layer in ConvE"
 )
-# Boolean for the bias in ConvE layers
-parser.add_argument(
-    '--use_bias', default=True, type=bool,
-    help="Using or not using bias for the ConvE layers"
-)
-
-parser.add_argument(
-    '--kernel_size', default=(3, 3), nargs='+', type=int,
-    help="Kernel Size"
-)
-
-parser.add_argument(
-    '--output_channel', default=32, type=int,
-    help="Number of output channel"
-)
-
-parser.add_argument(
-    '--hw', default=(10, 20), nargs='+', type=int,
-    help="False or (Height, Width) shape for 2D reshaping entity embedding"
-)
 
 # For Context-based models
 parser.add_argument(
