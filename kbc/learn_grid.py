@@ -255,11 +255,17 @@ if args.mkdir:
             os.mkdir('../results/{}'.format(each_model))
 
         for each_data in dataset_list:
-            if not os.path.exists('../results/{}/{}'.format(each_model, each_data)):
+            folder_name = '../results/{}/{}'.format(each_model, each_data)
+            if not os.path.exists(folder_name):
                 os.mkdir('../results/{}/{}'.format(each_model, each_data))
-
-    if not os.path.exists('./debug'):  # for saving debugging files; delete this at the end
-        os.mkdir('./debug')
+            # check if the summary configuration file exists or not,
+            if not os.path.exists(folder_name + '/summary_config.ini'):
+                # make config summary file
+                summary_config = configparser.ConfigParser()
+                summary_config['summary'] = {'model': each_model, 'dataset': each_data}
+                # save the summary config
+                with open(folder_name + '/summary_config.ini', 'w') as configfile:
+                    summary_config.write(configfile)
 
     if args.save_pre_train == 1:
         # this is where the pre-trained emebedding will be saved
@@ -270,18 +276,26 @@ if args.mkdir:
         dataset_list = ['FB15K', 'FB237', 'WN', 'WN18RR', 'YAGO3-10']
 
         for each_model in model_list:
-            if not os.path.exists('../pre_train/{}'.format('Context_'+each_model)):
-                os.mkdir('../pre_train/{}'.format('Context_'+each_model))
+            folder_name = '../pre_train/{}'.format('Context_'+each_model)
+            if not os.path.exists(folder_name):
+                os.mkdir(folder_name)
 
             for each_data in dataset_list:
-                if not os.path.exists('../pre_train/{}/{}'.format('Context_'+each_model, each_data)):
-                    os.mkdir('../pre_train/{}/{}'.format('Context_'+each_model, each_data))
+                if not os.path.exists('{}/{}'.format(folder_name, each_data)):
+                    os.mkdir('{}/{}'.format(folder_name, each_data))
+                # make a summary config
 
-        if not os.path.exists('../pre_train/{}/{}/{}'.format('Context_'+args.model, args.dataset, str(args.rank))):
-            os.mkdir('../pre_train/{}/{}/{}'.format('Context_'+args.model, args.dataset, str(args.rank)))
+                if not os.path.exists(folder_name + '/summary_config.ini'):
+                    # make config summary file
+                    summary_config = configparser.ConfigParser()
+                    summary_config['summary'] = {'model': each_model, 'dataset': each_data}
+                    # save the summary config
+                    with open(folder_name + '/summary_config.ini', 'w') as configfile:
+                        summary_config.write(configfile)
 
-if not os.path.exists(results_folder):
-    raise Exception('You do not have folder named:{}'.format(results_folder))
+        if not os.path.exists('{}/{}/{}'.format(folder_name, each_data, str(args.rank))):
+            os.mkdir('{}/{}/{}'.format(folder_name, each_data, str(args.rank)))
+
 
 train_no = 1
 
@@ -295,15 +309,9 @@ config = vars(args)
 
 pickle.dump(config, open(folder_name + '/config.p', 'wb'))
 
-# config_ini -> summary, each train
+# config_ini
+# has sections: summary, each train
 config_ini = configparser.ConfigParser()
-config_ini['summary'] = {}
-
-
-
-
-
-
 
 for key in config.keys():
     config_ini['setup'][str(key)] = str(config[key])
