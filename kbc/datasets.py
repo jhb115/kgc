@@ -52,7 +52,7 @@ class Dataset(object):
     def get_sorted_train(self):
         sorted_file_path = self.root / 'sorted_train.pickle'
         slice_file_path = self.root / 'slice_train.pickle'
-        if os.path.exists(sorted_file_path) and os.path.exists(slice_file_path):
+        if os.path.exists(sorted_file_path) and os.path.exists(slice_file_path) and 0:
             # load data if exists
             print('Sorted train set loaded')
             return pickle.load(open(sorted_file_path, 'rb')), \
@@ -80,16 +80,12 @@ class Dataset(object):
 
                 if prev_ent != curr_ent:
                     while ent_idx_list[len(slice_dic) + 1] != curr_ent:
-                        # slice_dic.append([ent_idx_list[len(slice_dic) + 1], start, start])
                         slice_dic.append([ent_idx_list[len(slice_dic) + 1], start, start, 0])
-
-                    # slice_dic.append([prev_ent, start, i])
                     slice_dic.append([prev_ent, start, i, i - start])  # slice_dic[i] == (subject, start, end, degree)
                     start = i
                     ent_idx += 1
 
                 if i == len(train) - 1:
-                    # slice_dic.append([curr_ent, start, i + 1])
                     slice_dic.append([curr_ent, start, i+1, i+1 - start])
 
                 i += 1
@@ -98,10 +94,11 @@ class Dataset(object):
             slice_dic = slice_dic[slice_dic[:, 0].argsort()]
 
             nb_degrees = slice_dic[train[:, 2], 3]
+
             i_train = np.lexsort((nb_degrees, train[:, 0]))
             # sort in terms of degrees of neighbouring nodes first then sort with respect to train id
             train = train[i_train]
-            slice_dic[:,:3]
+            slice_dic[:, :3]
 
             pickle.dump(train, open(sorted_file_path, 'wb'))
             pickle.dump(slice_dic, open(slice_file_path, 'wb'))
