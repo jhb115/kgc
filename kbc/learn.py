@@ -329,6 +329,7 @@ for e in range(args.max_epochs):
 
     if (e + 1) % args.valid == 0 or (e+1) == args.max_epochs:
         torch.save(model.state_dict(), folder_name + '/model_state.pt')
+        # save the model if the mrr or hits@10 is best among all
 
         if args.save_pre_train:  # save only the embeddings (for pre-training)
             if args.model == 'CP':
