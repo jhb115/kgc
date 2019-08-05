@@ -610,6 +610,10 @@ class Context_ComplEx(KBCModel):
                         hop = int(length / self.max_NB) * self.ascending
                         index_array[i, :] = self.sorted_data[start_i+self.max_NB:start_i:hop, 2][:self.max_NB]
 
+                print('length = ', length)
+                print('length of sorted data = ', len(self.sorted_data[start_i+self.max_NB:start_i:hop, 2]))
+                print('hop = ', hop)
+
         index_tensor = torch.LongTensor(index_array).cuda()
 
         return self.embeddings[2](index_tensor)
