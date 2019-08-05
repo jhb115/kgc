@@ -317,6 +317,8 @@ pickle.dump(config, open(folder_name + '/config.p', 'wb'))
 for key in config.keys():
     summary_config[train_no][str(key)] = str(config[key])
 
+summary_config['summary']['Currently running experiment'] = '{} on {}'.format(args.model, args.dataset)
+
 with open(folder_name + '/summary_config.ini', 'w') as configfile:
     summary_config.write(configfile)
 
@@ -387,6 +389,6 @@ for e in range(args.max_epochs):
 
         summary_config[train_no]['e'] = str(e)
 
-        with open(folder_name + '/config.ini', 'w') as configfile:
-            config_ini.write(configfile)
+        with open(folder_name + '/summary_config.ini', 'w') as configfile:
+            summary_config.write(configfile)
 
