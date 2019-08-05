@@ -327,8 +327,6 @@ for e in range(args.max_epochs):
     cur_loss = optimizer.epoch(examples)
 
     if (e + 1) % args.valid == 0 or (e+1) == args.max_epochs:
-        torch.save(model.state_dict(), folder_name + '/model_state.pt')
-        # save the model if the mrr or hits@10 is best among all
 
         if args.save_pre_train:  # save only the embeddings (for pre-training)
             if args.model == 'CP':
@@ -390,6 +388,8 @@ for e in range(args.max_epochs):
             summary_config['summary']['best_train_no'] = str(train_no)
             summary_config['summary']['best_mrr'] = str(max_test_mrr)
             summary_config['summary']['best_hits@10'] = str(max_test_hits)
+            torch.save(model.state_dict(), folder_name + '/model_state.pt')
+            # save the model if the mrr or hits@10 is best among all
 
         config['e'] = e
         pickle.dump(config, open(folder_name + '/config.p', 'wb'))
