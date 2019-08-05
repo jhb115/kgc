@@ -86,13 +86,14 @@ class Context_CP(KBCModel):
     def __init__(
             self, sizes: Tuple[int, int, int], rank: int, sorted_data: np.ndarray,
             slice_dic: np.ndarray, max_NB: int = 50, init_size: float = 1e-3,
-            data_name: str = 'FB15K'
+            data_name: str = 'FB15K', ascending=1
     ):
         super(Context_CP, self).__init__()
         self.sizes = sizes
         self.rank = rank
         self.data_name = data_name
         self.context_flag = 1
+        self.ascending = ascending
 
         self.lhs = nn.Embedding(sizes[0], rank, sparse=True)
         self.rel = nn.Embedding(sizes[1], rank, sparse=True)
@@ -150,7 +151,6 @@ class Context_CP(KBCModel):
                 else:
                     hop = int(length / self.max_NB)
                     index_array[i, :] = self.sorted_data[start_i:start_i + self.max_NB:hop, 2]
-                    # index_array[i, :] = self.sorted_data[start_i:start_i+self.max_NB, 2]
 
         # Convert index_array into a long tensor for indexing the embedding.
         index_tensor = torch.LongTensor(index_array).cuda()
@@ -208,7 +208,6 @@ class Context_CP(KBCModel):
         trp_E = torch.cat((lhs, rel), dim=1)  # (previous)
 
         # Get attention weight vector, where W.shape == (3k, k)
-        # w = self.bn1(self.W(self.drop_layer1(trp_E)))
         w = self.W(self.drop_layer1(trp_E))
         # w.shape == (chunk_size, k) and batch-norm, dropout
 
@@ -218,7 +217,6 @@ class Context_CP(KBCModel):
         alpha = torch.softmax(torch.einsum('bk,bmk->bm', w, nb_E), dim=1)
         # alpha.shape == (chunk_size, max_NB)
 
-        # e_c = self.bn2(self.W2(self.drop_layer2(torch.einsum('bm,bmk->bk', alpha, nb_E))))
         e_c = self.W2(self.drop_layer2(torch.einsum('bm,bmk->bk', alpha, nb_E)))
         # extra linear layer and batch-normalization
 
@@ -254,7 +252,6 @@ class Context_CP(KBCModel):
         alpha = torch.softmax(torch.einsum('bk,bmk->bm', w, nb_E), dim=1)
         # alpha.shape == (chunk_size, max_NB)
 
-        # e_c = self.bn2(self.W2(torch.einsum('bm,bmk->bk', alpha, nb_E)))  # added batch-norm
         e_c = self.W2(torch.einsum('bm,bmk->bk', alpha, nb_E))
         self.g = Sigmoid(self.Uo(lhs * rel) + self.Wo(e_c))
 
@@ -527,7 +524,7 @@ class Context_ComplEx(KBCModel):
     def __init__(
             self, sizes: Tuple[int, int, int], rank: int, sorted_data:np.ndarray,
             slice_dic: np.ndarray, max_NB: int=50, init_size: float=1e-3,
-            data_name: str='FB15K'
+            data_name: str='FB15K', ascending = 1
     ):
         super(Context_ComplEx, self).__init__()
         n_s, n_r, n_o = sizes
@@ -536,6 +533,7 @@ class Context_ComplEx(KBCModel):
         self.data_name = data_name
         self.context_flag = 1
         self.flag = 0
+        self.ascending = ascending
 
         self.embeddings = nn.ModuleList([
             nn.Embedding(s, 2 * rank, sparse=True)
@@ -595,9 +593,8 @@ class Context_ComplEx(KBCModel):
                 if self.max_NB >= length:
                     index_array[i, :length] = self.sorted_data[start_i:end_i, 2]
                 else:  # Need to uniformly truncate
-                    hop = int(length / self.max_NB)
+                    hop = int(length / self.max_NB) * self.ascending
                     index_array[i, :] = self.sorted_data[start_i:start_i+self.max_NB:hop, 2]
-                    # index_array[i, :] = self.sorted_data[start_i:start_i+self.max_NB, 2]
 
         index_tensor = torch.LongTensor(index_array).cuda()
 

@@ -151,6 +151,11 @@ parser.add_argument(
     help='1 if you wish to load the saved pre-train the embedding for Context-based model'
 )
 
+parser.add_argument(
+    '--ascending', default=1, type=int, choices=[-1,1],
+    help='1 if you wish to consider neighborhood degrees in ascending order, -1 otherwise'
+)
+
 # Setup parser
 args = parser.parse_args()
 
