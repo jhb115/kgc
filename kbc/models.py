@@ -178,7 +178,6 @@ class Context_CP(KBCModel):
         # alpha.shape == (chunk_size, max_NB)
 
         # Get context vector
-        # e_c = self.bn2(self.W2(torch.einsum('bm,bmk->bk', alpha, nb_E)))
         e_c = self.W2(torch.einsum('bm,bmk->bk', alpha, nb_E))
         # extra linear layer and batch-norm
 
@@ -592,10 +591,12 @@ class Context_ComplEx(KBCModel):
             length = end_i - start_i
 
             if length > 0:
-                if self.max_NB > length:
+                if self.max_NB >= length:
                     index_array[i, :length] = self.sorted_data[start_i:end_i, 2]
-                else:
-                    index_array[i, :] = self.sorted_data[start_i:start_i+self.max_NB, 2]
+                else:  # Need to uniformly truncate
+                    hop = int(length / self.max_NB)
+                    index_array[i, :] = self.sorted_data[start_i:start_i+self.max_NB:hop, 2]
+                    # index_array[i, :] = self.sorted_data[start_i:start_i+self.max_NB, 2]
 
         index_tensor = torch.LongTensor(index_array).cuda()
 
