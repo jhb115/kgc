@@ -393,7 +393,6 @@ class ConvE(KBCModel):
 
         return y
 
-
 class CP(KBCModel):
     def __init__(
             self, sizes: Tuple[int, int, int], rank: int,

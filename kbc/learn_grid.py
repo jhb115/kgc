@@ -34,7 +34,6 @@ parser = argparse.ArgumentParser(
     description="Relational learning contraption"
 )
 
-#Maybe we don't need this
 parser.add_argument(
     '--g_weight', type=float, default=0.,
     help='weights on the g regularization term'
