@@ -116,16 +116,10 @@ train_hit1 = list(np.load(folder_path + '/train_hit1.npy'))
 train_hit3 = list(np.load(folder_path + '/train_hit3.npy'))
 train_hit10 = list(np.load(folder_path + '/train_hit10.npy'))
 
-valid_mrr = list(np.load(folder_path + '/train_mrr.npy'))
-valid_hit1 = list(np.load(folder_path + '/train_hit1.npy'))
-valid_hit3 = list(np.load(folder_path + '/train_hit3.npy'))
-valid_hit10 = list(np.load(folder_path + '/train_hit10.npy'))
-
-
-test_mrr = list(np.load(folder_path + '/train_mrr.npy'))
-test_hit1 = list(np.load(folder_path + '/train_hit1.npy'))
-test_hit3 = list(np.load(folder_path + '/train_hit3.npy'))
-test_hit10 = list(np.load(folder_path + '/train_hit10.npy'))
+test_mrr = list(np.load(folder_path + '/test_mrr.npy'))
+test_hit1 = list(np.load(folder_path + '/test_hit1.npy'))
+test_hit3 = list(np.load(folder_path + '/test_hit3.npy'))
+test_hit10 = list(np.load(folder_path + '/test_hit10.npy'))
 
 
 config_ini = configparser.ConfigParser()
@@ -146,13 +140,9 @@ for e in range(config['e']+1, config['max_epochs']):
             with open(pre_train_folder + '/config.ini', 'w') as configfile:
                 config_ini.write(configfile)
 
-        model.i = 0
         train_results = avg_both(*dataset.eval(model, 'train', 50000))
-        model.i = 1
-        valid_results = avg_both(*dataset.eval(model, 'valid', -1))
 
         print("\n\t TRAIN: ", train_results)
-        print("\t VALID : ", valid_results)
 
         train_mrr.append(train_results['MRR'])
 
@@ -161,23 +151,10 @@ for e in range(config['e']+1, config['max_epochs']):
         train_hit3.append(hits1310[1])
         train_hit10.append(hits1310[2])
 
-        valid_mrr.append(valid_results['MRR'])
-
-        hits1310 = valid_results['hits@[1,3,10]'].numpy()
-        valid_hit1.append(hits1310[0])
-        valid_hit3.append(hits1310[1])
-        valid_hit10.append(hits1310[2])
-
         np.save(folder_path + '/train_mrr', np.array(train_mrr))
         np.save(folder_path + '/train_hit1', np.array(train_hit1))
         np.save(folder_path + '/train_hit3', np.array(train_hit3))
         np.save(folder_path + '/train_hit10', np.array(train_hit10))
-
-        np.save(folder_path + '/valid_mrr', np.array(valid_mrr))
-        np.save(folder_path + '/valid_hit1', np.array(valid_hit1))
-        np.save(folder_path + '/valid_hit3', np.array(valid_hit3))
-        np.save(folder_path + '/valid_hit10', np.array(valid_hit10))
-
 
         results = avg_both(*dataset.eval(model, 'test', -1))
 
@@ -202,9 +179,5 @@ for e in range(config['e']+1, config['max_epochs']):
 
         with open(folder_path + '/config.ini', 'w') as configfile:
             config_ini.write(configfile)
-
-        if args.model in ['Context_CP', 'Context_ConvE', 'Context_ComplEx']:
-            np.save('./debug/forward_g', np.array(model.forward_g))
-            np.save('./debug/valid_g', np.array(model.valid_g))
 
 
