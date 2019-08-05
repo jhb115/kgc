@@ -296,33 +296,29 @@ if args.mkdir:
         if not os.path.exists('{}/{}/{}'.format(folder_name, each_data, str(args.rank))):
             os.mkdir('{}/{}/{}'.format(folder_name, each_data, str(args.rank)))
 
+# We load our summary configuration file:
+summary_config = configparser.ConfigParser()
+summary_config.read('{}/summary_config.ini'.format(results_folder))
 
 train_no = 1
 
 while os.path.exists(results_folder + '/train' + str(train_no)):
     train_no += 1
 
-folder_name = results_folder + '/train' + str(train_no)
+train_no = 'train' + str(train_no)
+folder_name = '{}/{}'.format(results_folder, train_no)
 os.mkdir(folder_name)
 
-config = vars(args)
+summary_config[train_no] = {}
 
+config = vars(args)
 pickle.dump(config, open(folder_name + '/config.p', 'wb'))
 
-# config_ini
-# has sections: summary, each train
-config_ini = configparser.ConfigParser()
-
 for key in config.keys():
-    config_ini['setup'][str(key)] = str(config[key])
+    summary_config[train_no][str(key)] = str(config[key])
 
-# Comments about the model
-# Flag that we use batch-norm and dropout
-config_ini['setup']['only dropout no batch norm'] = 'True'
-config_ini['setup']['product score function'] = 'True'
-
-with open(folder_name + '/config.ini', 'w') as configfile:
-    config_ini.write(configfile)
+with open(folder_name + '/summary_config.ini', 'w') as configfile:
+    summary_config.write(configfile)
 
 for e in range(args.max_epochs):
     print('\n train epoch = ', e+1)
@@ -337,8 +333,8 @@ for e in range(args.max_epochs):
                 torch.save(model.lhs.state_dict(), pre_train_folder + '/lhs.pt')
                 torch.save(model.rel.state_dict(), pre_train_folder + '/rel.pt')
                 torch.save(model.rhs.state_dict(), pre_train_folder + '/rhs.pt')
-                with open(pre_train_folder + '/config.ini', 'w') as configfile:
-                    config_ini.write(configfile)
+                with open(pre_train_folder + '/summary_config', 'w') as configfile:
+                    summary_config.write(configfile)
             elif args.model == 'ComplEx':
                 torch.save(model.embeddings[0].state_dict(), pre_train_folder+'/entity.pt')
                 torch.save(model.embeddings[1].state_dict(), pre_train_folder+'/relation.pt')
@@ -359,7 +355,6 @@ for e in range(args.max_epochs):
         np.save(folder_name + '/train_hit1', np.array(train_hit1))
         np.save(folder_name + '/train_hit3', np.array(train_hit3))
         np.save(folder_name + '/train_hit10', np.array(train_hit10))
-
 
         results = avg_both(*dataset.eval(model, 'test', -1))
 
