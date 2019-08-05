@@ -149,7 +149,9 @@ class Context_CP(KBCModel):
                 if self.max_NB > length:
                     index_array[i, :length] = self.sorted_data[start_i:end_i, 2]
                 else:
-                    index_array[i, :] = self.sorted_data[start_i:start_i+self.max_NB, 2]
+                    hop = int(length / self.max_NB)
+                    index_array[i, :] = self.sorted_data[start_i:start_i + self.max_NB:hop, 2]
+                    #index_array[i, :] = self.sorted_data[start_i:start_i+self.max_NB, 2]
 
         # Convert index_array into a long tensor for indexing the embedding.
         index_tensor = torch.LongTensor(index_array).cuda()
