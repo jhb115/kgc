@@ -312,6 +312,7 @@ for key in config.keys():
 # Flag that we use batch-norm and dropout
 config_ini['setup']['only dropout no batch norm'] = 'True'
 config_ini['setup']['product score function'] = 'True'
+config_ini['setup']['use_ascending_order_NB'] = 'True'
 
 with open(folder_name + '/config.ini', 'w') as configfile:
     config_ini.write(configfile)
@@ -387,6 +388,9 @@ for e in range(args.max_epochs):
 
         if args.save_pre_train:
             np.save(pre_train_folder + '/test_mrr', np.array(test_mrr))
+
+        config_ini['setup']['max_hit10'] = str(max(np.array(test_hit10)))
+        config_ini['setup']['max_mrr'] = str(max(np.array(test_mrr)))
 
         config['e'] = e
         pickle.dump(config, open(folder_name + '/config.p', 'wb'))

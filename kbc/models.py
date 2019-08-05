@@ -138,7 +138,6 @@ class Context_CP(KBCModel):
 
     def get_neighbor(self, subj: torch.Tensor):
         # return neighbor (N_subject, N_nb_max, k)
-
         index_array = np.zeros(shape=(len(subj), self.max_NB), dtype=np.int32)
 
         for i, each_subj in enumerate(subj):
@@ -151,7 +150,7 @@ class Context_CP(KBCModel):
                 else:
                     hop = int(length / self.max_NB)
                     index_array[i, :] = self.sorted_data[start_i:start_i + self.max_NB:hop, 2]
-                    #index_array[i, :] = self.sorted_data[start_i:start_i+self.max_NB, 2]
+                    # index_array[i, :] = self.sorted_data[start_i:start_i+self.max_NB, 2]
 
         # Convert index_array into a long tensor for indexing the embedding.
         index_tensor = torch.LongTensor(index_array).cuda()
