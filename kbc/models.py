@@ -126,15 +126,7 @@ class Context_CP(KBCModel):
         self.slice_dic = slice_dic
         self.max_NB = max_NB
 
-        # Saving local variables for debugging, delete afterwards
-        self.alpha_list = []
-        # self.e_c_list = []
-        # self.nb_num = []
-        # self.e_head = []
-        self.forward_g = []
-        self.valid_g = []
-
-        self.i = 0
+        self.i = 0  # index at which we save the variables
         self.flag = 0
 
     def get_neighbor(self, subj: torch.Tensor):
@@ -187,9 +179,6 @@ class Context_CP(KBCModel):
         # Gate
         self.g = Sigmoid(self.Uo(lhs*rel) + self.Wo(e_c))
 
-        if self.i > 0 and self.flag % 200:
-            self.valid_g.append(self.g.clone().data.cpu().numpy())  # examine g
-
         gated_e_c = self.g * e_c + (torch.ones((self.chunk_size, 1)).cuda() - self.g) * torch.ones_like(e_c).cuda()
 
         # Get tot_score
@@ -225,9 +214,6 @@ class Context_CP(KBCModel):
         # Gate
         self.g = Sigmoid(self.Uo(lhs * rel) + self.Wo(e_c))
 
-        if self.flag % 1000:
-            self.forward_g.append(self.g.clone().data.cpu().numpy())  # examine g for debugging, delete afterwards
-
         gated_e_c = self.g * e_c + (torch.ones((self.chunk_size, 1)).cuda() - self.g) * torch.ones_like(e_c).cuda()
 
         # Get tot_score
@@ -256,9 +242,6 @@ class Context_CP(KBCModel):
 
         e_c = self.W2(torch.einsum('bm,bmk->bk', alpha, nb_E))
         self.g = Sigmoid(self.Uo(lhs * rel) + self.Wo(e_c))
-
-        if self.i > 0 and self.flag % 50:
-            self.valid_g.append(self.g.clone().data.cpu().numpy())  # examine g
 
         gated_e_c = self.g * e_c + (torch.ones((self.chunk_size, 1)).cuda() - self.g) * torch.ones_like(e_c).cuda()
 
@@ -526,7 +509,7 @@ class Context_ComplEx(KBCModel):
     def __init__(
             self, sizes: Tuple[int, int, int], rank: int, sorted_data:np.ndarray,
             slice_dic: np.ndarray, max_NB: int=50, init_size: float=1e-3,
-            data_name: str='FB15K', ascending = 1
+            data_name: str='FB15K', ascending=1
     ):
         super(Context_ComplEx, self).__init__()
         n_s, n_r, n_o = sizes
@@ -577,10 +560,6 @@ class Context_ComplEx(KBCModel):
         self.sorted_data = sorted_data
         self.slice_dic = slice_dic
         self.max_NB = max_NB
-
-        self.alpha_list = []
-        self.forward_g = []
-        self.valid_g = []
 
         self.i = 0
 
@@ -640,9 +619,6 @@ class Context_ComplEx(KBCModel):
         self.g = Sigmoid((lhs[0]*rel[0]-lhs[1]*rel[1]) @ self.Uo[0] - (lhs[1]*rel[0]+lhs[0]*rel[1]) @ self.Uo[1]
                     + e_c[0] @ self.Wo[0] + self.b_g)
 
-        if self.i > 0 and self.flag % 50:
-            self.valid_g.append(self.g.clone().data.cpu().numpy())  # examine g
-
         gated_e_c = (self.g * e_c[0] + (torch.ones((self.chunk_size, 1)).cuda() - self.g)*torch.ones_like(e_c[0]),
                      self.g * e_c[1])
 
@@ -692,9 +668,6 @@ class Context_ComplEx(KBCModel):
         # calculation of g
         self.g = Sigmoid((lhs[0]*rel[0]-lhs[1]*rel[1])@ self.Uo[0] - (lhs[1]*rel[0]+lhs[0]*rel[1])@ self.Uo[1]
                     + e_c[0] @ self.Wo[0] + self.b_g)
-
-        if self.flag % 1000:
-            self.forward_g.append(self.g.clone().data.cpu().numpy())  # examine g for debugging, delete afterwards
 
         gated_e_c = (self.g * e_c[0] + (torch.ones((self.chunk_size, 1)).cuda() - self.g) * torch.ones_like(e_c[0]),
                      self.g * e_c[1])
@@ -751,9 +724,6 @@ class Context_ComplEx(KBCModel):
         self.g = Sigmoid((lhs[0] * rel[0] - lhs[1] * rel[1]) @ self.Uo[0]
                     - (lhs[1] * rel[0] + lhs[0] * rel[1]) @ self.Uo[1]
                     + e_c[0] @ self.Wo[0] + self.b_g)
-
-        if self.i > 0 and self.flag % 50:
-            self.valid_g.append(self.g.clone().data.cpu().numpy())  # examine g
 
         gated_e_c = (self.g * e_c[0] + (torch.ones((self.chunk_size, 1)).cuda() - self.g) * torch.ones_like(e_c[0]),
                      self.g * e_c[1])
