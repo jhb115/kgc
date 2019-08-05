@@ -596,7 +596,6 @@ class Context_ComplEx(KBCModel):
         for i, each_subj in enumerate(subj):
             _, start_i, end_i = self.slice_dic[each_subj]
             length = end_i - start_i
-            print('length = ', length)
 
             if length > 0:
                 if self.ascending == 1:
