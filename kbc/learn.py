@@ -343,13 +343,9 @@ for e in range(args.max_epochs):
         model.i = 0
         train_results = avg_both(*dataset.eval(model, 'train', 50000))
         model.i = 1
-        # valid_results = avg_both(*dataset.eval(model, 'valid', -1))
 
         print("\n\t TRAIN: ", train_results)
-        # print("\t VALID : ", valid_results)  # change this back
 
-        # Below is Functionality for saving scores but
-        # we switch these off for now (during debugging)
         train_mrr.append(train_results['MRR'])
 
         hits1310 = train_results['hits@[1,3,10]'].numpy()
@@ -357,22 +353,11 @@ for e in range(args.max_epochs):
         train_hit3.append(hits1310[1])
         train_hit10.append(hits1310[2])
 
-        # valid_mrr.append(valid_results['MRR'])
-        #
-        # hits1310 = valid_results['hits@[1,3,10]'].numpy()
-        # valid_hit1.append(hits1310[0])
-        # valid_hit3.append(hits1310[1])
-        # valid_hit10.append(hits1310[2])
-
         np.save(folder_name + '/train_mrr', np.array(train_mrr))
         np.save(folder_name + '/train_hit1', np.array(train_hit1))
         np.save(folder_name + '/train_hit3', np.array(train_hit3))
         np.save(folder_name + '/train_hit10', np.array(train_hit10))
 
-        # np.save(folder_name + '/valid_mrr', np.array(valid_mrr))
-        # np.save(folder_name + '/valid_hit1', np.array(valid_hit1))
-        # np.save(folder_name + '/valid_hit3', np.array(valid_hit3))
-        # np.save(folder_name + '/valid_hit10', np.array(valid_hit10))
 
         results = avg_both(*dataset.eval(model, 'test', -1))
 
@@ -407,7 +392,3 @@ for e in range(args.max_epochs):
 
         test_i += 1
 
-        # if args.model in ['Context_CP', 'Context_ConvE', 'Context_ComplEx']:
-        #     np.save(folder_name + '/forward_g', np.array(model.forward_g))
-        #     np.save(folder_name + '/valid_g', np.array(model.valid_g))
-        #     np.save(folder_name + '/alpha_list', np.array(model.alpha_list))
