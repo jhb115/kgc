@@ -154,7 +154,7 @@ class Context_CP(KBCModel):
                         index_array[i, :] = self.sorted_data[start_i:end_i:hop, 2][:self.max_NB]
                 else:
                     if self.max_NB >= length:
-                        index_array[i, :length] = self.sorted_data[end_i::self.ascending, 2]
+                        index_array[i, :length] = self.sorted_data[end_i:start_i:self.ascending, 2]
 
                     else:  # Need to uniformly truncate
                         hop = int(length / self.max_NB) * self.ascending
@@ -598,19 +598,13 @@ class Context_ComplEx(KBCModel):
             length = end_i - start_i
 
             if length > 0:
-                if self.ascending == 1:
-                    if self.max_NB >= length:
-                        index_array[i, :length] = self.sorted_data[start_i:end_i, 2]
-                    else:  # Need to uniformly truncate
-                        hop = int(length / self.max_NB)
-                        index_array[i, :] = self.sorted_data[start_i:end_i:hop, 2][:self.max_NB]
-                else:
-                    if self.max_NB >= length:
-                        index_array[i, :length] = self.sorted_data[end_i::self.ascending, 2]
-
-                    else:  # Need to uniformly truncate
-                        hop = int(length / self.max_NB) * self.ascending
-                        index_array[i, :] = self.sorted_data[end_i:start_i:hop, 2][:self.max_NB]
+                if self.max_NB >= length:
+                    index_array[i, :length] = self.sorted_data[start_i:end_i, 2]
+                else:  # Need to uniformly truncate
+                    hop = int(length / self.max_NB)
+                    index_array[i, :] = self.sorted_data[start_i:end_i:hop, 2][:self.max_NB]
+                if self.ascending == -1:
+                    index_array[i, :] = index_array[i, :][::-1]
 
         index_tensor = torch.LongTensor(index_array).cuda()
 
