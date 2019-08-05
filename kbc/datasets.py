@@ -95,12 +95,13 @@ class Dataset(object):
                 i += 1
 
             slice_dic = np.array(slice_dic, dtype=np.int64)
-            slice_dic = slice_dic[slice_dic[:, 0].argsort()][:, :3]  # get rid of the last column with neighbor degrees
+            slice_dic = slice_dic[slice_dic[:, 0].argsort()]
 
             nb_degrees = slice_dic[train[:, 2], 3]
             i_train = np.lexsort((nb_degrees, train[:, 0]))
             # sort in terms of degrees of neighbouring nodes first then sort with respect to train id
             train = train[i_train]
+            slice_dic[:,:3]
 
             pickle.dump(train, open(sorted_file_path, 'wb'))
             pickle.dump(slice_dic, open(slice_file_path, 'wb'))
