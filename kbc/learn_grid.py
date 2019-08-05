@@ -13,7 +13,7 @@ import configparser
 import torch
 from torch import optim
 from kbc.datasets import Dataset
-from kbc.models import CP, ComplEx, ConvE, Context_CP, Context_ComplEx
+from kbc.models import CP, ComplEx, Context_CP, Context_ComplEx
 from kbc.regularizers import N2, N3, N4
 from kbc.optimizers import KBCOptimizer
 import os
