@@ -22,12 +22,18 @@ torch.backends.cudnn.benchmark = False
 parser = argparse.ArgumentParser()
 
 datasets = ['FB15K', 'WN', 'WN18RR', 'FB237', 'YAGO3-10']
-parser.add_argument('--dataset', choices=datasets)
+parser.add_argument(
+    '--dataset', choices=datasets
+)
 
 models = ['CP', 'ComplEx', 'ConvE', 'Context_CP', 'Context_ComplEx']
-parser.add_argument('--model', choices=models)
+parser.add_argument(
+    '--model', choices=models
+)
 
-parser.add_argument('--train_no')
+parser.add_argument(
+    '--train_no'
+)
 
 args = parser.parse_args()
 
