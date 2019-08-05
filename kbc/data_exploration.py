@@ -7,7 +7,17 @@ import matplotlib.pyplot as plt
 #%%%
 
 
+import configparser
 
+config_ini = configparser.ConfigParser()
+config_ini['setup'] = {}
+config_ini['train1'] = {}
+
+config_ini['setup']['best model'] = 'train1'
+config_ini['train1']['rank'] = '100'
+
+with open('../../config.ini', 'w') as configfile:
+    config_ini.write(configfile)
 
 #%%%%
 '''
