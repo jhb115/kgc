@@ -351,6 +351,9 @@ for e in range(args.max_epochs):
         train_hit3.append(hits1310[1])
         train_hit10.append(hits1310[2])
 
+        summary_config[train_no]['curr_train_hit10'] = str(hits1310[2])
+        summary_config[train_no]['curr_train_mrr'] = str(train_results['MRR'])
+
         np.save(folder_name + '/train_mrr', np.array(train_mrr))
         np.save(folder_name + '/train_hit1', np.array(train_hit1))
         np.save(folder_name + '/train_hit3', np.array(train_hit3))
@@ -376,13 +379,13 @@ for e in range(args.max_epochs):
         if args.save_pre_train:
             np.save(pre_train_folder + '/test_mrr', np.array(test_mrr))
 
-        config_ini['setup']['max_hit10'] = str(max(np.array(test_hit10)))
-        config_ini['setup']['max_mrr'] = str(max(np.array(test_mrr)))
+        summary_config[train_no]['max_test_hit10'] = str(max(np.array(test_hit10)))
+        summary_config[train_no]['max_test_mrr'] = str(max(np.array(test_mrr)))
 
         config['e'] = e
         pickle.dump(config, open(folder_name + '/config.p', 'wb'))
 
-        config_ini['setup']['e'] = str(e)
+        summary_config[train_no]['e'] = str(e)
 
         with open(folder_name + '/config.ini', 'w') as configfile:
             config_ini.write(configfile)
