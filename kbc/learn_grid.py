@@ -159,19 +159,15 @@ parser.add_argument(
 # Setup parser
 args = parser.parse_args()
 
-
 # Get Dataset
-# maybe we don't need the argument for use_colab
 dataset = Dataset(args.dataset)
 if args.model in ['CP', 'ComplEx', 'ConvE']:  # For non-context model
     unsorted_examples = torch.from_numpy(dataset.get_train().astype('int64'))
     examples = unsorted_examples
-else:  # Get sorted examples for context model
+else:
     sorted_data, slice_dic = dataset.get_sorted_train()
     examples = torch.from_numpy(dataset.get_train().astype('int64'))
 
-
-print(dataset.get_shape())
 model = {
     'CP': lambda: CP(dataset.get_shape(), args.rank, args.init),
     'ComplEx': lambda: ComplEx(dataset.get_shape(), args.rank, args.init),
@@ -217,9 +213,7 @@ def avg_both(mrrs: Dict[str, float], hits: Dict[str, torch.FloatTensor]):
     h = (hits['lhs'] + hits['rhs']) / 2.
     return {'MRR': m, 'hits@[1,3,10]': h}
 
-
 cur_loss = 0
-test_i = 0
 
 hits_name = ['_hits@1', '_hits@3', '_hits@10']
 
@@ -228,23 +222,17 @@ train_hit1 = []
 train_hit3 = []
 train_hit10 = []
 
-valid_mrr = []
-valid_hit1 = []
-valid_hit3 = []
-valid_hit10 = []
-
-
 test_mrr = []
 test_hit1 = []
 test_hit3 = []
 test_hit10 = []
 
-#check if the directory exists
 results_folder = '../results/{}/{}'.format(args.model, args.dataset)
 
 # Load pre-trained embeddings
 if args.save_pre_train == 1:
     pre_train_folder = '../pre_train/{}/{}/{}'.format('Context_' + args.model, args.dataset, str(args.rank))
+
 if args.load_pre_train == 1:
     pre_train_folder = '../pre_train/{}/{}/{}'.format(args.model, args.dataset, str(args.rank))
     if args.model == 'Context_CP':
@@ -256,7 +244,6 @@ if args.load_pre_train == 1:
         model.embeddings[0].load_state_dict(torch.load(pre_train_folder + '/entity.pt'))
         model.embeddings[1].load_state_dict(torch.load(pre_train_folder + '/relation.pt'))
 
-# make appropriate directories and folders for storing the results
 if args.mkdir:
     if not os.path.exists('../results'):
         os.mkdir('../results')
@@ -304,13 +291,19 @@ while os.path.exists(results_folder + '/train' + str(train_no)):
 folder_name = results_folder + '/train' + str(train_no)
 os.mkdir(folder_name)
 
-# Save the configuration file
 config = vars(args)
 
 pickle.dump(config, open(folder_name + '/config.p', 'wb'))
 
+# config_ini -> summary, each train
 config_ini = configparser.ConfigParser()
-config_ini['setup'] = {}
+config_ini['summary'] = {}
+
+
+
+
+
+
 
 for key in config.keys():
     config_ini['setup'][str(key)] = str(config[key])
@@ -391,4 +384,3 @@ for e in range(args.max_epochs):
         with open(folder_name + '/config.ini', 'w') as configfile:
             config_ini.write(configfile)
 
-        test_i += 1

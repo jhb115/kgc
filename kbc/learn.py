@@ -228,12 +228,6 @@ train_hit1 = []
 train_hit3 = []
 train_hit10 = []
 
-valid_mrr = []
-valid_hit1 = []
-valid_hit3 = []
-valid_hit10 = []
-
-
 test_mrr = []
 test_hit1 = []
 test_hit3 = []

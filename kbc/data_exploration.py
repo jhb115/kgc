@@ -19,6 +19,18 @@ config_ini['train1']['rank'] = '100'
 with open('../../config.ini', 'w') as configfile:
     config_ini.write(configfile)
 
+#%%%
+
+loaded_config = configparser.ConfigParser()
+loaded_config.read('../../config.ini')
+
+loaded_config['setup']
+
+
+
+
+
+
 #%%%%
 '''
 class Dataset
