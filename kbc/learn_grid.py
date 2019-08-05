@@ -44,7 +44,7 @@ parser.add_argument(
     help="Dataset in {}".format(datasets)
 )
 
-models = ['CP', 'ComplEx', 'ConvE', 'Context_CP', 'Context_ComplEx']
+models = ['CP', 'ComplEx', 'Context_CP', 'Context_ComplEx']
 parser.add_argument(
     '--model', choices=models,
     help="Model in {}".format(models)
@@ -101,13 +101,6 @@ parser.add_argument(
     help="decay rate for second moment estimate in Adam"
 )
 
-# Parser argument for ConvE
-# Dropout
-parser.add_argument(
-    '--dropouts', default=(0.3, 0.3, 0.3), type=float,
-    help="Dropout rates for each layer in ConvE"
-)
-
 # For Context-based models
 parser.add_argument(
     '--max_NB', default=50, type=int,
@@ -140,7 +133,7 @@ args = parser.parse_args()
 
 # Get Dataset
 dataset = Dataset(args.dataset)
-if args.model in ['CP', 'ComplEx', 'ConvE']:  # For non-context model
+if args.model in ['CP', 'ComplEx']:
     unsorted_examples = torch.from_numpy(dataset.get_train().astype('int64'))
     examples = unsorted_examples
 else:
@@ -150,8 +143,6 @@ else:
 model = {
     'CP': lambda: CP(dataset.get_shape(), args.rank, args.init),
     'ComplEx': lambda: ComplEx(dataset.get_shape(), args.rank, args.init),
-    'ConvE': lambda: ConvE(dataset.get_shape(), args.rank, tuple(args.dropouts), args.use_bias, tuple(args.hw),
-                           tuple(args.kernel_size), args.output_channel),
     'Context_CP': lambda: Context_CP(dataset.get_shape(), args.rank, sorted_data, slice_dic,
                                      max_NB=args.max_NB, init_size=args.init, data_name=args.dataset,
                                      ascending=args.ascending),
@@ -169,9 +160,6 @@ regularizer = {
 
 device = 'cuda'
 model.to(device)
-
-if args.model == "ConvE":
-    model.init()
 
 optim_method = {
     'Adagrad': lambda: optim.Adagrad(model.parameters(), lr=args.learning_rate),
@@ -226,7 +214,7 @@ if args.load_pre_train == 1:
 if args.mkdir:
     if not os.path.exists('../results'):
         os.mkdir('../results')
-    model_list = ['ComplEx', 'ConvE', 'CP', 'Context_CP', 'Context_ComplEx', 'Context_ConvE']
+    model_list = ['ComplEx', 'CP', 'Context_CP', 'Context_ComplEx']
     dataset_list = ['FB15K', 'FB237', 'WN', 'WN18RR', 'YAGO3-10']
 
     for each_model in model_list:
@@ -254,7 +242,7 @@ if args.mkdir:
         if not os.path.exists('../pre_train'):
             os.mkdir('../pre_train')
 
-        model_list = ['ComplEx', 'ConvE', 'CP']
+        model_list = ['ComplEx', 'CP']
         dataset_list = ['FB15K', 'FB237', 'WN', 'WN18RR', 'YAGO3-10']
 
         for each_model in model_list:
