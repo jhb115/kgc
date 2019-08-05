@@ -262,8 +262,11 @@ if args.mkdir:
             if not os.path.exists(folder_name + '/summary_config.ini'):
                 # make config summary file
                 summary_config = configparser.ConfigParser()
-                summary_config['summary'] = {'model': each_model, 'dataset': each_data}
-                # save the summary config
+                summary_config['summary'] = {'model': each_model,
+                                             'dataset': each_data,
+                                             'best_mrr': '0',
+                                             'best_hits@10': '0'}
+
                 with open(folder_name + '/summary_config.ini', 'w') as configfile:
                     summary_config.write(configfile)
 
@@ -283,13 +286,10 @@ if args.mkdir:
             for each_data in dataset_list:
                 if not os.path.exists('{}/{}'.format(folder_name, each_data)):
                     os.mkdir('{}/{}'.format(folder_name, each_data))
-                # make a summary config
 
                 if not os.path.exists(folder_name + '/summary_config.ini'):
-                    # make config summary file
                     summary_config = configparser.ConfigParser()
                     summary_config['summary'] = {'model': each_model, 'dataset': each_data}
-                    # save the summary config
                     with open(folder_name + '/summary_config.ini', 'w') as configfile:
                         summary_config.write(configfile)
 
@@ -317,7 +317,7 @@ pickle.dump(config, open(folder_name + '/config.p', 'wb'))
 for key in config.keys():
     summary_config[train_no][str(key)] = str(config[key])
 
-summary_config['summary']['Currently running experiment'] = '{} on {}'.format(args.model, args.dataset)
+summary_config['summary']['Currently_running_experiment'] = '{} on {}'.format(args.model, args.dataset)
 
 with open(folder_name + '/summary_config.ini', 'w') as configfile:
     summary_config.write(configfile)
@@ -381,8 +381,15 @@ for e in range(args.max_epochs):
         if args.save_pre_train:
             np.save(pre_train_folder + '/test_mrr', np.array(test_mrr))
 
-        summary_config[train_no]['max_test_hit10'] = str(max(np.array(test_hit10)))
-        summary_config[train_no]['max_test_mrr'] = str(max(np.array(test_mrr)))
+        max_test_mrr = max(np.array(test_mrr))
+        max_test_hits = max(np.array(test_hit10))
+        summary_config[train_no]['max_test_hit10'] = str(max_test_hits)
+        summary_config[train_no]['max_test_mrr'] = str(max_test_mrr)
+
+        if max_test_mrr > float(summary_config['summary']['best_mrr']):
+            summary_config['summary']['best_train_no'] = str(train_no)
+            summary_config['summary']['best_mrr'] = str(max_test_mrr)
+            summary_config['summary']['best_hits@10'] = str(max_test_hits)
 
         config['e'] = e
         pickle.dump(config, open(folder_name + '/config.p', 'wb'))
