@@ -6,18 +6,6 @@ import matplotlib.pyplot as plt
 
 #%%%
 
-dataset = Dataset('WN18RR')
-
-#%%%
-
-train, slice_dic = dataset.get_sorted_train()
-
-
-#%%%
-print(train[0:27])
-print([i for i in train[0:27, 2]])
-print([slice_dic[i, 2] - slice_dic[i, 1] for i in train[0:27, 2]])
-
 
 
 
