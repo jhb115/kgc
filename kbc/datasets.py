@@ -80,18 +80,27 @@ class Dataset(object):
 
                 if prev_ent != curr_ent:
                     while ent_idx_list[len(slice_dic) + 1] != curr_ent:
-                        slice_dic.append([ent_idx_list[len(slice_dic) + 1], start, start])
-                    slice_dic.append([prev_ent, start, i])
+                        # slice_dic.append([ent_idx_list[len(slice_dic) + 1], start, start])
+                        slice_dic.append([ent_idx_list[len(slice_dic) + 1], start, start, 0])
+
+                    # slice_dic.append([prev_ent, start, i])
+                    slice_dic.append([prev_ent, start, i, i - start])  # slice_dic[i] == (subject, start, end, degree)
                     start = i
                     ent_idx += 1
 
                 if i == len(train) - 1:
-                    slice_dic.append([curr_ent, start, i + 1])
+                    # slice_dic.append([curr_ent, start, i + 1])
+                    slice_dic.append([curr_ent, start, i+1, i+1 - start])
 
                 i += 1
 
             slice_dic = np.array(slice_dic, dtype=np.int64)
-            slice_dic = slice_dic[slice_dic[:, 0].argsort()]
+            slice_dic = slice_dic[slice_dic[:, 0].argsort()][:, :3]  # get rid of the last column with neighbor degrees
+
+            nb_degrees = slice_dic[train[:, 2], 3]
+            i_train = np.lexsort((nb_degrees, train[:, 0]))
+            # sort in terms of degrees of neighbouring nodes first then sort with respect to train id
+            train = train[i_train]
 
             pickle.dump(train, open(sorted_file_path, 'wb'))
             pickle.dump(slice_dic, open(slice_file_path, 'wb'))

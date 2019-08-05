@@ -17,7 +17,7 @@ file_type = ['train', 'valid', 'test']
 for each_data in data_list:
 
     print('\n{}'.format(each_data))
-    mydata = Dataset(each_data, use_colab = False)
+    mydata = Dataset(each_data)
 
     train = mydata.get_train()
     org_train = mydata.data['train']
