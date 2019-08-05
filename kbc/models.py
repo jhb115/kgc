@@ -606,7 +606,7 @@ class Context_ComplEx(KBCModel):
                         index_array[i, :] = self.sorted_data[start_i:end_i:hop, 2][:self.max_NB]
                 else:
                     if self.max_NB >= length:
-                        index_array[i, :length] = self.sorted_data[end_i:start_i:self.ascending, 2]
+                        index_array[i, :length] = self.sorted_data[end_i::self.ascending, 2]
 
                     else:  # Need to uniformly truncate
                         hop = int(length / self.max_NB) * self.ascending
