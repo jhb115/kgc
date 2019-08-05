@@ -178,9 +178,11 @@ model = {
     'ConvE': lambda: ConvE(dataset.get_shape(), args.rank, tuple(args.dropouts), args.use_bias, tuple(args.hw),
                            tuple(args.kernel_size), args.output_channel),
     'Context_CP': lambda: Context_CP(dataset.get_shape(), args.rank, sorted_data, slice_dic,
-                                     max_NB=args.max_NB, init_size=args.init, data_name=args.dataset),
+                                     max_NB=args.max_NB, init_size=args.init, data_name=args.dataset,
+                                     ascending=args.ascending),
     'Context_ComplEx': lambda: Context_ComplEx(dataset.get_shape(), args.rank, sorted_data, slice_dic,
-                                               max_NB=args.max_NB, init_size=args.init, data_name=args.dataset)
+                                               max_NB=args.max_NB, init_size=args.init, data_name=args.dataset,
+                                               ascending=args.ascending)
 }[args.model]()
 
 regularizer = {
@@ -317,7 +319,6 @@ for key in config.keys():
 # Flag that we use batch-norm and dropout
 config_ini['setup']['only dropout no batch norm'] = 'True'
 config_ini['setup']['product score function'] = 'True'
-config_ini['setup']['use_ascending_order_NB'] = 'True'
 
 with open(folder_name + '/config.ini', 'w') as configfile:
     config_ini.write(configfile)

@@ -147,9 +147,9 @@ class Context_CP(KBCModel):
 
             if length > 0:
                 if self.max_NB > length:
-                    index_array[i, :length] = self.sorted_data[start_i:end_i, 2]
+                    index_array[i, :length] = self.sorted_data[start_i:end_i: self.ascending, 2]
                 else:
-                    hop = int(length / self.max_NB)
+                    hop = int(length / self.max_NB) * self.ascending
                     index_array[i, :] = self.sorted_data[start_i:start_i + self.max_NB:hop, 2]
 
         # Convert index_array into a long tensor for indexing the embedding.
@@ -591,7 +591,7 @@ class Context_ComplEx(KBCModel):
 
             if length > 0:
                 if self.max_NB >= length:
-                    index_array[i, :length] = self.sorted_data[start_i:end_i, 2]
+                    index_array[i, :length] = self.sorted_data[start_i:end_i:self.ascending, 2]
                 else:  # Need to uniformly truncate
                     hop = int(length / self.max_NB) * self.ascending
                     index_array[i, :] = self.sorted_data[start_i:start_i+self.max_NB:hop, 2]
