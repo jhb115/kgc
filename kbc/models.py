@@ -126,9 +126,6 @@ class Context_CP(KBCModel):
         self.slice_dic = slice_dic
         self.max_NB = max_NB
 
-        self.i = 0  # index at which we save the variables
-        self.flag = 0
-
     def get_neighbor(self, subj: torch.Tensor):
         # return neighbor (N_subject, N_nb_max, k)
         index_array = np.zeros(shape=(len(subj), self.max_NB), dtype=np.int32)
@@ -560,8 +557,6 @@ class Context_ComplEx(KBCModel):
         self.sorted_data = sorted_data
         self.slice_dic = slice_dic
         self.max_NB = max_NB
-
-        self.i = 0
 
     def get_neighbor(self, subj: torch.Tensor):
         index_array = np.zeros(shape=(len(subj), self.max_NB), dtype=np.int32)
