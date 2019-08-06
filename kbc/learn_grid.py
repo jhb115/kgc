@@ -303,30 +303,27 @@ if args.load_pre_train == 1:
             pre_train_optimizer = KBCOptimizer(pre_train_model, pre_train_regularizer, pre_train_optim,
                                                pre_train_args['batch_size'])
 
-# We load our summary configuration file:
+# summary_config is config file for actual model
 summary_config = configparser.ConfigParser()
-summary_config.read('{}/summary_config.ini'.format(results_folder))
+summary_config.read('../results/{}/{}/summary_config.ini'.format(args.model, args.dataset))
 
 train_no = 1
 
-while os.path.exists(results_folder + '/train' + str(train_no)):
+while os.path.exists('../results/{}/{}/train{}'.format(args.model, args.dataset, str(train_no))):
     train_no += 1
 
 train_no = 'train' + str(train_no)
-folder_name = '{}/{}'.format(results_folder, train_no)
-os.mkdir(folder_name)
+os.mkdir('../results/{}/{}/{}'.format(args.model, args.dataset, train_no))
+config = vars(args)
+pickle.dump(config, open('{}/{}/config.p'.format(results_folder, train_no), 'wb'))
 
 summary_config[train_no] = {}
-
-config = vars(args)
-pickle.dump(config, open(folder_name + '/config.p', 'wb'))
-
 for key in config.keys():
     summary_config[train_no][str(key)] = str(config[key])
 
 summary_config['summary']['Currently_running_experiment'] = '{} on {}'.format(args.model, args.dataset)
 
-with open(folder_name + '/summary_config.ini', 'w') as configfile:
+with open('../results/{}/{}/summary_config.ini'.format(args.model, args.dataset), 'w') as configfile:
     summary_config.write(configfile)
 
 
