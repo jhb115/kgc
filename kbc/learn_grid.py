@@ -487,6 +487,9 @@ for e in range(args.max_epochs):
         summary_config[train_no]['max_test_hit10'] = str(max_test_hits)
         summary_config[train_no]['max_test_mrr'] = str(max_test_mrr)
 
+        summary_config[train_no]['curr_test_hit10'] = str(hits1310[2])
+        summary_config[train_no]['curr_test_mrr'] = str(results['MRR'])
+
         if max_test_mrr >= float(summary_config['summary']['best_mrr']):
             best_model_flag = 1
             summary_config['summary']['best_train_no'] = str(train_no)
