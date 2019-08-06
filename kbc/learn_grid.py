@@ -248,6 +248,7 @@ if args.load_pre_train == 1:
 
     if not os.path.exists(pre_train_folder):
         os.mkdir(pre_train_folder)
+        run_pre_train_flag = 1
 
     if args.model == 'Context_CP':
         if os.path.exists(pre_train_folder + 'lhs.pt'):
@@ -332,14 +333,13 @@ with open('../results/{}/{}/summary_config.ini'.format(args.model, args.dataset)
 if run_pre_train_flag:
     pre_train_config = configparser.ConfigParser()
     pre_train_config_folder = '../pre_train/{}/{}'.format(args.model, args.dataset)
-    if os.path.exists(pre_train_config_folder):
-        pre_train_config.read(pre_train_config_folder + '/summary_config.ini')
+    pre_train_config.read(pre_train_config_folder + '/summary_config.ini')
 
     # For each dataset and for each model
     pre_train_config[train_no] = {}
 
     for key in pre_train_args:
-        pre_train_config[train_no][str(key)] = str(pre_train_args['key'])
+        pre_train_config[train_no][str(key)] = str(pre_train_args[key])
 
     with open(pre_train_config_folder + '/summary_config.ini', 'w') as configfile:
         pre_train_config.write(configfile)
@@ -411,7 +411,6 @@ if run_pre_train_flag:
 
     elif args.model == 'Context_ComplEx':
         if os.path.exists(pre_train_folder + 'entity.pt'):
-            # model.embeddings = torch.load(pre_train_folder + '/embeddings.pt')
             model.embeddings[0].load_state_dict(torch.load(pre_train_folder + '/entity.pt'))
             model.embeddings[1].load_state_dict(torch.load(pre_train_folder + '/relation.pt'))
 
@@ -441,21 +440,11 @@ for e in range(args.max_epochs):
 
     if (e + 1) % args.valid == 0 or (e+1) == args.max_epochs:
 
-        if args.save_pre_train:  # save only the embeddings (for pre-training)
-            if args.model == 'CP':
-                torch.save(model.lhs.state_dict(), pre_train_folder + '/lhs.pt')
-                torch.save(model.rel.state_dict(), pre_train_folder + '/rel.pt')
-                torch.save(model.rhs.state_dict(), pre_train_folder + '/rhs.pt')
-            elif args.model == 'ComplEx':
-                torch.save(model.embeddings[0].state_dict(), pre_train_folder+'/entity.pt')
-                torch.save(model.embeddings[1].state_dict(), pre_train_folder+'/relation.pt')
-
         train_results = avg_both(*dataset.eval(model, 'train', 50000))
 
         if best_model_flag == 1 and ((e+1) % (args.valid*3) == 0):
             forward_g.append(model.g.clone().data.cpu().numpy())
             forward_alpha.append(model.alpha.clone().data.cpu().numpy())
-
 
         print("\n\t TRAIN: ", train_results)
 
@@ -468,6 +457,8 @@ for e in range(args.max_epochs):
 
         summary_config[train_no]['curr_train_hit10'] = str(hits1310[2])
         summary_config[train_no]['curr_train_mrr'] = str(train_results['MRR'])
+
+        folder_name = '../results/{}/{}/{}'.format(args.model, args.dataset, train_no)
 
         np.save(folder_name + '/train_mrr', np.array(train_mrr))
         np.save(folder_name + '/train_hit1', np.array(train_hit1))
@@ -490,9 +481,6 @@ for e in range(args.max_epochs):
         np.save(folder_name + '/test_hit1', np.array(test_hit1))
         np.save(folder_name + '/test_hit3', np.array(test_hit3))
         np.save(folder_name + '/test_hit10', np.array(test_hit10))
-
-        if args.save_pre_train:
-            np.save(pre_train_folder + '/test_mrr', np.array(test_mrr))
 
         max_test_mrr = max(np.array(test_mrr))
         max_test_hits = max(np.array(test_hit10))
