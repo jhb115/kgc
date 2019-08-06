@@ -255,8 +255,6 @@ if args.load_pre_train == 1:
             model.rhs.load_state_dict(torch.load(pre_train_folder + '/rhs.pt'))
         else:
             run_pre_train_flag = 1
-            # Does not have a pre-trained embedding. Need to run pre-training CP
-            # This is different for each dataset
             pre_train_args = {'model': 'CP', 'regularizer': 'N3', 'max_epoch': 80, 'batch_size': 300,
                               'save_pre_train': 1, 'learning_rate': 0.1, 'reg': 0.1, 'dataset': args.dataset,
                               'rank': args.rank, 'init': args.init}
@@ -398,6 +396,11 @@ if run_pre_train_flag:
         torch.save(pre_train_model.embeddings[0].state_dict(), pre_train_folder + '/entity.pt')
         torch.save(pre_train_model.embeddings[1].state_dict(), pre_train_folder + '/relation.pt')
 
+    del pre_train_dataset
+    del unsorted_examples
+    del pre_train_model
+    del pre_train_optim
+    del pre_train_optimizer
 
 # Relevant variables to store
 forward_g = []
