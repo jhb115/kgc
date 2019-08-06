@@ -191,14 +191,14 @@ def avg_both(mrrs: Dict[str, float], hits: Dict[str, torch.FloatTensor]):
 
 cur_loss = 0
 
-results_folder = '../results/{}/{}'.format(args.model, args.dataset)
-
+config_folder = '../results/{}/{}'.format(args.model, args.dataset)
 
 if not os.path.exists('../results'):
     os.mkdir('../results')
 model_list = ['ComplEx', 'CP', 'Context_CP', 'Context_ComplEx']
 dataset_list = ['FB15K', 'FB237', 'WN', 'WN18RR', 'YAGO3-10']
 
+# For actual model
 for each_model in model_list:
     if not os.path.exists('../results/{}'.format(each_model)):
         os.mkdir('../results/{}'.format(each_model))
@@ -219,7 +219,7 @@ for each_model in model_list:
             with open(folder_name + '/summary_config.ini', 'w') as configfile:
                 summary_config.write(configfile)
 
-# this is where the pre-trained emebedding will be saved
+# Configuration for pre-training
 if not os.path.exists('../pre_train'):
     os.mkdir('../pre_train')
 
@@ -241,13 +241,14 @@ for each_model in model_list:
             with open('{}/{}/{}'.format(folder_name, each_data, 'summary_config.ini'), 'w') as configfile:
                 summary_config.write(configfile)
 
-if not os.path.exists('{}/{}/{}'.format(folder_name, each_data, str(args.rank))):
-    os.mkdir('{}/{}/{}'.format(folder_name, each_data, str(args.rank)))
-
 run_pre_train_flag = 0
 
 if args.load_pre_train == 1:
     pre_train_folder = '../pre_train/{}/{}/{}'.format(args.model, args.dataset, str(args.rank))
+
+    if not os.path.exists(pre_train_folder):
+        os.mkdir(pre_train_folder)
+
     if args.model == 'Context_CP':
         if os.path.exists(pre_train_folder + 'lhs.pt'):
             model.lhs.load_state_dict(torch.load(pre_train_folder + '/lhs.pt'))
@@ -315,7 +316,7 @@ while os.path.exists('../results/{}/{}/train{}'.format(args.model, args.dataset,
 train_no = 'train' + str(train_no)
 os.mkdir('../results/{}/{}/{}'.format(args.model, args.dataset, train_no))
 config = vars(args)
-pickle.dump(config, open('{}/{}/config.p'.format(results_folder, train_no), 'wb'))
+pickle.dump(config, open('../results/{}/{}/{}/config.p'.format(args.model, args.dataset, train_no), 'wb'))
 
 summary_config[train_no] = {}
 for key in config.keys():
@@ -346,6 +347,9 @@ if run_pre_train_flag:
 
 # Run pre-training
 if run_pre_train_flag:
+
+    pre_train_folder = '../pre_train/{}/{}/{}'.format(args.model, args.dataset, str(args.rank))
+
     train_mrr = []
     train_hit10 = []
     test_mrr = []
@@ -369,10 +373,10 @@ if run_pre_train_flag:
 
             pre_train_save_folder = '../pre_train/{}/{}/{}'.format(args.model, args.dataset, str(args.rank))
 
-            np.save('{}/{}'.format(pre_train_save_folder, 'train_mrr'), np.array(train_mrr))
-            np.save('{}/{}'.format(pre_train_save_folder, 'train_hit10'), np.array(train_hit10))
-            np.save('{}/{}'.format(pre_train_save_folder, 'test_mrr'), np.array(test_mrr))
-            np.save('{}/{}'.format(pre_train_save_folder, 'test_hit10'), np.array(test_hit10))
+            np.save('{}/{}'.format(pre_train_folder, 'train_mrr'), np.array(train_mrr))
+            np.save('{}/{}'.format(pre_train_folder, 'train_hit10'), np.array(train_hit10))
+            np.save('{}/{}'.format(pre_train_folder, 'test_mrr'), np.array(test_mrr))
+            np.save('{}/{}'.format(pre_train_folder, 'test_hit10'), np.array(test_hit10))
 
     # Need to save the embedding at the end
 
@@ -398,8 +402,6 @@ if run_pre_train_flag:
     del pre_train_model
     del pre_train_optim
     del pre_train_optimizer
-
-    pre_train_folder = '../pre_train/{}/{}/{}'.format(args.model, args.dataset, str(args.rank))
 
     if args.model == 'Context_CP':
         if os.path.exists(pre_train_folder + 'lhs.pt'):
@@ -444,8 +446,6 @@ for e in range(args.max_epochs):
                 torch.save(model.lhs.state_dict(), pre_train_folder + '/lhs.pt')
                 torch.save(model.rel.state_dict(), pre_train_folder + '/rel.pt')
                 torch.save(model.rhs.state_dict(), pre_train_folder + '/rhs.pt')
-                with open(pre_train_folder + '/summary_config', 'w') as configfile:
-                    summary_config.write(configfile)
             elif args.model == 'ComplEx':
                 torch.save(model.embeddings[0].state_dict(), pre_train_folder+'/entity.pt')
                 torch.save(model.embeddings[1].state_dict(), pre_train_folder+'/relation.pt')
