@@ -19,9 +19,7 @@ from kbc.optimizers import KBCOptimizer
 import os
 import numpy as np
 
-# python kbc/learn.py --dataset 'FB15K' --model 'Context_CP' --regularizer 'N3' --max_epoch 1 --max_NB 50 --mkdir True
-
-#For reproducilibility
+# For reproducilibility
 np.random.seed(0)
 torch.manual_seed(0)
 torch.backends.cudnn.deterministic = True
@@ -29,11 +27,11 @@ torch.backends.cudnn.benchmark = False
 
 '''
 List of Hyperparameters to tune:
-rank = [100, 200, 500]
-batch_size = [100, 500]
-learning_rate = [0.1, 0.01]
+rank = [100, 200, 400]
+batch_size = [300]
+learning_rate = [0.05]
 g_weight = [0, 0.03]
-max_NB = [10, 50, 150]
+max_NB = [10, 100]
 '''
 
 big_datasets = ['FB15K', 'WN', 'WN18RR', 'FB237', 'YAGO3-10']
@@ -178,6 +176,7 @@ optim_method = {
 
 optimizer = KBCOptimizer(model, regularizer, optim_method, args.batch_size)
 
+
 def avg_both(mrrs: Dict[str, float], hits: Dict[str, torch.FloatTensor]):
     """
     aggregate metrics for missing lhs and rhs
@@ -188,6 +187,7 @@ def avg_both(mrrs: Dict[str, float], hits: Dict[str, torch.FloatTensor]):
     m = (mrrs['lhs'] + mrrs['rhs']) / 2.
     h = (hits['lhs'] + hits['rhs']) / 2.
     return {'MRR': m, 'hits@[1,3,10]': h}
+
 
 cur_loss = 0
 
@@ -400,4 +400,3 @@ if (max(np.array(test_mrr)) == np.array(test_mrr)[-1]) and (abs(np.array(test_mr
 
     with open(folder_name + '/summary_config.ini', 'w') as configfile:
         summary_config.write(configfile)
-
