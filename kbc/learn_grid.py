@@ -257,7 +257,7 @@ if args.load_pre_train == 1:
             model.rhs.load_state_dict(torch.load(pre_train_folder + '/rhs.pt'))
         else:
             run_pre_train_flag = 1
-            pre_train_args = {'model': 'CP', 'regularizer': 'N3', 'max_epoch': 3, 'batch_size': 300,
+            pre_train_args = {'model': 'CP', 'regularizer': 'N3', 'max_epoch': 80, 'batch_size': 300,
                               'save_pre_train': 1, 'learning_rate': 0.1, 'reg': 0.1, 'dataset': args.dataset,
                               'rank': args.rank, 'init': args.init}
 
@@ -280,7 +280,7 @@ if args.load_pre_train == 1:
             run_pre_train_flag = 1
             # Does not have a pre-trained embedding. Need to run pre-training ComplEx
 
-            pre_train_args = {'model': 'ComplEx', 'regularizer': 'N3', 'max_epoch': 3, 'save_pre_train': 1}
+            pre_train_args = {'model': 'ComplEx', 'regularizer': 'N3', 'max_epoch': 80, 'save_pre_train': 1}
 
             if args.dataset == 'FB237':
                 pre_train_args['learning_rate'] = 0.1
