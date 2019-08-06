@@ -82,8 +82,8 @@ def main(argv):
 #$ -o /dev/null
 #$ -e /dev/null
 #$ -t 1-{}
-#$ -l tmem=8G
-#$ -l h_rt=8:00:00
+#$ -l tmem=9G
+#$ -l h_rt=90:00:00
 #$ -l gpu=1
 
 conda activate gpu
