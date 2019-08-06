@@ -191,60 +191,58 @@ def avg_both(mrrs: Dict[str, float], hits: Dict[str, torch.FloatTensor]):
 
 cur_loss = 0
 
-
 results_folder = '../results/{}/{}'.format(args.model, args.dataset)
 
-if args.mkdir:
-    if not os.path.exists('../results'):
-        os.mkdir('../results')
-    model_list = ['ComplEx', 'CP', 'Context_CP', 'Context_ComplEx']
-    dataset_list = ['FB15K', 'FB237', 'WN', 'WN18RR', 'YAGO3-10']
 
-    for each_model in model_list:
-        if not os.path.exists('../results/{}'.format(each_model)):
-            os.mkdir('../results/{}'.format(each_model))
+if not os.path.exists('../results'):
+    os.mkdir('../results')
+model_list = ['ComplEx', 'CP', 'Context_CP', 'Context_ComplEx']
+dataset_list = ['FB15K', 'FB237', 'WN', 'WN18RR', 'YAGO3-10']
 
-        for each_data in dataset_list:
-            folder_name = '../results/{}/{}'.format(each_model, each_data)
-            if not os.path.exists(folder_name):
-                os.mkdir('../results/{}/{}'.format(each_model, each_data))
-            # check if the summary configuration file exists or not,
-            if not os.path.exists(folder_name + '/summary_config.ini'):
-                # make config summary file
-                summary_config = configparser.ConfigParser()
-                summary_config['summary'] = {'model': each_model,
-                                             'dataset': each_data,
-                                             'best_mrr': '0',
-                                             'best_hits@10': '0'}
+for each_model in model_list:
+    if not os.path.exists('../results/{}'.format(each_model)):
+        os.mkdir('../results/{}'.format(each_model))
 
-                with open(folder_name + '/summary_config.ini', 'w') as configfile:
-                    summary_config.write(configfile)
-
-    # this is where the pre-trained emebedding will be saved
-    if not os.path.exists('../pre_train'):
-        os.mkdir('../pre_train')
-
-    model_list = ['ComplEx', 'CP']
-    dataset_list = ['FB15K', 'FB237', 'WN', 'WN18RR', 'YAGO3-10']
-
-    for each_model in model_list:
-        folder_name = '../pre_train/{}'.format('Context_'+each_model)
+    for each_data in dataset_list:
+        folder_name = '../results/{}/{}'.format(each_model, each_data)
         if not os.path.exists(folder_name):
-            os.mkdir(folder_name)
+            os.mkdir('../results/{}/{}'.format(each_model, each_data))
+        # check if the summary configuration file exists or not,
+        if not os.path.exists(folder_name + '/summary_config.ini'):
+            # make config summary file
+            summary_config = configparser.ConfigParser()
+            summary_config['summary'] = {'model': each_model,
+                                         'dataset': each_data,
+                                         'best_mrr': '0',
+                                         'best_hits@10': '0'}
 
-        for each_data in dataset_list:
-            if not os.path.exists('{}/{}'.format(folder_name, each_data)):
-                os.mkdir('{}/{}'.format(folder_name, each_data))
+            with open(folder_name + '/summary_config.ini', 'w') as configfile:
+                summary_config.write(configfile)
 
-            if not os.path.exists(folder_name + '/summary_config.ini'):
-                summary_config = configparser.ConfigParser()
-                summary_config['summary'] = {'model': each_model, 'dataset': each_data}
-                with open(folder_name + '/summary_config.ini', 'w') as configfile:
-                    summary_config.write(configfile)
+# this is where the pre-trained emebedding will be saved
+if not os.path.exists('../pre_train'):
+    os.mkdir('../pre_train')
 
-    if not os.path.exists('{}/{}/{}'.format(folder_name, each_data, str(args.rank))):
-        os.mkdir('{}/{}/{}'.format(folder_name, each_data, str(args.rank)))
+model_list = ['ComplEx', 'CP']
+dataset_list = ['FB15K', 'FB237', 'WN', 'WN18RR', 'YAGO3-10']
 
+for each_model in model_list:
+    folder_name = '../pre_train/{}'.format('Context_'+each_model)
+    if not os.path.exists(folder_name):
+        os.mkdir(folder_name)
+
+    for each_data in dataset_list:
+        if not os.path.exists('{}/{}'.format(folder_name, each_data)):
+            os.mkdir('{}/{}'.format(folder_name, each_data))
+
+        if not os.path.exists('{}/{}/{}'.format(folder_name, each_data, 'summary_config.ini')):
+            summary_config = configparser.ConfigParser()
+            summary_config['summary'] = {'model': each_model, 'dataset': each_data}
+            with open('{}/{}/{}'.format(folder_name, each_data, 'summary_config.ini'), 'w') as configfile:
+                summary_config.write(configfile)
+
+if not os.path.exists('{}/{}/{}'.format(folder_name, each_data, str(args.rank))):
+    os.mkdir('{}/{}/{}'.format(folder_name, each_data, str(args.rank)))
 
 run_pre_train_flag = 0
 
