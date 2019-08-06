@@ -191,26 +191,8 @@ def avg_both(mrrs: Dict[str, float], hits: Dict[str, torch.FloatTensor]):
 
 cur_loss = 0
 
-hits_name = ['_hits@1', '_hits@3', '_hits@10']
-
-train_mrr = []
-train_hit1 = []
-train_hit3 = []
-train_hit10 = []
-
-test_mrr = []
-test_hit1 = []
-test_hit3 = []
-test_hit10 = []
 
 results_folder = '../results/{}/{}'.format(args.model, args.dataset)
-
-# Load pre-trained embeddings
-
-run_pre_train_flag = 0
-
-if args.save_pre_train == 1:
-    pre_train_folder = '../pre_train/{}/{}/{}'.format('Context_' + args.model, args.dataset, str(args.rank))
 
 if args.mkdir:
     if not os.path.exists('../results'):
@@ -264,14 +246,16 @@ if args.mkdir:
         os.mkdir('{}/{}/{}'.format(folder_name, each_data, str(args.rank)))
 
 
+run_pre_train_flag = 0
+
 if args.load_pre_train == 1:
     pre_train_folder = '../pre_train/{}/{}/{}'.format(args.model, args.dataset, str(args.rank))
     if args.model == 'Context_CP':
-        try:
+        if os.path.exists(pre_train_folder + 'lhs.pt'):
             model.lhs.load_state_dict(torch.load(pre_train_folder + '/lhs.pt'))
             model.rel.load_state_dict(torch.load(pre_train_folder + '/rel.pt'))
             model.rhs.load_state_dict(torch.load(pre_train_folder + '/rhs.pt'))
-        except:
+        else:
             run_pre_train_flag = 1
             # Does not have a pre-trained embedding. Need to run pre-training CP
             # This is different for each dataset
@@ -289,14 +273,12 @@ if args.load_pre_train == 1:
             pre_train_optimizer = KBCOptimizer(pre_train_model, pre_train_regularizer, pre_train_optim,
                                                pre_train_args['batch_size'])
 
-            # Save the configuration detilas in pre_train_args
-
     elif args.model == 'Context_ComplEx':
-        try:
+        if os.path.exists(pre_train_folder + 'entity.pt'):
             # model.embeddings = torch.load(pre_train_folder + '/embeddings.pt')
             model.embeddings[0].load_state_dict(torch.load(pre_train_folder + '/entity.pt'))
             model.embeddings[1].load_state_dict(torch.load(pre_train_folder + '/relation.pt'))
-        except:
+        else:
             run_pre_train_flag = 1
             # Does not have a pre-trained embedding. Need to run pre-training ComplEx
 
@@ -325,27 +307,6 @@ if args.load_pre_train == 1:
             pre_train_optimizer = KBCOptimizer(pre_train_model, pre_train_regularizer, pre_train_optim,
                                                pre_train_args['batch_size'])
 
-if run_pre_train_flag == 1:
-    for e in range(args.max_epochs):
-        cur_loss = optimizer.epoch(examples)
-
-        if (e + 1) % args.valid == 0 or (e + 1) == args.max_epochs:
-
-            if pre_train_args['model'] == 'CP':
-                torch.save(pre_train_model.lhs.state_dict(), pre_train_folder + '/lhs.pt')
-                torch.save(pre_train_model.rel.state_dict(), pre_train_folder + '/rel.pt')
-                torch.save(model.rhs.state_dict(), pre_train_folder + '/rhs.pt')
-            elif pre_train_args['model'] == 'ComplEx':
-                torch.save(pre_train_model.embeddings[0].state_dict(), pre_train_folder + '/entity.pt')
-                torch.save(pre_train_model.embeddings[1].state_dict(), pre_train_folder + '/relation.pt')
-
-            results = avg_both(*dataset.eval(model, 'test', -1))
-            results['MRR']
-            hits1310 = results['hits@[1,3,10]'].numpy()
-
-
-
-
 # We load our summary configuration file:
 summary_config = configparser.ConfigParser()
 summary_config.read('{}/summary_config.ini'.format(results_folder))
@@ -373,12 +334,91 @@ with open(folder_name + '/summary_config.ini', 'w') as configfile:
     summary_config.write(configfile)
 
 
+# For pre-training configuration
+if run_pre_train_flag:
+    pre_train_config = configparser.ConfigParser()
+    pre_train_config_folder = '../pre_train/{}/{}'.format(args.model, args.dataset)
+    if os.path.exists(pre_train_config_folder):
+        pre_train_config.read(pre_train_config_folder + '/summary_config.ini')
+
+    # For each dataset and for each model
+    pre_train_config[train_no] = {}
+
+    for key in pre_train_args:
+        pre_train_config[train_no][str(key)] = str(pre_train_args['key'])
+
+    with open(pre_train_config_folder + '/summary_config.ini', 'w') as configfile:
+        pre_train_config.write(configfile)
+
+
+# Run pre-training
+if run_pre_train_flag:
+    train_mrr = []
+    train_hit10 = []
+    test_mrr = []
+    test_hit10 = []
+
+    pre_train_config['train_no']['best_mrr'] = str(0)
+
+    for e in range(args.max_epochs):
+        cur_loss = optimizer.epoch(examples)
+
+        if (e + 1) % args.valid == 0 or (e + 1) == args.max_epochs:
+            train_results = avg_both(*dataset.eval(model, 'train', 50000))
+            train_mrr.append(train_results['MRR'])
+            hits1310 = train_results['hits@[1,3,10]'].numpy()
+            train_hit10.append(hits1310[2])
+
+            results = avg_both(*dataset.eval(model, 'test', -1))
+            test_mrr.append(results['MRR'])
+            hits1310 = results['hits@[1,3,10]'].numpy()
+            test_hit10.append(hits1310[2])
+
+            pre_train_save_folder = '../pre_train/{}/{}/{}'.format(args.model, args.dataset, str(args.rank))
+
+            np.save('{}/{}'.format(pre_train_save_folder, 'train_mrr'), np.array(train_mrr))
+            np.save('{}/{}'.format(pre_train_save_folder, 'train_hit10'), np.array(train_hit10))
+            np.save('{}/{}'.format(pre_train_save_folder, 'test_mrr'), np.array(test_mrr))
+            np.save('{}/{}'.format(pre_train_save_folder, 'test_hit10'), np.array(test_hit10))
+
+    # Need to save the embedding at the end
+
+    max_test_mrr = max(np.array(test_mrr))
+    max_test_hit10 = np.array(test_hit10)[np.argmax(np.array(test_mrr))]
+
+    pre_train_config[train_no]['best_mrr'] = str(max_test_mrr)
+    pre_train_config[train_no]['best_test10'] = str(max_test_hit10)
+
+    with open(pre_train_config_folder) as configfile:
+        pre_train_config.write(configfile)
+
+    if pre_train_args['model'] == 'CP':
+        torch.save(pre_train_model.lhs.state_dict(), pre_train_folder + '/lhs.pt')
+        torch.save(pre_train_model.rel.state_dict(), pre_train_folder + '/rel.pt')
+        torch.save(model.rhs.state_dict(), pre_train_folder + '/rhs.pt')
+    elif pre_train_args['model'] == 'ComplEx':
+        torch.save(pre_train_model.embeddings[0].state_dict(), pre_train_folder + '/entity.pt')
+        torch.save(pre_train_model.embeddings[1].state_dict(), pre_train_folder + '/relation.pt')
+
+
+# Relevant variables to store
 forward_g = []
 test_g = []
 forward_alpha = []
 test_alpha = []
 best_model_flag = 0
 
+hits_name = ['_hits@1', '_hits@3', '_hits@10']
+
+train_mrr = []
+train_hit1 = []
+train_hit3 = []
+train_hit10 = []
+
+test_mrr = []
+test_hit1 = []
+test_hit3 = []
+test_hit10 = []
 
 for e in range(args.max_epochs):
     print('\n train epoch = ', e+1)
