@@ -375,3 +375,7 @@ for e in range(args.max_epochs):
         with open(folder_name + '/summary_config.ini', 'w') as configfile:
             summary_config.write(configfile)
 
+eps = 0.002
+if (max(np.array(test_mrr)) == np.array(test_mrr)[-1]) and (abs(np.array(test_mrr)[-1] - np.array(test_mrr)[-2]) > eps):
+    torch.save(model.state_dict(), folder_name + '/model_state.pt')
+    summary_config['summary']['{} not fully trained'.format(train_no)] = 'True'
