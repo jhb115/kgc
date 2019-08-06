@@ -206,19 +206,73 @@ test_hit10 = []
 results_folder = '../results/{}/{}'.format(args.model, args.dataset)
 
 # Load pre-trained embeddings
+
+run_pre_train_flag = 0
+
 if args.save_pre_train == 1:
     pre_train_folder = '../pre_train/{}/{}/{}'.format('Context_' + args.model, args.dataset, str(args.rank))
 
 if args.load_pre_train == 1:
     pre_train_folder = '../pre_train/{}/{}/{}'.format(args.model, args.dataset, str(args.rank))
     if args.model == 'Context_CP':
-        model.lhs.load_state_dict(torch.load(pre_train_folder + '/lhs.pt'))
-        model.rel.load_state_dict(torch.load(pre_train_folder + '/rel.pt'))
-        model.rhs.load_state_dict(torch.load(pre_train_folder + '/rhs.pt'))
+        try:
+            model.lhs.load_state_dict(torch.load(pre_train_folder + '/lhs.pt'))
+            model.rel.load_state_dict(torch.load(pre_train_folder + '/rel.pt'))
+            model.rhs.load_state_dict(torch.load(pre_train_folder + '/rhs.pt'))
+        except:
+            run_pre_train_flag = 1
+            # Does not have a pre-trained embedding. Need to run pre-training CP
+            # This is different for each dataset
+            pre_train_args = {'model': 'CP', 'regularizer': 'N3', 'max_epoch': 80, 'batch_size': 300,
+                              'save_pre_train': 1, 'learning_rate': 0.1, 'reg': 0.1, 'dataset': args.dataset,
+                              'rank': args.rank, 'init': args.init}
+
+            pre_train_dataset = Dataset(args.dataset)
+            unsorted_examples = torch.from_numpy(pre_train_dataset.get_train().astype('int64'))
+            pre_train_model = CP(pre_train_dataset.get_shape(), args.rank, args.init)
+            pre_train_regularizer = N3(pre_train_args['reg'])
+            device = 'cuda'
+            pre_train_model.to(device)
+            pre_train_optim = optim.Adagrad(pre_train_model.parameters(), lr=pre_train_args['learning_rate'])
+            pre_train_optimizer = KBCOptimizer(pre_train_model, pre_train_regularizer, pre_train_optim,
+                                               pre_train_args['batch_size'])
+
+
+
+
     elif args.model == 'Context_ComplEx':
-        # model.embeddings = torch.load(pre_train_folder + '/embeddings.pt')
-        model.embeddings[0].load_state_dict(torch.load(pre_train_folder + '/entity.pt'))
-        model.embeddings[1].load_state_dict(torch.load(pre_train_folder + '/relation.pt'))
+        try:
+            # model.embeddings = torch.load(pre_train_folder + '/embeddings.pt')
+            model.embeddings[0].load_state_dict(torch.load(pre_train_folder + '/entity.pt'))
+            model.embeddings[1].load_state_dict(torch.load(pre_train_folder + '/relation.pt'))
+        except:
+            run_pre__train_flag = 1
+            # Does not have a pre-trained embedding. Need to run pre-training ComplEx
+
+            pre_train_args = {'model': 'ComplEx', 'regularizer': 'N3', 'max_epoch': 80, 'batch_size': 300,
+                              'save_pre_train': 1, 'learning_rate': 0.1, 'reg': 0.1}
+
+            pre_train_dataset = Dataset(args.dataset)
+            unsorted_examples = torch.from_numpy(pre_train_dataset.get_train().astype('int64'))
+            pre_train_model = CP(pre_train_dataset.get_shape(), args.rank, args.init)
+            pre_train_regularizer = N3(pre_train_args['reg'])
+            device = 'cuda'
+            pre_train_model.to(device)
+            pre_train_optim = optim.Adagrad(pre_train_model.parameters(), lr=pre_train_args['learning_rate'])
+            pre_train_optimizer = KBCOptimizer(pre_train_model, pre_train_regularizer, pre_train_optim,
+                                               pre_train_args['batch_size'])
+
+
+
+
+
+
+
+
+
+
+
+
 
 if args.mkdir:
     if not os.path.exists('../results'):
@@ -299,12 +353,12 @@ with open(folder_name + '/summary_config.ini', 'w') as configfile:
     summary_config.write(configfile)
 
 
-
 forward_g = []
 test_g = []
 forward_alpha = []
 test_alpha = []
 best_model_flag = 0
+
 
 for e in range(args.max_epochs):
     print('\n train epoch = ', e+1)
