@@ -383,7 +383,7 @@ if run_pre_train_flag:
     pre_train_config[train_no]['best_mrr'] = str(max_test_mrr)
     pre_train_config[train_no]['best_test10'] = str(max_test_hit10)
 
-    with open(pre_train_config_folder + '/summary_config.ini') as configfile:
+    with open(pre_train_config_folder + '/summary_config.ini', 'w') as configfile:
         pre_train_config.write(configfile)
 
     if pre_train_args['model'] == 'CP':
