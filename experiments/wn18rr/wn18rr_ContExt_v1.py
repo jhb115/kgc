@@ -20,7 +20,7 @@ def summary(configuration):
 
 def to_cmd(c, _path=None):
     command = f'PYTHONPATH=. python kbc/learn_grid.py --dataset WN18RR ' \
-        f'--model Context_CP ' \
+        f'--model Context_ComplEx ' \
         f'--regularizer N4 ' \
         f'--max_epoch 100 ' \
         f'--mkdir 1 --rank {c["rank"]} --load_pre_train 1 --max_NB {c["max_NB"]} --valid 3 ' \
@@ -35,7 +35,7 @@ def to_logfile(c, path):
 
 def main(argv):
     hyp_space = dict(
-        rank=[100, 200, 400, 800],
+        rank=[100, 200, 400],
         max_NB=[10, 100],
         g_weight=[0, 0.03]
     )
