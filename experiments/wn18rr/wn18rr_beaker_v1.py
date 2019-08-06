@@ -19,7 +19,7 @@ def summary(configuration):
 
 
 def to_cmd(c, _path=None):
-    command = f'PYTHONPATH=. python kbc/learn.py --dataset WN18RR ' \
+    command = f'PYTHONPATH=. python kbc/learn_grid.py --dataset WN18RR ' \
         f'--model Context_ComplEx ' \
         f'--regularizer N4 ' \
         f'--max_epoch 100 ' \
