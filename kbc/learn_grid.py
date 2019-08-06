@@ -27,6 +27,15 @@ torch.manual_seed(0)
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
 
+'''
+List of Hyperparameters to tune:
+rank = [100, 200, 500]
+batch_size = [100, 500]
+learning_rate = [0.1, 0.01]
+g_weight = [0, 0.03]
+max_NB = [10, 50, 150]
+'''
+
 big_datasets = ['FB15K', 'WN', 'WN18RR', 'FB237', 'YAGO3-10']
 datasets = big_datasets
 
@@ -114,17 +123,17 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    '--save_pre_train', default=0, type=int, choices=[0,1],
+    '--save_pre_train', default=0, type=int, choices=[0, 1],
     help='1 if you wish to pre-train and save the embedding on non-context-based model'
 )
 
 parser.add_argument(
-    '--load_pre_train', default=0, type=int, choices=[0,1],
+    '--load_pre_train', default=0, type=int, choices=[0, 1],
     help='1 if you wish to load the saved pre-train the embedding for Context-based model'
 )
 
 parser.add_argument(
-    '--ascending', default=1, type=int, choices=[-1,1],
+    '--ascending', default=1, type=int, choices=[-1, 1],
     help='1 if you wish to consider neighborhood degrees in ascending order, -1 otherwise'
 )
 
