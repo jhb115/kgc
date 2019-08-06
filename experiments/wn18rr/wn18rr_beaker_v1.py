@@ -24,7 +24,7 @@ def to_cmd(c, _path=None):
         f'--regularizer N4 ' \
         f'--max_epoch 100 ' \
         f'--mkdir 1 --rank {c["rank"]} --load_pre_train 1 --max_NB {c["max_NB"]} --valid 3 ' \
-        f'--learning_rate 0.05 --reg 0.1 --batch_size 300 --g_weight'
+        f'--learning_rate 0.05 --reg 0.1 --batch_size 300 --g_weight --ascending -1'
     return command
 
 
