@@ -22,9 +22,9 @@ def to_cmd(c, _path=None):
     command = f'PYTHONPATH=. python kbc/learn.py --dataset WN18RR ' \
         f'--model Context_ComplEx ' \
         f'--regularizer N4 ' \
-        f'--max_epoch {c["max_epoch"]} ' \
-        f'--mkdir 1 --rank {c["rank"]} --load_pre_train 1 --max_NB 70 --valid 3 ' \
-        f'--learning_rate 0.01 --reg 0.1 --batch_size 1000'
+        f'--max_epoch 100 ' \
+        f'--mkdir 1 --rank {c["rank"]} --load_pre_train 1 --max_NB {c["max_NB"]} --valid 3 ' \
+        f'--learning_rate 0.05 --reg 0.1 --batch_size 300 --g_weight'
     return command
 
 
@@ -35,8 +35,9 @@ def to_logfile(c, path):
 
 def main(argv):
     hyp_space = dict(
-        max_epoch=[100, 150],
-        rank=[100, 500, 1000]
+        rank=[100, 200, 400],
+        max_NB=[10, 100],
+        g_weight=[0, 0.03]
     )
 
     configurations = list(cartesian_product(hyp_space))
