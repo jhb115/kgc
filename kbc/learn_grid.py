@@ -500,8 +500,6 @@ for e in range(args.max_epochs):
             np.save(folder_name + '/test_g', np.array(test_g))
             np.save(folder_name + '/test_g', np.array(test_g))
 
-            # save the model if the mrr or hits@10 is best among all
-
         config['e'] = e
         pickle.dump(config, open(folder_name + '/config.p', 'wb'))
 
