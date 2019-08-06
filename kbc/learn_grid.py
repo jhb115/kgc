@@ -212,68 +212,6 @@ run_pre_train_flag = 0
 if args.save_pre_train == 1:
     pre_train_folder = '../pre_train/{}/{}/{}'.format('Context_' + args.model, args.dataset, str(args.rank))
 
-if args.load_pre_train == 1:
-    pre_train_folder = '../pre_train/{}/{}/{}'.format(args.model, args.dataset, str(args.rank))
-    if args.model == 'Context_CP':
-        try:
-            model.lhs.load_state_dict(torch.load(pre_train_folder + '/lhs.pt'))
-            model.rel.load_state_dict(torch.load(pre_train_folder + '/rel.pt'))
-            model.rhs.load_state_dict(torch.load(pre_train_folder + '/rhs.pt'))
-        except:
-            run_pre_train_flag = 1
-            # Does not have a pre-trained embedding. Need to run pre-training CP
-            # This is different for each dataset
-            pre_train_args = {'model': 'CP', 'regularizer': 'N3', 'max_epoch': 80, 'batch_size': 300,
-                              'save_pre_train': 1, 'learning_rate': 0.1, 'reg': 0.1, 'dataset': args.dataset,
-                              'rank': args.rank, 'init': args.init}
-
-            pre_train_dataset = Dataset(args.dataset)
-            unsorted_examples = torch.from_numpy(pre_train_dataset.get_train().astype('int64'))
-            pre_train_model = CP(pre_train_dataset.get_shape(), args.rank, args.init)
-            pre_train_regularizer = N3(pre_train_args['reg'])
-            device = 'cuda'
-            pre_train_model.to(device)
-            pre_train_optim = optim.Adagrad(pre_train_model.parameters(), lr=pre_train_args['learning_rate'])
-            pre_train_optimizer = KBCOptimizer(pre_train_model, pre_train_regularizer, pre_train_optim,
-                                               pre_train_args['batch_size'])
-
-
-
-
-    elif args.model == 'Context_ComplEx':
-        try:
-            # model.embeddings = torch.load(pre_train_folder + '/embeddings.pt')
-            model.embeddings[0].load_state_dict(torch.load(pre_train_folder + '/entity.pt'))
-            model.embeddings[1].load_state_dict(torch.load(pre_train_folder + '/relation.pt'))
-        except:
-            run_pre__train_flag = 1
-            # Does not have a pre-trained embedding. Need to run pre-training ComplEx
-
-            pre_train_args = {'model': 'ComplEx', 'regularizer': 'N3', 'max_epoch': 80, 'batch_size': 300,
-                              'save_pre_train': 1, 'learning_rate': 0.1, 'reg': 0.1}
-
-            pre_train_dataset = Dataset(args.dataset)
-            unsorted_examples = torch.from_numpy(pre_train_dataset.get_train().astype('int64'))
-            pre_train_model = CP(pre_train_dataset.get_shape(), args.rank, args.init)
-            pre_train_regularizer = N3(pre_train_args['reg'])
-            device = 'cuda'
-            pre_train_model.to(device)
-            pre_train_optim = optim.Adagrad(pre_train_model.parameters(), lr=pre_train_args['learning_rate'])
-            pre_train_optimizer = KBCOptimizer(pre_train_model, pre_train_regularizer, pre_train_optim,
-                                               pre_train_args['batch_size'])
-
-
-
-
-
-
-
-
-
-
-
-
-
 if args.mkdir:
     if not os.path.exists('../results'):
         os.mkdir('../results')
@@ -300,31 +238,113 @@ if args.mkdir:
                 with open(folder_name + '/summary_config.ini', 'w') as configfile:
                     summary_config.write(configfile)
 
-    if args.save_pre_train == 1:
-        # this is where the pre-trained emebedding will be saved
-        if not os.path.exists('../pre_train'):
-            os.mkdir('../pre_train')
+    # this is where the pre-trained emebedding will be saved
+    if not os.path.exists('../pre_train'):
+        os.mkdir('../pre_train')
 
-        model_list = ['ComplEx', 'CP']
-        dataset_list = ['FB15K', 'FB237', 'WN', 'WN18RR', 'YAGO3-10']
+    model_list = ['ComplEx', 'CP']
+    dataset_list = ['FB15K', 'FB237', 'WN', 'WN18RR', 'YAGO3-10']
 
-        for each_model in model_list:
-            folder_name = '../pre_train/{}'.format('Context_'+each_model)
-            if not os.path.exists(folder_name):
-                os.mkdir(folder_name)
+    for each_model in model_list:
+        folder_name = '../pre_train/{}'.format('Context_'+each_model)
+        if not os.path.exists(folder_name):
+            os.mkdir(folder_name)
 
-            for each_data in dataset_list:
-                if not os.path.exists('{}/{}'.format(folder_name, each_data)):
-                    os.mkdir('{}/{}'.format(folder_name, each_data))
+        for each_data in dataset_list:
+            if not os.path.exists('{}/{}'.format(folder_name, each_data)):
+                os.mkdir('{}/{}'.format(folder_name, each_data))
 
-                if not os.path.exists(folder_name + '/summary_config.ini'):
-                    summary_config = configparser.ConfigParser()
-                    summary_config['summary'] = {'model': each_model, 'dataset': each_data}
-                    with open(folder_name + '/summary_config.ini', 'w') as configfile:
-                        summary_config.write(configfile)
+            if not os.path.exists(folder_name + '/summary_config.ini'):
+                summary_config = configparser.ConfigParser()
+                summary_config['summary'] = {'model': each_model, 'dataset': each_data}
+                with open(folder_name + '/summary_config.ini', 'w') as configfile:
+                    summary_config.write(configfile)
 
-        if not os.path.exists('{}/{}/{}'.format(folder_name, each_data, str(args.rank))):
-            os.mkdir('{}/{}/{}'.format(folder_name, each_data, str(args.rank)))
+    if not os.path.exists('{}/{}/{}'.format(folder_name, each_data, str(args.rank))):
+        os.mkdir('{}/{}/{}'.format(folder_name, each_data, str(args.rank)))
+
+
+if args.load_pre_train == 1:
+    pre_train_folder = '../pre_train/{}/{}/{}'.format(args.model, args.dataset, str(args.rank))
+    if args.model == 'Context_CP':
+        try:
+            model.lhs.load_state_dict(torch.load(pre_train_folder + '/lhs.pt'))
+            model.rel.load_state_dict(torch.load(pre_train_folder + '/rel.pt'))
+            model.rhs.load_state_dict(torch.load(pre_train_folder + '/rhs.pt'))
+        except:
+            run_pre_train_flag = 1
+            # Does not have a pre-trained embedding. Need to run pre-training CP
+            # This is different for each dataset
+            pre_train_args = {'model': 'CP', 'regularizer': 'N3', 'max_epoch': 80, 'batch_size': 300,
+                              'save_pre_train': 1, 'learning_rate': 0.1, 'reg': 0.1, 'dataset': args.dataset,
+                              'rank': args.rank, 'init': args.init}
+
+            pre_train_dataset = Dataset(args.dataset)
+            unsorted_examples = torch.from_numpy(pre_train_dataset.get_train().astype('int64'))
+            pre_train_model = CP(pre_train_dataset.get_shape(), args.rank, args.init)
+            pre_train_regularizer = N3(pre_train_args['reg'])
+            device = 'cuda'
+            pre_train_model.to(device)
+            pre_train_optim = optim.Adagrad(pre_train_model.parameters(), lr=pre_train_args['learning_rate'])
+            pre_train_optimizer = KBCOptimizer(pre_train_model, pre_train_regularizer, pre_train_optim,
+                                               pre_train_args['batch_size'])
+
+            # Save the configuration detilas in pre_train_args
+
+    elif args.model == 'Context_ComplEx':
+        try:
+            # model.embeddings = torch.load(pre_train_folder + '/embeddings.pt')
+            model.embeddings[0].load_state_dict(torch.load(pre_train_folder + '/entity.pt'))
+            model.embeddings[1].load_state_dict(torch.load(pre_train_folder + '/relation.pt'))
+        except:
+            run_pre_train_flag = 1
+            # Does not have a pre-trained embedding. Need to run pre-training ComplEx
+
+            pre_train_args = {'model': 'ComplEx', 'regularizer': 'N3', 'max_epoch': 80, 'save_pre_train': 1}
+
+            if args.dataset == 'FB237':
+                pre_train_args['learning_rate'] = 0.1
+                pre_train_args['batch_size'] = 100
+                pre_train_args['reg'] = 0.05
+            elif args.dataset == 'WN18RR':
+                pre_train_args['learning_rate'] = 0.1
+                pre_train_args['batch_size'] = 100
+                pre_train_args['reg'] = 0.1
+            elif args.dataset == 'YAGO3-10':
+                pre_train_args['learning_rate'] = 0.1
+                pre_train_args['batch_size'] = 1000
+                pre_train_args['reg'] = 0.005
+
+            pre_train_dataset = Dataset(args.dataset)
+            unsorted_examples = torch.from_numpy(pre_train_dataset.get_train().astype('int64'))
+            pre_train_model = CP(pre_train_dataset.get_shape(), args.rank, args.init)
+            pre_train_regularizer = N3(pre_train_args['reg'])
+            device = 'cuda'
+            pre_train_model.to(device)
+            pre_train_optim = optim.Adagrad(pre_train_model.parameters(), lr=pre_train_args['learning_rate'])
+            pre_train_optimizer = KBCOptimizer(pre_train_model, pre_train_regularizer, pre_train_optim,
+                                               pre_train_args['batch_size'])
+
+if run_pre_train_flag == 1:
+    for e in range(args.max_epochs):
+        cur_loss = optimizer.epoch(examples)
+
+        if (e + 1) % args.valid == 0 or (e + 1) == args.max_epochs:
+
+            if pre_train_args['model'] == 'CP':
+                torch.save(pre_train_model.lhs.state_dict(), pre_train_folder + '/lhs.pt')
+                torch.save(pre_train_model.rel.state_dict(), pre_train_folder + '/rel.pt')
+                torch.save(model.rhs.state_dict(), pre_train_folder + '/rhs.pt')
+            elif pre_train_args['model'] == 'ComplEx':
+                torch.save(pre_train_model.embeddings[0].state_dict(), pre_train_folder + '/entity.pt')
+                torch.save(pre_train_model.embeddings[1].state_dict(), pre_train_folder + '/relation.pt')
+
+            results = avg_both(*dataset.eval(model, 'test', -1))
+            results['MRR']
+            hits1310 = results['hits@[1,3,10]'].numpy()
+
+
+
 
 # We load our summary configuration file:
 summary_config = configparser.ConfigParser()
