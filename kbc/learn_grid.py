@@ -298,6 +298,14 @@ summary_config['summary']['Currently_running_experiment'] = '{} on {}'.format(ar
 with open(folder_name + '/summary_config.ini', 'w') as configfile:
     summary_config.write(configfile)
 
+
+
+forward_g = []
+test_g = []
+forward_alpha = []
+test_alpha = []
+best_model_flag = 0
+
 for e in range(args.max_epochs):
     print('\n train epoch = ', e+1)
     cur_loss = optimizer.epoch(examples)
@@ -314,9 +322,13 @@ for e in range(args.max_epochs):
             elif args.model == 'ComplEx':
                 torch.save(model.embeddings[0].state_dict(), pre_train_folder+'/entity.pt')
                 torch.save(model.embeddings[1].state_dict(), pre_train_folder+'/relation.pt')
-        model.i = 0
+
         train_results = avg_both(*dataset.eval(model, 'train', 50000))
-        model.i = 1
+
+        if best_model_flag == 1 and ((e+1) % (args.valid*3) == 0):
+            forward_g.append(model.g.clone().data.cpu().numpy())
+            forward_alpha.append(model.alpha.clone().data.cpu().numpy())
+
 
         print("\n\t TRAIN: ", train_results)
 
@@ -360,11 +372,17 @@ for e in range(args.max_epochs):
         summary_config[train_no]['max_test_hit10'] = str(max_test_hits)
         summary_config[train_no]['max_test_mrr'] = str(max_test_mrr)
 
-        if max_test_mrr > float(summary_config['summary']['best_mrr']):
+        if max_test_mrr >= float(summary_config['summary']['best_mrr']):
+            best_model_flag = 1
             summary_config['summary']['best_train_no'] = str(train_no)
             summary_config['summary']['best_mrr'] = str(max_test_mrr)
             summary_config['summary']['best_hits@10'] = str(max_test_hits)
             torch.save(model.state_dict(), folder_name + '/model_state.pt')
+
+        if best_model_flag == 1 and ((e+1) % (args.valid*3) == 0):
+            test_g.append(model.g.clone().data.cpu().numpy())
+            test_alpha.append(model.alpha.clone().data.cpu().numpy())
+
             # save the model if the mrr or hits@10 is best among all
 
         config['e'] = e
