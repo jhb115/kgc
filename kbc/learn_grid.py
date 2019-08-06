@@ -329,7 +329,7 @@ with open('../results/{}/{}/summary_config.ini'.format(args.model, args.dataset)
     summary_config.write(configfile)
 
 
-# For pre-training configuration
+# For running pre-training
 if run_pre_train_flag:
     pre_train_config = configparser.ConfigParser()
     pre_train_config_folder = '../pre_train/{}/{}'.format(args.model, args.dataset)
@@ -343,10 +343,6 @@ if run_pre_train_flag:
 
     with open(pre_train_config_folder + '/summary_config.ini', 'w') as configfile:
         pre_train_config.write(configfile)
-
-
-# Run pre-training
-if run_pre_train_flag:
 
     pre_train_folder = '../pre_train/{}/{}/{}'.format(args.model, args.dataset, str(args.rank))
 
