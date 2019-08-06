@@ -251,7 +251,7 @@ if args.load_pre_train == 1:
         run_pre_train_flag = 1
 
     if args.model == 'Context_CP':
-        if os.path.exists(pre_train_folder + 'lhs.pt'):
+        if os.path.exists(pre_train_folder + '/lhs.pt'):
             model.lhs.load_state_dict(torch.load(pre_train_folder + '/lhs.pt'))
             model.rel.load_state_dict(torch.load(pre_train_folder + '/rel.pt'))
             model.rhs.load_state_dict(torch.load(pre_train_folder + '/rhs.pt'))
@@ -272,7 +272,7 @@ if args.load_pre_train == 1:
                                                pre_train_args['batch_size'])
 
     elif args.model == 'Context_ComplEx':
-        if os.path.exists(pre_train_folder + 'entity.pt'):
+        if os.path.exists(pre_train_folder + '/entity.pt'):
             # model.embeddings = torch.load(pre_train_folder + '/embeddings.pt')
             model.embeddings[0].load_state_dict(torch.load(pre_train_folder + '/entity.pt'))
             model.embeddings[1].load_state_dict(torch.load(pre_train_folder + '/relation.pt'))
