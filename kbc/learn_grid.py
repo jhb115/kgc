@@ -430,6 +430,8 @@ test_hit1 = []
 test_hit3 = []
 test_hit10 = []
 
+folder_name = '../results/{}/{}/{}'.format(args.model, args.dataset, train_no)
+
 for e in range(args.max_epochs):
     print('\n train epoch = ', e+1)
     cur_loss = optimizer.epoch(examples)
@@ -442,6 +444,10 @@ for e in range(args.max_epochs):
             forward_g.append(model.g.clone().data.cpu().numpy())
             forward_alpha.append(model.alpha.clone().data.cpu().numpy())
 
+            np.save(folder_name + '/forward_g', np.array(forward_g))
+            np.save(folder_name + '/forward_alpha', np.array(forward_alpha))
+
+
         print("\n\t TRAIN: ", train_results)
 
         train_mrr.append(train_results['MRR'])
@@ -453,8 +459,6 @@ for e in range(args.max_epochs):
 
         summary_config[train_no]['curr_train_hit10'] = str(hits1310[2])
         summary_config[train_no]['curr_train_mrr'] = str(train_results['MRR'])
-
-        folder_name = '../results/{}/{}/{}'.format(args.model, args.dataset, train_no)
 
         np.save(folder_name + '/train_mrr', np.array(train_mrr))
         np.save(folder_name + '/train_hit1', np.array(train_hit1))
@@ -493,6 +497,8 @@ for e in range(args.max_epochs):
         if best_model_flag == 1 and ((e+1) % (args.valid*3) == 0):
             test_g.append(model.g.clone().data.cpu().numpy())
             test_alpha.append(model.alpha.clone().data.cpu().numpy())
+            np.save(folder_name + '/test_g', np.array(test_g))
+            np.save(folder_name + '/test_g', np.array(test_g))
 
             # save the model if the mrr or hits@10 is best among all
 
