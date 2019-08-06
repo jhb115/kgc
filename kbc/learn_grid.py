@@ -351,9 +351,10 @@ if run_pre_train_flag:
     test_mrr = []
     test_hit10 = []
 
-    pre_train_config['train_no']['best_mrr'] = str(0)
+    pre_train_config[train_no]['best_mrr'] = str(0)
 
-    for e in range(args.max_epochs):
+    for e in range(pre_train_args['max_epoch']):
+        print('pre_train epoch = ', e)
         cur_loss = optimizer.epoch(examples)
 
         if (e + 1) % args.valid == 0 or (e + 1) == args.max_epochs:
