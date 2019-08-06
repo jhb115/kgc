@@ -166,11 +166,11 @@ class Context_CP(KBCModel):
         # Get nb_E
         nb_E = self.get_neighbor(x[:, 0])  # nb_E.shape == (chunk_size, max_NB, k)
 
-        alpha = torch.softmax(torch.einsum('bk,bmk->bm', w, nb_E), dim=1)
+        self.alpha = torch.softmax(torch.einsum('bk,bmk->bm', w, nb_E), dim=1)
         # alpha.shape == (chunk_size, max_NB)
 
         # Get context vector
-        e_c = self.W2(torch.einsum('bm,bmk->bk', alpha, nb_E))
+        e_c = self.W2(torch.einsum('bm,bmk->bk', self.alpha, nb_E))
         # extra linear layer and batch-norm
 
         # Gate
@@ -202,10 +202,10 @@ class Context_CP(KBCModel):
         # Get nb_E
         nb_E = self.get_neighbor(x[:, 0])  # nb_E.shape == (chunk_size, max_NB, k)
 
-        alpha = torch.softmax(torch.einsum('bk,bmk->bm', w, nb_E), dim=1)
+        self.alpha = torch.softmax(torch.einsum('bk,bmk->bm', w, nb_E), dim=1)
         # alpha.shape == (chunk_size, max_NB)
 
-        e_c = self.W2(self.drop_layer2(torch.einsum('bm,bmk->bk', alpha, nb_E)))
+        e_c = self.W2(self.drop_layer2(torch.einsum('bm,bmk->bk', self.alpha, nb_E)))
         # extra linear layer and batch-normalization
 
         # Gate
@@ -234,10 +234,10 @@ class Context_CP(KBCModel):
         w = self.W(trp_E)  # w.shape == (chunk_size, k) and added batch-norm
         nb_E = self.get_neighbor(x[:, 0])  # nb_E.shape == (chunk_size, max_NB, k)
 
-        alpha = torch.softmax(torch.einsum('bk,bmk->bm', w, nb_E), dim=1)
+        self.alpha = torch.softmax(torch.einsum('bk,bmk->bm', w, nb_E), dim=1)
         # alpha.shape == (chunk_size, max_NB)
 
-        e_c = self.W2(torch.einsum('bm,bmk->bk', alpha, nb_E))
+        e_c = self.W2(torch.einsum('bm,bmk->bk', self.alpha, nb_E))
         self.g = Sigmoid(self.Uo(lhs * rel) + self.Wo(e_c))
 
         gated_e_c = self.g * e_c + (torch.ones((self.chunk_size, 1)).cuda() - self.g) * torch.ones_like(e_c).cuda()
@@ -456,10 +456,10 @@ class Context_ComplEx(KBCModel):
         nb_E = nb_E[:, :, :self.rank], nb_E[:, :, self.rank:]  # check on this
 
         # Take the real part of w @ nb_E
-        alpha = torch.softmax(torch.einsum('bk,bmk->bm', w[0], nb_E[0]) - torch.einsum('bk,bmk->bm', w[1], nb_E[1]),
-                              dim=1)
+        self.alpha = torch.softmax(torch.einsum('bk,bmk->bm', w[0], nb_E[0]) - torch.einsum('bk,bmk->bm', w[1], nb_E[1]),
+                                   dim=1)
 
-        e_c = torch.einsum('bm,bmk->bk', alpha, nb_E[0]), torch.einsum('bm,bmk->bk', alpha, nb_E[1])
+        e_c = torch.einsum('bm,bmk->bk', self.alpha, nb_E[0]), torch.einsum('bm,bmk->bk', self.alpha, nb_E[1])
 
         # Linear matrix multiplication
         e_c = (e_c[0] @ self.W2[0] - e_c[1] @ self.W2[1] + self.b_w2[0],
@@ -503,11 +503,11 @@ class Context_ComplEx(KBCModel):
         nb_E = nb_E[:, :, :self.rank], nb_E[:, :, self.rank:]  # check on this
 
         # Take the real part of w @ nb_E
-        alpha = torch.softmax(torch.einsum('bk,bmk->bm', w[0], nb_E[0]) - torch.einsum('bk,bmk->bm', w[1], nb_E[1]),
-                              dim=1)
+        self.alpha = torch.softmax(torch.einsum('bk,bmk->bm', w[0], nb_E[0]) - torch.einsum('bk,bmk->bm', w[1], nb_E[1]),
+                                   dim=1)
 
-        e_c = (self.drop_layer2(torch.einsum('bm,bmk->bk', alpha, nb_E[0])),
-               self.drop_layer2(torch.einsum('bm,bmk->bk', alpha, nb_E[1])))
+        e_c = (self.drop_layer2(torch.einsum('bm,bmk->bk', self.alpha, nb_E[0])),
+               self.drop_layer2(torch.einsum('bm,bmk->bk', self.alpha, nb_E[1])))
 
         # Need dropout applied to e_c
 
@@ -561,10 +561,10 @@ class Context_ComplEx(KBCModel):
         nb_E = nb_E[:, :, :self.rank], nb_E[:, :, self.rank:]  # check on this
 
         # Take the real part of w @ nb_E
-        alpha = torch.softmax(torch.einsum('bk,bmk->bm', w[0], nb_E[0]) - torch.einsum('bk,bmk->bm', w[1], nb_E[1]),
-                              dim=1)
+        self.alpha = torch.softmax(torch.einsum('bk,bmk->bm', w[0], nb_E[0]) - torch.einsum('bk,bmk->bm', w[1], nb_E[1]),
+                                   dim=1)
 
-        e_c = torch.einsum('bm,bmk->bk', alpha, nb_E[0]), torch.einsum('bm,bmk->bk', alpha, nb_E[1])
+        e_c = torch.einsum('bm,bmk->bk', self.alpha, nb_E[0]), torch.einsum('bm,bmk->bk', self.alpha, nb_E[1])
 
         # Linear matrix multiplication
         e_c = (e_c[0] @ self.W2[0] - e_c[1] @ self.W2[1] + self.b_w2[0],
