@@ -94,6 +94,7 @@ class Context_CP(KBCModel):
         self.data_name = data_name
         self.context_flag = 1
         self.ascending = ascending
+        self.flag = 0
 
         self.lhs = nn.Embedding(sizes[0], rank, sparse=True)
         self.rel = nn.Embedding(sizes[1], rank, sparse=True)
