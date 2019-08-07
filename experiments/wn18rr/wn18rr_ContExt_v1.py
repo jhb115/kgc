@@ -19,7 +19,7 @@ def summary(configuration):
 
 
 def to_cmd(c, _path=None):
-    command = f'PYTHONPATH=. python kbc/learn_grid.py --dataset WN18RR ' \
+    command = f'python kbc/learn_grid.py --dataset WN18RR ' \
         f'--model Context_ComplEx ' \
         f'--regularizer N4 ' \
         f'--max_epoch 100 ' \
@@ -36,9 +36,6 @@ def main(argv):
     )
 
     configurations = list(cartesian_product(hyp_space))
-
-    path = 'logs/wn18rr/wn18rr_beaker_v1'
-    is_rc = False
 
     # Check that we are on the UCLCS cluster first
 
