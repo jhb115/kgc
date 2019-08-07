@@ -42,29 +42,8 @@ def main(argv):
 
     configurations = list(cartesian_product(hyp_space))
 
-    path = 'logs/wn18rr/wn18rr_beaker_v1'
-    is_rc = False
-
-    # Check that we are on the UCLCS cluster first
-    if os.path.exists('/home/pminervi/'):
-        is_rc = True
-        # If the folder that will contain logs does not exist, create it
-        if not os.path.exists(path):
-            os.makedirs(path)
-
     command_lines = set()
     for cfg in configurations:
-        # logfile = to_logfile(cfg, path)
-
-        # completed = False
-        # if is_rc is True and os.path.isfile(logfile):
-        #     with open(logfile, 'r', encoding='utf-8', errors='ignore') as f:
-        #         content = f.read()
-        #         completed = 'Training finished' in content
-
-        # if not completed:
-        #     command_line = '{} > {} 2>&1'.format(to_cmd(cfg), logfile)
-        #     command_lines |= {command_line}
         command_lines |= {to_cmd(cfg)}
 
     # Sort command lines and remove duplicates
