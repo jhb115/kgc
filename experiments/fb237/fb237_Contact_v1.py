@@ -54,7 +54,7 @@ def main(argv):
 #$ -S /bin/bash
 #$ -o /home/jeunbyun/sgelogs
 #$ -j y
-#$ -N wn18rr_Contact
+#$ -N fb237_Contact
 #$ -l tmem=9G
 #$ -l h_rt=92:00:00
 #$ -l gpu=1
