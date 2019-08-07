@@ -28,11 +28,6 @@ def to_cmd(c, _path=None):
     return command
 
 
-def to_logfile(c, path):
-    outfile = "{}/wn18rr_beaker_v1.{}.log".format(path, summary(c).replace("/", "_"))
-    return outfile
-
-
 def main(argv):
     hyp_space = dict(
         rank=[100, 200, 400],
