@@ -59,7 +59,7 @@ def main(argv):
 #$ -S /bin/bash
 #$ -o /home/jeunbyun/sgelogs
 #$ -j y
-#$ -N wn18rr_ContExt
+#$ -N fb237_ContExt_v1
 #$ -l tmem=9G
 #$ -l h_rt=92:00:00
 #$ -l gpu=1
