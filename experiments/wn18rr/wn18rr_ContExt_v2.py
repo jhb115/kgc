@@ -88,7 +88,7 @@ def main(argv):
 
 date
 
-conda activate py36
+conda activate gpu
 
 export LANG="en_US.utf8"
 export LANGUAGE="en_US:en"
