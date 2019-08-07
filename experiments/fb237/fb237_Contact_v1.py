@@ -54,17 +54,18 @@ def main(argv):
 
     command_lines = set()
     for cfg in configurations:
-        logfile = to_logfile(cfg, path)
+        # logfile = to_logfile(cfg, path)
 
-        completed = False
-        if is_rc is True and os.path.isfile(logfile):
-            with open(logfile, 'r', encoding='utf-8', errors='ignore') as f:
-                content = f.read()
-                completed = 'Training finished' in content
+        # completed = False
+        # if is_rc is True and os.path.isfile(logfile):
+        #     with open(logfile, 'r', encoding='utf-8', errors='ignore') as f:
+        #         content = f.read()
+        #         completed = 'Training finished' in content
 
-        if not completed:
-            command_line = '{} > {} 2>&1'.format(to_cmd(cfg), logfile)
-            command_lines |= {command_line}
+        # if not completed:
+        #     command_line = '{} > {} 2>&1'.format(to_cmd(cfg), logfile)
+        #     command_lines |= {command_line}
+        command_lines |= {to_cmd(cfg)}
 
     # Sort command lines and remove duplicates
     sorted_command_lines = sorted(command_lines)
