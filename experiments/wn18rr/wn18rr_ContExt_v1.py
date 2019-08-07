@@ -28,11 +28,6 @@ def to_cmd(c, _path=None):
     return command
 
 
-def to_logfile(c, path):
-    outfile = "{}/wn18rr_beaker_v1.{}.log".format(path, summary(c).replace("/", "_"))
-    return outfile
-
-
 def main(argv):
     hyp_space = dict(
         rank=[100, 200, 400],
@@ -46,25 +41,10 @@ def main(argv):
     is_rc = False
 
     # Check that we are on the UCLCS cluster first
-    if os.path.exists('/home/pminervi/'):
-        is_rc = True
-        # If the folder that will contain logs does not exist, create it
-        if not os.path.exists(path):
-            os.makedirs(path)
 
     command_lines = set()
     for cfg in configurations:
-        logfile = to_logfile(cfg, path)
-
-        completed = False
-        if is_rc is True and os.path.isfile(logfile):
-            with open(logfile, 'r', encoding='utf-8', errors='ignore') as f:
-                content = f.read()
-                completed = 'Training finished' in content
-
-        if not completed:
-            command_line = '{} > {} 2>&1'.format(to_cmd(cfg), logfile)
-            command_lines |= {command_line}
+        command_lines |= {to_cmd(cfg)}
 
     # Sort command lines and remove duplicates
     sorted_command_lines = sorted(command_lines)
@@ -75,51 +55,43 @@ def main(argv):
 
     nb_jobs = len(sorted_command_lines)
 
-    header = """#!/bin/bash -l
-
-#$ -cwd
+    header = """
 #$ -S /bin/bash
-#$ -o /dev/null
-#$ -e /dev/null
-#$ -t 1-{}
+#$ -o /home/jeunbyun/sgelogs
+#$ -j y
+#$ -N wn18rr_ContExt_v1
 #$ -l tmem=9G
 #$ -l h_rt=92:00:00
 #$ -l gpu=1
 
+hostname
 date
 
-source /share/apps/examples/python/python-3.6.5.source
-source /share/apps/examples/cuda/cuda-9.0.source
-
-# >>> conda initialize >>>
-# !! Contents within this block are managed by 'conda init' !!
-__conda_setup="$('/home/jeunbyun/miniconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
-if [ $? -eq 0 ]; then
-    eval "$__conda_setup"
-else
-    if [ -f "/home/jeunbyun/miniconda3/etc/profile.d/conda.sh" ]; then
-        . "/home/jeunbyun/miniconda3/etc/profile.d/conda.sh"
-    else
-        export PATH="/home/jeunbyun/miniconda3/bin:$PATH"
-    fi
-fi
-unset __conda_setup
-# <<< conda initialize <<<
-
-
+source /home/jeunbyun/conda.source
 conda activate py36
+
+date
 
 export LANG="en_US.utf8"
 export LANGUAGE="en_US:en"
 
-cd /home/jeunbyun/jeung_project/kbc
+cd /home/jeunbyun/jeung_project/
+rm -rf kbc
+git clone https://github.com/jhb115/kbc.git
+cd kbc
+python setup.py install
+cd kbc/scripts
+chmod +x download_data.sh
+./download_data.sh
+cd ../..
+python kbc/process_datasets.py
 
 """.format(nb_jobs)
 
     print(header)
 
     for job_id, command_line in enumerate(sorted_command_lines, 1):
-        print('test $SGE_TASK_ID -eq {} && sleep 10 && {}'.format(job_id, command_line))
+        print('{}'.format(command_line))
 
 
 if __name__ == '__main__':
