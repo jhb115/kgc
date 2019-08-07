@@ -71,14 +71,8 @@ export LANG="en_US.utf8"
 export LANGUAGE="en_US:en"
 
 cd /home/jeunbyun/jeung_project/
-rm -rf kbc
-git clone https://github.com/jhb115/kbc.git
 cd kbc
 python setup.py install
-cd kbc/scripts
-chmod +x download_data.sh
-./download_data.sh
-cd ../..
 python kbc/process_datasets.py
 
 
