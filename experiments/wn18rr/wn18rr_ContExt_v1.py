@@ -109,8 +109,6 @@ unset __conda_setup
 
 conda activate py36
 
-date
-
 export LANG="en_US.utf8"
 export LANGUAGE="en_US:en"
 

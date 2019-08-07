@@ -86,7 +86,7 @@ def main(argv):
 #$ -l h_rt=92:00:00
 #$ -l gpu=1
 
-date
+
 
 source /share/apps/examples/python/python-3.6.5.source
 source /share/apps/examples/cuda/cuda-9.0.source
