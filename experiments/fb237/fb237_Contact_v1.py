@@ -87,7 +87,7 @@ python kbc/process_datasets.py
     print(header)
 
     for job_id, command_line in enumerate(sorted_command_lines, 1):
-        print('test $SGE_TASK_ID -eq {} && sleep 10 && {}'.format(job_id, command_line))
+        print('{}'.format(command_line))
 
 
 if __name__ == '__main__':
