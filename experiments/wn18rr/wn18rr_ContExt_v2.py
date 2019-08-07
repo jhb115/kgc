@@ -79,8 +79,6 @@ def main(argv):
 
 #$ -cwd
 #$ -S /bin/bash
-#$ -o /dev/null
-#$ -e /dev/null
 #$ -t 1-{}
 #$ -l tmem=9G
 #$ -l h_rt=92:00:00

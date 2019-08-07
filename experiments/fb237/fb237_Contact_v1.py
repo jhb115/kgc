@@ -75,38 +75,19 @@ def main(argv):
 
     nb_jobs = len(sorted_command_lines)
 
-    header = """#!/bin/bash -l
-
-#$ -cwd
+    header = """
 #$ -S /bin/bash
-#$ -o /dev/null
-#$ -e /dev/null
-#$ -t 1-{}
+#$ -o /home/jeunbyun/sgelogs
+#$ -j y
+#$ -N wn18rr_ContExt
 #$ -l tmem=9G
 #$ -l h_rt=92:00:00
 #$ -l gpu=1
 
+hostname
+date
 
-
-source /share/apps/examples/python/python-3.6.5.source
-source /share/apps/examples/cuda/cuda-9.0.source
-
-# >>> conda initialize >>>
-# !! Contents within this block are managed by 'conda init' !!
-__conda_setup="$('/home/jeunbyun/miniconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
-if [ $? -eq 0 ]; then
-    eval "$__conda_setup"
-else
-    if [ -f "/home/jeunbyun/miniconda3/etc/profile.d/conda.sh" ]; then
-        . "/home/jeunbyun/miniconda3/etc/profile.d/conda.sh"
-    else
-        export PATH="/home/jeunbyun/miniconda3/bin:$PATH"
-    fi
-fi
-unset __conda_setup
-# <<< conda initialize <<<
-
-
+source /home/jeunbyun/conda.source
 conda activate py36
 
 date
@@ -114,7 +95,17 @@ date
 export LANG="en_US.utf8"
 export LANGUAGE="en_US:en"
 
-cd /home/jeunbyun/jeung_project/kbc
+cd /home/jeunbyun/jeung_project/
+rm -rf kbc
+git clone https://github.com/jhb115/kbc.git
+cd kbc
+python setup.py install
+cd kbc/scripts
+chmod +x download_data.sh
+./download_data.sh
+cd ../..
+python kbc/process_datasets.py
+
 
 """.format(nb_jobs)
 
