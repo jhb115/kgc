@@ -5,29 +5,75 @@ from kbc.datasets import Dataset
 import matplotlib.pyplot as plt
 
 #%%%
+# FB237 dataset degree distribution
+
+mydata = Dataset('FB237')
+
+train, slice_dic = mydata.get_sorted_train()
+
+plt.close('all')
+
+plt.figure()
+plt.hist(slice_dic[:, 3], bins=300, range=(0, 300))
+plt.xlabel('Number of adjacent neighbors (Degrees) \n FB237 Dataset ')
+plt.ylabel('Frequency')
+plt.show()
 
 
-import configparser
+#%%%
+# FB15K dataset degree distribution
 
-config_ini = configparser.ConfigParser()
-config_ini['setup'] = {}
-config_ini['train1'] = {}
+mydata = Dataset('WN18RR')
 
-config_ini['setup']['best model'] = 'train1'
-config_ini['train1']['rank'] = '100'
+train, slice_dic = mydata.get_sorted_train()
 
-with open('../../config.ini', 'w') as configfile:
-    config_ini.write(configfile)
+plt.figure()
+plt.hist(slice_dic[:, 3], bins=30, range=(0, 30))
+plt.xlabel('Number of adjacent neighbors (Degrees) \n WN18RR Dataset')
+plt.ylabel('Frequency')
+
+plt.show()
+
 
 #%%%
 
-loaded_config = configparser.ConfigParser()
-loaded_config.read('../../config.ini')
+# YAGO3-10 dataset degree distribution
+mydata = Dataset('YAGO3-10')
 
-loaded_config['setup']
+train, slice_dic = mydata.get_sorted_train()
 
+plt.figure()
+plt.hist(slice_dic[:, 3], bins=100, range=(0, 100))
+plt.xlabel('Number of adjacent neighbors (Degrees) \n YAGO3-10 Dataset')
+plt.ylabel('Frequency')
 
+plt.show()
 
+#%%%
+# FB15K dataset degree distribution
+
+mydata = Dataset('FB15K')
+
+train, slice_dic = mydata.get_sorted_train()
+
+plt.figure()
+plt.hist(slice_dic[:, 3], bins=300, range=(0, 300))
+plt.xlabel('Number of adjacent neighbors (Degrees) \n FB15K Dataset ')
+plt.ylabel('Frequency')
+plt.show()
+
+#%%%
+# WN Dataset degree distribution
+
+mydata = Dataset('WN')
+
+train, slice_dic = mydata.get_sorted_train()
+
+plt.figure()
+plt.hist(slice_dic[:, 3], bins=50, range=(0, 50))
+plt.xlabel('Number of adjacent neighbors (Degrees) \n WN18 Dataset ')
+plt.ylabel('Frequency')
+plt.show()
 
 
 
