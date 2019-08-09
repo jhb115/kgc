@@ -368,7 +368,7 @@ if run_pre_train_flag:
         cur_loss = pre_train_optimizer.epoch(examples)
 
         if (e + 1) % args.valid == 0 or (e + 1) == args.max_epochs:
-            train_results = avg_both(*dataset.eval(pre_train_model, 'train', 50000))
+            train_results = avg_both(*pre_train_dataset.eval(pre_train_model, 'train', 50000))
             train_mrr.append(train_results['MRR'])
             hits1310 = train_results['hits@[1,3,10]'].numpy()
             train_hit10.append(hits1310[2])
@@ -389,8 +389,6 @@ if run_pre_train_flag:
 
         with open(pre_train_config_folder + '/summary_config.ini', 'w') as configfile:
             pre_train_config.write(configfile)
-
-    # Need to save the embedding at the end
 
     max_test_mrr = max(np.array(test_mrr))
     max_test_hit10 = np.array(test_hit10)[np.argmax(np.array(test_mrr))]
