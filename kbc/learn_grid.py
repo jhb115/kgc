@@ -267,6 +267,8 @@ if args.load_pre_train == 1:
                               'save_pre_train': 1, 'learning_rate': 0.1, 'reg': 0.1, 'dataset': args.dataset,
                               'rank': args.rank, 'init': args.init}
 
+            pre_train_args['init'] = args.init
+
             pre_train_dataset = Dataset(args.dataset)
             unsorted_examples = torch.from_numpy(pre_train_dataset.get_train().astype('int64'))
             pre_train_model = CP(pre_train_dataset.get_shape(), args.rank, args.init)
@@ -300,6 +302,10 @@ if args.load_pre_train == 1:
                 pre_train_args['learning_rate'] = 0.1
                 pre_train_args['batch_size'] = 1000
                 pre_train_args['reg'] = 0.005
+
+            pre_train_args['rank'] = args.rank
+            pre_train_args['init'] = args.init
+
 
             pre_train_dataset = Dataset(args.dataset)
             unsorted_examples = torch.from_numpy(pre_train_dataset.get_train().astype('int64'))
@@ -370,7 +376,7 @@ if run_pre_train_flag:
             hits1310 = train_results['hits@[1,3,10]'].numpy()
             train_hit10.append(hits1310[2])
 
-            results = avg_both(*dataset.eval(pre_train_model, 'test', -1))
+            results = avg_both(*pre_train_dataset.eval(pre_train_model, 'test', -1))
             test_mrr.append(results['MRR'])
             hits1310 = results['hits@[1,3,10]'].numpy()
             test_hit10.append(hits1310[2])
