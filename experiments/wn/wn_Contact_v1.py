@@ -54,7 +54,7 @@ def main(argv):
 #$ -S /bin/bash
 #$ -o /home/jeunbyun/sgelogs
 #$ -j y
-#$ -N wn18rr_Contact_v1
+#$ -N wn_Contact_v1
 #$ -l tmem=9G
 #$ -l h_rt=92:00:00
 #$ -l gpu=1
@@ -70,11 +70,7 @@ date
 export LANG="en_US.utf8"
 export LANGUAGE="en_US:en"
 
-cd /home/jeunbyun/jeung_project/
-cd kbc
-python setup.py install
-python kbc/process_datasets.py
-
+cd /home/jeunbyun/jeung_project/kbc
 
 """.format(nb_jobs)
 

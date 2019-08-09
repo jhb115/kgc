@@ -70,10 +70,7 @@ date
 export LANG="en_US.utf8"
 export LANGUAGE="en_US:en"
 
-cd /home/jeunbyun/jeung_project/
-cd kbc
-python setup.py install
-python kbc/process_datasets.py
+cd /home/jeunbyun/jeung_project/kbc
 
 
 """.format(nb_jobs)
