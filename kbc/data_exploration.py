@@ -78,6 +78,66 @@ plt.show()
 
 
 #%%%%
+# Statistics of the dataset
+
+
+
+DATA_PATH = Path(pkg_resources.resource_filename('kbc', 'data/'))
+print(DATA_PATH)
+
+data_list = ['FB15K', 'FB237', 'WN', 'WN18RR', 'YAGO3-10']
+file_type = ['train', 'valid', 'test']
+
+for each_data in data_list:
+    print('\n{}'.format(each_data))
+    root = DATA_PATH / each_data
+
+    file_dic = {}
+    for each_file in file_type:
+        in_file = open(str((root / (each_file + '.pickle'))), 'rb')
+        file_dic[each_file] = pickle.load(in_file)
+
+    print('')
+    print('length of train set for {} dataset: \n {}'.format(each_data, len(file_dic['train'])))
+    print('length of train set for {} dataset: \n {}'.format(each_data, len(file_dic['valid'])))
+    print('length of train set for {} dataset: \n {}'.format(each_data, len(file_dic['test'])))
+
+    train_entity_set = set(file_dic['train'][:, 0]).union(set(file_dic['train'][:, 2]))
+    valid_entity_set = set(file_dic['valid'][:, 0]).union(set(file_dic['valid'][:, 2]))
+    test_entity_set = set(file_dic['test'][:, 0]).union(set(file_dic['test'][:, 2]))
+
+    total_relation_set = set(file_dic['train'][:, 1]).union(set(file_dic['valid'][:, 1]).union(set(file_dic['test'][:, 1])))
+
+    total_entity_set = train_entity_set.union(valid_entity_set.union(test_entity_set))
+
+    print('number of entities in {} dataset: \n {}'.format(each_data, len(total_entity_set)))
+    print('number of relations in {} dataset: \n {}'.format(each_data, len(total_relation_set)))
+
+    print('')
+
+#%%%%
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#%%%
 '''
 class Dataset
 get_train -> returns train examples (examples include reciprocal triplets)

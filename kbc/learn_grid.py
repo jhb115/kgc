@@ -199,6 +199,7 @@ model_list = ['ComplEx', 'CP', 'Context_CP', 'Context_ComplEx']
 dataset_list = ['FB15K', 'FB237', 'WN', 'WN18RR', 'YAGO3-10']
 
 # For actual model
+# saves file summary_config.ini to ../results/model/data
 for each_model in model_list:
     if not os.path.exists('../results/{}'.format(each_model)):
         os.mkdir('../results/{}'.format(each_model))
@@ -206,7 +207,7 @@ for each_model in model_list:
     for each_data in dataset_list:
         folder_name = '../results/{}/{}'.format(each_model, each_data)
         if not os.path.exists(folder_name):
-            os.mkdir('../results/{}/{}'.format(each_model, each_data))
+            os.mkdir(folder_name)
         # check if the summary configuration file exists or not,
         if not os.path.exists(folder_name + '/summary_config.ini'):
             # make config summary file
@@ -214,7 +215,8 @@ for each_model in model_list:
             summary_config['summary'] = {'model': each_model,
                                          'dataset': each_data,
                                          'best_mrr': '0',
-                                         'best_hits@10': '0'}
+                                         'best_hits@10': '0',
+                                         'best_train_no': '?'}
 
             with open(folder_name + '/summary_config.ini', 'w') as configfile:
                 summary_config.write(configfile)
@@ -228,13 +230,16 @@ dataset_list = ['FB15K', 'FB237', 'WN', 'WN18RR', 'YAGO3-10']
 
 for each_model in model_list:
     folder_name = '../pre_train/{}'.format('Context_'+each_model)
+    # folder_name = '../pre_train/model
     if not os.path.exists(folder_name):
         os.mkdir(folder_name)
 
     for each_data in dataset_list:
         if not os.path.exists('{}/{}'.format(folder_name, each_data)):
             os.mkdir('{}/{}'.format(folder_name, each_data))
+            # ../pre_train/model/data
 
+        # create ../pre_train/model/data/summary_config.ini
         if not os.path.exists('{}/{}/{}'.format(folder_name, each_data, 'summary_config.ini')):
             summary_config = configparser.ConfigParser()
             summary_config['summary'] = {'model': each_model, 'dataset': each_data}
@@ -245,6 +250,7 @@ run_pre_train_flag = 0
 
 if args.load_pre_train == 1:
     pre_train_folder = '../pre_train/{}/{}/{}'.format(args.model, args.dataset, str(args.rank))
+    # ../pre_train/model/data/rank
 
     if not os.path.exists(pre_train_folder):
         os.mkdir(pre_train_folder)
@@ -307,6 +313,7 @@ if args.load_pre_train == 1:
 
 # summary_config is config file for actual model
 summary_config = configparser.ConfigParser()
+# load ../results/model/dataset/summary_config.ini
 summary_config.read('../results/{}/{}/summary_config.ini'.format(args.model, args.dataset))
 
 train_no = 1
@@ -355,15 +362,15 @@ if run_pre_train_flag:
 
     for e in range(pre_train_args['max_epoch']):
         print('pre_train epoch = ', e)
-        cur_loss = optimizer.epoch(examples)
+        cur_loss = pre_train_optimizer.epoch(examples)
 
         if (e + 1) % args.valid == 0 or (e + 1) == args.max_epochs:
-            train_results = avg_both(*dataset.eval(model, 'train', 50000))
+            train_results = avg_both(*dataset.eval(pre_train_model, 'train', 50000))
             train_mrr.append(train_results['MRR'])
             hits1310 = train_results['hits@[1,3,10]'].numpy()
             train_hit10.append(hits1310[2])
 
-            results = avg_both(*dataset.eval(model, 'test', -1))
+            results = avg_both(*dataset.eval(pre_train_model, 'test', -1))
             test_mrr.append(results['MRR'])
             hits1310 = results['hits@[1,3,10]'].numpy()
             test_hit10.append(hits1310[2])
@@ -509,7 +516,8 @@ for e in range(args.max_epochs):
 
         summary_config[train_no]['e'] = str(e)
 
-        with open(folder_name + '/summary_config.ini', 'w') as configfile:
+        # Update ../results/model/dataset/summary_config.ini file
+        with open('../results/{}/{}/summary_config.ini'.format(args.model, args.dataset), 'w') as configfile:
             summary_config.write(configfile)
 
 eps = 0.002
@@ -517,5 +525,5 @@ if (max(np.array(test_mrr)) == np.array(test_mrr)[-1]) and (abs(np.array(test_mr
     torch.save(model.state_dict(), folder_name + '/model_state.pt')
     summary_config['summary']['{} not fully trained'.format(train_no)] = 'True'
 
-    with open(folder_name + '/summary_config.ini', 'w') as configfile:
+    with open('../results/{}/{}/summary_config.ini'.format(args.model, args.dataset), 'w') as configfile:
         summary_config.write(configfile)
