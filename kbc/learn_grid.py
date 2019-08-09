@@ -267,8 +267,6 @@ if args.load_pre_train == 1:
                               'save_pre_train': 1, 'learning_rate': 0.1, 'reg': 0.1, 'dataset': args.dataset,
                               'rank': args.rank, 'init': args.init}
 
-            pre_train_args['init'] = args.init
-
             pre_train_dataset = Dataset(args.dataset)
             unsorted_examples = torch.from_numpy(pre_train_dataset.get_train().astype('int64'))
             pre_train_model = CP(pre_train_dataset.get_shape(), args.rank, args.init)
@@ -305,7 +303,6 @@ if args.load_pre_train == 1:
 
             pre_train_args['rank'] = args.rank
             pre_train_args['init'] = args.init
-
 
             pre_train_dataset = Dataset(args.dataset)
             unsorted_examples = torch.from_numpy(pre_train_dataset.get_train().astype('int64'))
@@ -387,6 +384,11 @@ if run_pre_train_flag:
             np.save('{}/{}'.format(pre_train_folder, 'train_hit10'), np.array(train_hit10))
             np.save('{}/{}'.format(pre_train_folder, 'test_mrr'), np.array(test_mrr))
             np.save('{}/{}'.format(pre_train_folder, 'test_hit10'), np.array(test_hit10))
+
+        pre_train_config[train_no]['e'] = str(e)
+
+        with open(pre_train_config_folder + '/summary_config.ini', 'w') as configfile:
+            pre_train_config.write(configfile)
 
     # Need to save the embedding at the end
 
