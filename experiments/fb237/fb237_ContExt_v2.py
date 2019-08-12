@@ -23,10 +23,10 @@ def to_cmd(c, _path=None):
         f'--model Context_ComplEx ' \
         f'--regularizer N4 ' \
         f'--max_epoch 140 ' \
-        f'--optimizer {c["optimizer"]}' \
+        f'--optimizer {c["optimizer"]} ' \
         f'--mkdir 1 --rank {c["rank"]} --load_pre_train 1 --max_NB {c["max_NB"]} --valid 3 ' \
-        f'--learning_rate 0.01 --reg {c["reg"]} --batch_size 300 --g_weight {c["g_weight"]}' \
-        f' --ascending {c["ascending"]}'
+        f'--learning_rate 0.01 --reg {c["reg"]} --batch_size 300 --g_weight {c["g_weight"]} ' \
+        f'--ascending {c["ascending"]}'
     return command
 
 
