@@ -13,7 +13,7 @@ import configparser
 import torch
 from torch import optim
 from kbc.datasets import Dataset
-from kbc.models import CP, ComplEx, Context_CP, Context_ComplEx
+from kbc.models import CP, ComplEx, Context_CP, Context_ComplEx, Context_CP_v2, Context_ComplEx_v2
 from kbc.regularizers import N2, N3, N4
 from kbc.optimizers import KBCOptimizer
 import os
@@ -51,7 +51,7 @@ parser.add_argument(
     help="Dataset in {}".format(datasets)
 )
 
-models = ['CP', 'ComplEx', 'Context_CP', 'Context_ComplEx']
+models = ['CP', 'ComplEx', 'Context_CP', 'Context_ComplEx', 'Context_CP_v2', 'Context_ComplEx_v2']
 parser.add_argument(
     '--model', choices=models,
     help="Model in {}".format(models)
@@ -254,8 +254,13 @@ for each_model in model_list:
 
 run_pre_train_flag = 0
 
+
+# Need to consider the case when args.model == 'Context_CP
+
+pre_model_name = {'Context_CP_v2': 'Context_CP', 'Context_ComplEx_v2': 'Context_ComplEx'}[args.model]
+
 if args.load_pre_train == 1:
-    pre_train_folder = '../pre_train/{}/{}/{}'.format(args.model, args.dataset, str(args.rank))
+    pre_train_folder = '../pre_train/{}/{}/{}'.format(pre_model_name, args.dataset, str(args.rank))
     # ../pre_train/model/data/rank
 
     if not os.path.exists(pre_train_folder):
@@ -348,7 +353,7 @@ with open('../results/{}/{}/summary_config.ini'.format(args.model, args.dataset)
 # For running pre-training
 if run_pre_train_flag:
     pre_train_config = configparser.ConfigParser()
-    pre_train_config_folder = '../pre_train/{}/{}'.format(args.model, args.dataset)
+    pre_train_config_folder = '../pre_train/{}/{}'.format(pre_model_name, args.dataset)
     pre_train_config.read(pre_train_config_folder + '/summary_config.ini')
 
     # For each dataset and for each model
@@ -360,7 +365,7 @@ if run_pre_train_flag:
     with open(pre_train_config_folder + '/summary_config.ini', 'w') as configfile:
         pre_train_config.write(configfile)
 
-    pre_train_folder = '../pre_train/{}/{}/{}'.format(args.model, args.dataset, str(args.rank))
+    pre_train_folder = '../pre_train/{}/{}/{}'.format(pre_model_name, args.dataset, str(args.rank))
 
     train_mrr = []
     train_hit10 = []
@@ -384,7 +389,7 @@ if run_pre_train_flag:
             hits1310 = results['hits@[1,3,10]'].numpy()
             test_hit10.append(hits1310[2])
 
-            pre_train_save_folder = '../pre_train/{}/{}/{}'.format(args.model, args.dataset, str(args.rank))
+            pre_train_save_folder = '../pre_train/{}/{}/{}'.format(pre_model_name, args.dataset, str(args.rank))
 
             np.save('{}/{}'.format(pre_train_folder, 'train_mrr'), np.array(train_mrr))
             np.save('{}/{}'.format(pre_train_folder, 'train_hit10'), np.array(train_hit10))
