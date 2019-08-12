@@ -155,7 +155,13 @@ model = {
                                      ascending=args.ascending),
     'Context_ComplEx': lambda: Context_ComplEx(dataset.get_shape(), args.rank, sorted_data, slice_dic,
                                                max_NB=args.max_NB, init_size=args.init, data_name=args.dataset,
-                                               ascending=args.ascending)
+                                               ascending=args.ascending),
+    'Context_CP_v2': lambda: Context_CP_v2(dataset.get_shape(), args.rank, sorted_data, slice_dic,
+                                           max_NB=args.max_NB, init_size=args.init, data_name=args.dataset,
+                                           ascending=args.ascending),
+    'Context_ComplEx_v2': lambda: Context_ComplEx_v2(dataset.get_shape(), args.rank, sorted_data, slice_dic,
+                                                     max_NB=args.max_NB, init_size=args.init, data_name=args.dataset,
+                                                     ascending=args.ascending),
 }[args.model]()
 
 regularizer = {
@@ -195,7 +201,7 @@ config_folder = '../results/{}/{}'.format(args.model, args.dataset)
 
 if not os.path.exists('../results'):
     os.mkdir('../results')
-model_list = ['ComplEx', 'CP', 'Context_CP', 'Context_ComplEx']
+model_list = ['ComplEx', 'CP', 'Context_CP', 'Context_ComplEx', 'Context_CP_v2', 'Context_ComplEx_v2']
 dataset_list = ['FB15K', 'FB237', 'WN', 'WN18RR', 'YAGO3-10']
 
 # For actual model
@@ -256,7 +262,7 @@ if args.load_pre_train == 1:
         os.mkdir(pre_train_folder)
         run_pre_train_flag = 1
 
-    if args.model == 'Context_CP':
+    if args.model == 'Context_CP' or args.model == 'Context_CP_v2':
         if os.path.exists(pre_train_folder + '/lhs.pt'):
             model.lhs.load_state_dict(torch.load(pre_train_folder + '/lhs.pt'))
             model.rel.load_state_dict(torch.load(pre_train_folder + '/rel.pt'))
@@ -277,7 +283,7 @@ if args.load_pre_train == 1:
             pre_train_optimizer = KBCOptimizer(pre_train_model, pre_train_regularizer, pre_train_optim,
                                                pre_train_args['batch_size'])
 
-    elif args.model == 'Context_ComplEx':
+    elif args.model == 'Context_ComplEx' or args.model == 'Context_ComplEx_v2':
         if os.path.exists(pre_train_folder + '/entity.pt'):
             # model.embeddings = torch.load(pre_train_folder + '/embeddings.pt')
             model.embeddings[0].load_state_dict(torch.load(pre_train_folder + '/entity.pt'))
@@ -413,13 +419,13 @@ if run_pre_train_flag:
     del pre_train_optim
     del pre_train_optimizer
 
-    if args.model == 'Context_CP':
+    if args.model == 'Context_CP' or args.model == 'Context_CP_v2':
         if os.path.exists(pre_train_folder + 'lhs.pt'):
             model.lhs.load_state_dict(torch.load(pre_train_folder + '/lhs.pt'))
             model.rel.load_state_dict(torch.load(pre_train_folder + '/rel.pt'))
             model.rhs.load_state_dict(torch.load(pre_train_folder + '/rhs.pt'))
 
-    elif args.model == 'Context_ComplEx':
+    elif args.model == 'Context_ComplEx' or args.model == 'Context_ComplEx_v2':
         if os.path.exists(pre_train_folder + 'entity.pt'):
             model.embeddings[0].load_state_dict(torch.load(pre_train_folder + '/entity.pt'))
             model.embeddings[1].load_state_dict(torch.load(pre_train_folder + '/relation.pt'))
