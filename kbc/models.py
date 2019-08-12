@@ -113,8 +113,8 @@ class Context_CP(KBCModel):
         self.W2 = nn.Linear(rank, rank, bias=True)
         # self.bn2 = nn.BatchNorm1d(rank).cuda()
 
-        self.drop_layer1 = nn.Dropout(p=0.3)  # apply dropout to only forward
-        self.drop_layer2 = nn.Dropout(p=0.3)
+        self.drop_layer1 = nn.Dropout(p=0.5)  # apply dropout to only forward
+        self.drop_layer2 = nn.Dropout(p=0.5)
 
         # Weights for the gate (added)
         self.Wo = nn.Linear(rank, 1, bias=True)
@@ -592,3 +592,333 @@ class Context_ComplEx(KBCModel):
                chunk_begin:chunk_begin + chunk_size
                ].transpose(0, 1)
 
+
+class Context_CP_v2(KBCModel):
+    def __init__(
+            self, sizes: Tuple[int, int, int], rank: int, sorted_data: np.ndarray,
+            slice_dic: np.ndarray, max_NB: int = 50, init_size: float = 1e-3,
+            data_name: str = 'FB15K', ascending=1
+    ):
+        super(Context_CP, self).__init__()
+        self.sizes = sizes
+        self.rank = rank
+        self.data_name = data_name
+        self.context_flag = 1
+        self.ascending = ascending
+        self.flag = 0
+
+        self.lhs = nn.Embedding(sizes[0], rank, sparse=True)
+        self.rel = nn.Embedding(sizes[1], rank, sparse=True)
+        self.rhs = nn.Embedding(sizes[2], rank, sparse=True)
+        self.ctxt = nn.Embedding(sizes[2], rank, sparse=True)
+        # Embedding for context
+
+        self.lhs.weight.data *= init_size
+        self.rel.weight.data *= init_size
+        self.rhs.weight.data *= init_size
+        self.ctxt.weight.data *= init_size
+
+        # Context related parameters
+        self.W = nn.Linear(int(2 * rank), rank, bias=True)  # W for w = [lhs; rel; rhs]^T W
+
+        self.drop_layer1 = nn.Dropout(p=0.5)  # apply dropout to only forward
+
+        # Weights for the gate (added)
+        self.Wo = nn.Linear(rank, 1, bias=True)
+        self.Uo = nn.Linear(rank, 1, bias=True)
+
+        nn.init.xavier_uniform_(self.W.weight)  # Xavier initialization
+
+        self.sorted_data = sorted_data
+        self.slice_dic = slice_dic
+        self.max_NB = max_NB
+
+    def get_neighbor(self, subj: torch.Tensor):
+        # return neighbor (N_subject, N_nb_max, k)
+        index_array = np.zeros(shape=(len(subj), self.max_NB), dtype=np.int32)
+
+        for i, each_subj in enumerate(subj):
+            _, start_i, end_i = self.slice_dic[each_subj]
+            length = end_i - start_i
+
+            if length > 0:
+                if self.max_NB >= length:
+                    index_array[i, :length] = self.sorted_data[start_i:end_i, 2]
+                else:  # Need to uniformly truncate
+                    hop = int(length / self.max_NB)
+                    index_array[i, :] = self.sorted_data[start_i:end_i:hop, 2][:self.max_NB]
+                if self.ascending == -1:
+                    index_array[i, :] = index_array[i, :][::-1]
+
+        # Convert index_array into a long tensor for indexing the embedding.
+        index_tensor = torch.LongTensor(index_array).cuda()
+
+        return self.ctxt(index_tensor)
+
+    def score(self, x: torch.Tensor):
+
+        self.chunk_size = len(x)
+        self.flag += 1
+
+        lhs = self.lhs(x[:, 0])
+        rel = self.rel(x[:, 1])
+        rhs = self.rhs(x[:, 2])
+
+        # concatenation of lhs, rel
+        trp_E = torch.cat((lhs, rel), dim=1)  # (previous)
+
+        # Get attention weight vector, where W.shape == (3k, k)
+        # w = self.bn1(self.W(trp_E))  # w.shape == (chunk_size, k) and batch-norm
+        w = self.W(trp_E)  # w.shape == (chunk_size, k) and batch-norm
+        # Get nb_E
+        nb_E = self.get_neighbor(x[:, 0])  # nb_E.shape == (chunk_size, max_NB, k)
+
+        self.alpha = torch.softmax(torch.einsum('bk,bmk->bm', w, nb_E), dim=1)
+        # alpha.shape == (chunk_size, max_NB)
+
+        # Get context vector
+        e_c = torch.einsum('bm,bmk->bk', self.alpha, nb_E)
+        # extra linear layer and batch-norm
+
+        # Gate
+        self.g = Sigmoid(self.Uo(lhs*rel) + self.Wo(e_c))
+
+        gated_e_c = self.g * e_c + (torch.ones((self.chunk_size, 1)).cuda() - self.g) * torch.ones_like(e_c).cuda()
+
+        # Get tot_score
+        tot_score = torch.sum(lhs * rel * rhs * gated_e_c, 1, keepdim=True)
+
+        return tot_score
+
+    def forward(self, x: torch.Tensor):
+
+        self.chunk_size = len(x)
+        self.flag += 1
+
+        lhs = self.lhs(x[:, 0])
+        rel = self.rel(x[:, 1])
+        rhs = self.rhs(x[:, 2])
+
+        # concatenation of lhs, rel, rhs
+        trp_E = torch.cat((lhs, rel), dim=1)  # (previous)
+
+        # Get attention weight vector, where W.shape == (3k, k)
+        w = self.W(self.drop_layer1(trp_E))
+        # w.shape == (chunk_size, k) and batch-norm, dropout
+
+        # Get nb_E
+        nb_E = self.get_neighbor(x[:, 0])  # nb_E.shape == (chunk_size, max_NB, k)
+
+        self.alpha = torch.softmax(torch.einsum('bk,bmk->bm', w, nb_E), dim=1)
+        # alpha.shape == (chunk_size, max_NB)
+
+        e_c = torch.einsum('bm,bmk->bk', self.alpha, nb_E)
+        # extra linear layer and batch-normalization
+
+        # Gate
+        self.g = Sigmoid(self.Uo(lhs * rel) + self.Wo(e_c))
+
+        gated_e_c = self.g * e_c + (torch.ones((self.chunk_size, 1)).cuda() - self.g) * torch.ones_like(e_c).cuda()
+
+        # Get tot_score
+        tot_forward = (lhs * rel * gated_e_c) @ self.rhs.weight.t()
+
+        return tot_forward, (lhs, rel, rhs, gated_e_c)
+
+    def get_queries(self, x: torch.Tensor):  # need to include context part
+        # x is a numpy array (equivalent to queries)
+
+        self.chunk_size = len(x)
+        self.flag += 1
+
+        lhs = self.lhs(x[:, 0])
+        rel = self.rel(x[:, 1])
+
+        # concatenation of lhs, rel, rhs
+        trp_E = torch.cat((lhs, rel), dim=1)  # trp_E.shape == (chunk_size, 3k) previous
+
+        # w = self.bn1(self.W(trp_E))  # w.shape == (chunk_size, k) and added batch-norm
+        w = self.W(trp_E)  # w.shape == (chunk_size, k) and added batch-norm
+        nb_E = self.get_neighbor(x[:, 0])  # nb_E.shape == (chunk_size, max_NB, k)
+
+        self.alpha = torch.softmax(torch.einsum('bk,bmk->bm', w, nb_E), dim=1)
+        # alpha.shape == (chunk_size, max_NB)
+
+        e_c = torch.einsum('bm,bmk->bk', self.alpha, nb_E)
+        self.g = Sigmoid(self.Uo(lhs * rel) + self.Wo(e_c))
+
+        gated_e_c = self.g * e_c + (torch.ones((self.chunk_size, 1)).cuda() - self.g) * torch.ones_like(e_c).cuda()
+
+        return lhs.data * rel.data * gated_e_c.data
+
+    def get_rhs(self, chunk_begin: int, chunk_size: int):
+        return self.rhs.weight.data[
+            chunk_begin:chunk_begin + chunk_size
+        ].transpose(0, 1)
+
+
+class Context_ComplEx_v2(KBCModel):
+    def __init__(
+            self, sizes: Tuple[int, int, int], rank: int, sorted_data:np.ndarray,
+            slice_dic: np.ndarray, max_NB: int=50, init_size: float=1e-3,
+            data_name: str='FB15K', ascending=1
+    ):
+        super(Context_ComplEx, self).__init__()
+        n_s, n_r, n_o = sizes
+        self.sizes = [n_s, n_r, n_o, n_o]  #append another n_o for nb_o
+        self.rank = rank
+        self.data_name = data_name
+        self.context_flag = 1
+        self.flag = 0
+        self.ascending = ascending
+
+        self.embeddings = nn.ModuleList([
+            nn.Embedding(s, 2 * rank, sparse=True)
+            for s in self.sizes[:3]
+        ])
+        self.embeddings[0].weight.data *= init_size
+        self.embeddings[1].weight.data *= init_size
+        self.embeddings[2].weight.data *= init_size  # For context
+
+        self.W = torch.randn((rank*2, rank)).cuda(), torch.randn((rank*2, rank)).cuda()
+        self.b_w = torch.randn((1, rank)).cuda(), torch.randn((1, rank)).cuda()  # bias term
+
+        nn.init.xavier_uniform_(self.W[0])
+        nn.init.xavier_uniform_(self.W[1])
+
+        nn.init.xavier_uniform_(self.b_w[0])
+        nn.init.xavier_uniform_(self.b_w[1])
+
+        self.drop_layer1 = nn.Dropout(p=0.5)
+
+        self.Wo = torch.randn((rank, 1)).cuda(), torch.randn((rank, 1)).cuda()
+        self.b_g = torch.randn((1, 1)).cuda()
+        self.Uo = torch.randn((rank, 1)).cuda(), torch.randn((rank, 1)).cuda()
+
+        nn.init.xavier_uniform_(self.Wo[0])
+        nn.init.xavier_uniform_(self.Uo[0])
+        nn.init.xavier_uniform_(self.Wo[1])
+        nn.init.xavier_uniform_(self.Uo[1])
+
+        nn.init.xavier_uniform_(self.b_g)
+
+        self.sorted_data = sorted_data
+        self.slice_dic = slice_dic
+        self.max_NB = max_NB
+
+    def get_neighbor(self, subj: torch.Tensor):
+        index_array = np.zeros(shape=(len(subj), self.max_NB), dtype=np.int32)
+
+        for i, each_subj in enumerate(subj):
+            _, start_i, end_i = self.slice_dic[each_subj]
+            length = end_i - start_i
+
+            if length > 0:
+                if self.max_NB >= length:
+                    index_array[i, :length] = self.sorted_data[start_i:end_i, 2]
+                else:  # Need to uniformly truncate
+                    hop = int(length / self.max_NB)
+                    index_array[i, :] = self.sorted_data[start_i:end_i:hop, 2][:self.max_NB]
+                if self.ascending == -1:
+                    index_array[i, :] = index_array[i, :][::-1]
+
+        index_tensor = torch.LongTensor(index_array).cuda()
+
+        return self.embeddings[2](index_tensor)
+
+    def score(self, x: torch.Tensor):
+
+        self.chunk_size = len(x)
+        self.flag += 1
+
+        lhs = self.embeddings[0](x[:, 0])
+        rel = self.embeddings[1](x[:, 1])
+        rhs = self.embeddings[0](x[:, 2])
+
+        lhs = lhs[:, :self.rank], lhs[:, self.rank:]
+        rel = rel[:, :self.rank], rel[:, self.rank:]
+        rhs = rhs[:, :self.rank], rhs[:, self.rank:]
+
+        # Concatenation of lhs, rel
+        trp_E = torch.cat((lhs[0], rel[0]), dim=1), torch.cat((lhs[1], rel[1]), dim=1)
+
+        w = (trp_E[0] @ self.W[0] - trp_E[1] @ self.W[1] + self.b_w[0],
+             trp_E[0] @ self.W[1] + trp_E[1] @ self.W[0] + self.b_w[1])
+
+        nb_E = self.get_neighbor(x[:, 0])
+        nb_E = nb_E[:, :, :self.rank], nb_E[:, :, self.rank:]  # check on this
+
+        # Take the real part of w @ nb_E
+        self.alpha = torch.softmax(torch.einsum('bk,bmk->bm', w[0], nb_E[0]) - torch.einsum('bk,bmk->bm', w[1], nb_E[1]),
+                                   dim=1)
+
+        e_c = torch.einsum('bm,bmk->bk', self.alpha, nb_E[0]), torch.einsum('bm,bmk->bk', self.alpha, nb_E[1])
+
+        # calculation of g
+        self.g = Sigmoid((lhs[0]*rel[0]-lhs[1]*rel[1]) @ self.Uo[0] - (lhs[1]*rel[0]+lhs[0]*rel[1]) @ self.Uo[1]
+                         + e_c[0] @ self.Wo[0] + self.b_g)
+
+        gated_e_c = (self.g * e_c[0] + (torch.ones((self.chunk_size, 1)).cuda() - self.g)*torch.ones_like(e_c[0]),
+                     self.g * e_c[1])
+
+        rror_rioi = rel[0]*rhs[0]+rel[1]*rhs[1]
+        rior = rel[1]*rhs[0]
+        rroi = rel[0]*rhs[1]
+
+        return torch.sum((lhs[0]*rror_rioi + lhs[1]*(rior + rroi))*gated_e_c[0]
+                         + (lhs[1]*rror_rioi + lhs[0]*(rior - rroi))*gated_e_c[1], 1, keepdim=True)
+
+    def forward(self, x):
+
+        self.chunk_size = len(x)
+        self.flag += 1
+
+        lhs = self.embeddings[0](x[:, 0])
+        rel = self.embeddings[1](x[:, 1])
+        rhs = self.embeddings[0](x[:, 2])
+
+        lhs = lhs[:, :self.rank], lhs[:, self.rank:]
+        rel = rel[:, :self.rank], rel[:, self.rank:]
+        rhs = rhs[:, :self.rank], rhs[:, self.rank:]
+
+        # Concatenation of lhs, rel
+        trp_E = (self.drop_layer1(torch.cat((lhs[0], rel[0]), dim=1)),
+                 self.drop_layer1(torch.cat((lhs[1], rel[1]), dim=1)))
+
+        w = (trp_E[0] @ self.W[0] - trp_E[1] @ self.W[1] + self.b_w[0],
+             trp_E[0] @ self.W[1] + trp_E[1] @ self.W[0] + self.b_w[1])
+
+        nb_E = self.get_neighbor(x[:, 0])
+        nb_E = nb_E[:, :, :self.rank], nb_E[:, :, self.rank:]  # check on this
+
+        # Take the real part of w @ nb_E
+        self.alpha = torch.softmax(torch.einsum('bk,bmk->bm', w[0], nb_E[0]) - torch.einsum('bk,bmk->bm', w[1], nb_E[1]),
+                                   dim=1)
+
+        e_c = (torch.einsum('bm,bmk->bk', self.alpha, nb_E[0]),
+               torch.einsum('bm,bmk->bk', self.alpha, nb_E[1]))
+
+        # calculation of g
+        self.g = Sigmoid((lhs[0]*rel[0]-lhs[1]*rel[1])@ self.Uo[0] - (lhs[1]*rel[0]+lhs[0]*rel[1])@ self.Uo[1]
+                         + e_c[0] @ self.Wo[0] + self.b_g)
+
+        gated_e_c = (self.g * e_c[0] + (torch.ones((self.chunk_size, 1)).cuda() - self.g) * torch.ones_like(e_c[0]),
+                     self.g * e_c[1])
+
+        srrr = lhs[0] * rel[0]
+        siri = lhs[1] * rel[1]
+        sirr = lhs[1] * rel[0]
+        srri = lhs[0] * rel[1]
+
+        to_score = self.embeddings[0].weight
+        to_score = to_score[:, :self.rank], to_score[:, self.rank:]
+
+        return (
+                ((srrr + siri) * gated_e_c[0] + (sirr + srri) * gated_e_c[1]) @ to_score[0].transpose(0, 1) +
+                ((srri + sirr) * gated_e_c[0] + (siri - srrr) * gated_e_c[1]) @ to_score[1].transpose(0, 1)
+        ), (
+            torch.sqrt(lhs[0]**2 + lhs[1]**2),
+            torch.sqrt(rel[0]**2 + rel[1]**2),
+            torch.sqrt(rhs[0]**2 + rhs[1]**2),
+            torch.sqrt(gated_e_c[0]**2 + gated_e_c[1]**2)
+        )
