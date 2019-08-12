@@ -515,7 +515,7 @@ for e in range(args.max_epochs):
             test_g.append(model.g.clone().data.cpu().numpy())
             test_alpha.append(model.alpha.clone().data.cpu().numpy())
             np.save(folder_name + '/test_g', np.array(test_g))
-            np.save(folder_name + '/test_g', np.array(test_g))
+            np.save(folder_name + '/test_alpha', np.array(test_alpha))
 
         config['e'] = e
         pickle.dump(config, open(folder_name + '/config.p', 'wb'))
@@ -528,7 +528,7 @@ for e in range(args.max_epochs):
 
 eps = 0.002
 if (max(np.array(test_mrr)) == np.array(test_mrr)[-1]) and (abs(np.array(test_mrr)[-1] - np.array(test_mrr)[-2]) > eps):
-    torch.save(model.state_dict(), folder_name + '/model_state.pt')
+    # torch.save(model.state_dict(), folder_name + '/model_state.pt')
     summary_config['summary']['{} not fully trained'.format(train_no)] = 'True'
 
     with open('../results/{}/{}/summary_config.ini'.format(args.model, args.dataset), 'w') as configfile:
