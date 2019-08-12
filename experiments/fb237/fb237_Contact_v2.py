@@ -32,7 +32,7 @@ def to_cmd(c, _path=None):
 
 def main(argv):
     hyp_space = dict(
-        rank=[400, 800],
+        rank=[400, 800, 1600],
         max_NB=[50, 100, 150],
         g_weight=[0.03, 0.06, 0.1],
         reg=[0.01, 0.05, 0.1],
