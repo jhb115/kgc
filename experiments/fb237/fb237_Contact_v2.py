@@ -32,12 +32,12 @@ def to_cmd(c, _path=None):
 
 def main(argv):
     hyp_space = dict(
-        rank=[400, 800, 1600],
-        max_NB=[50, 100, 150],
+        rank=[400, 800],
+        max_NB=[50, 150],
         g_weight=[0.03, 0.06, 0.1],
-        reg=[0.01, 0.05, 0.1],
+        reg=[0.03, 0.08],
         ascending=[-1, 1],
-        optimizer=['Adagrad', 'Adam', 'SGD'],
+        optimizer=['Adagrad', 'Adam'],
     )
 
     configurations = list(cartesian_product(hyp_space))
