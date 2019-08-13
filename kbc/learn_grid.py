@@ -140,7 +140,7 @@ parser.add_argument(
     help='Dropout on the first linear projection layer for query vector, used in v3'
 )
 
-parser.addargument(
+parser.add_argument(
     '--dropout_g', default=0.3, type=float,
     help='Dropout on the g, used in v3'
 )
@@ -200,6 +200,11 @@ optim_method = {
     'Adam': lambda: optim.Adam(model.parameters(), lr=args.learning_rate, betas=(args.decay1, args.decay2)),
     'SGD': lambda: optim.SGD(model.parameters(), lr=args.learning_rate)
 }[args.optimizer]()
+
+print('')
+print('Model parameters')
+print(model.parameters())
+print('')
 
 optimizer = KBCOptimizer(model, regularizer, optim_method, args.batch_size)
 
