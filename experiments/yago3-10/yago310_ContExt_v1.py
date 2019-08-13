@@ -22,17 +22,23 @@ def to_cmd(c, _path=None):
     command = f'python kbc/learn_grid.py --dataset YAGO3-10 ' \
         f'--model Context_ComplEx ' \
         f'--regularizer N4 ' \
-        f'--max_epoch 100 ' \
+        f'--max_epoch 140 ' \
+        f'--optimizer {c["optimizer"]} ' \
         f'--mkdir 1 --rank {c["rank"]} --load_pre_train 1 --max_NB {c["max_NB"]} --valid 3 ' \
-        f'--learning_rate 0.05 --reg 0.1 --batch_size 300 --g_weight {c["g_weight"]} --ascending -1'
+        f'--learning_rate {c["learning_rate"]} --reg {c["reg"]} --batch_size 300 --g_weight {c["g_weight"]} ' \
+        f'--ascending {c["ascending"]}'
     return command
 
 
 def main(argv):
     hyp_space = dict(
-        rank=[100, 200, 400],
-        max_NB=[10, 100],
-        g_weight=[0, 0.03]
+        rank=[500],
+        max_NB=[20, 100],
+        g_weight=[0.03, 0.06, 0.1],
+        reg=[0.01, 0.08],
+        ascending=[-1],
+        learning_rate=[0.01, 0.005],
+        optimizer=['Adagrad'],
     )
 
     configurations = list(cartesian_product(hyp_space))
@@ -59,7 +65,7 @@ def main(argv):
 #$ -S /bin/bash
 #$ -o /home/jeunbyun/sgelogs
 #$ -j y
-#$ -N yago310_ContExt_v1
+#$ -N yago310_ContExt_v3
 #$ -l tmem=9G
 #$ -l h_rt=92:00:00
 #$ -l gpu=1
