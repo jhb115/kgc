@@ -362,7 +362,7 @@ class Context_CP(KBCModel):
 
 '''
 Correction -> nn.Parameter(tensor)
-
+Correction -> using ModuleList
 '''
 # Fix the requires_grad=True problem
 class Context_ComplEx(KBCModel):
@@ -388,10 +388,10 @@ class Context_ComplEx(KBCModel):
         self.embeddings[1].weight.data *= init_size
         self.embeddings[2].weight.data *= init_size  # For context
 
-        self.W = nn.Parameter(torch.randn((rank*2, rank))), nn.Parameter(torch.randn((rank*2, rank)))
-        self.b_w = nn.Parameter(torch.randn((1, rank))), nn.Parameter(torch.randn((1, rank)))
-        self.W2 = nn.Parameter(torch.randn((rank, rank))), nn.Parameter(torch.randn((rank, rank)))
-        self.b_w2 = nn.Parameter(torch.randn((1, rank))), nn.Parameter(torch.randn((1, rank)))
+        self.W = nn.ModuleList([nn.Parameter(torch.randn((rank*2, rank))), nn.Parameter(torch.randn((rank*2, rank)))])
+        self.b_w = nn.ModuleList([nn.Parameter(torch.randn((1, rank))), nn.Parameter(torch.randn((1, rank)))])
+        self.W2 = nn.ModuleList([nn.Parameter(torch.randn((rank, rank))), nn.Parameter(torch.randn((rank, rank)))])
+        self.b_w2 = nn.ModuleList([nn.Parameter(torch.randn((1, rank))), nn.Parameter(torch.randn((1, rank)))])
 
         nn.init.xavier_uniform_(self.W[0])
         nn.init.xavier_uniform_(self.W2[0])
@@ -406,9 +406,9 @@ class Context_ComplEx(KBCModel):
         self.drop_layer1 = nn.Dropout(p=0.5)
         self.drop_layer2 = nn.Dropout(p=0.5)
 
-        self.Wo = nn.Parameter(torch.randn((rank, 1))), nn.Parameter(torch.randn((rank, 1)))
+        self.Wo = nn.ModuleList([nn.Parameter(torch.randn((rank, 1))), nn.Parameter(torch.randn((rank, 1)))])
         self.b_g = nn.Parameter(torch.randn((1, 1)))
-        self.Uo = nn.Parameter(torch.randn((rank, 1))), nn.Parameter(torch.randn((rank, 1)))
+        self.Uo = nn.ModuleList([nn.Parameter(torch.randn((rank, 1))), nn.Parameter(torch.randn((rank, 1)))])
 
         nn.init.xavier_uniform_(self.Wo[0])
         nn.init.xavier_uniform_(self.Uo[0])
