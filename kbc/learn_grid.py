@@ -201,10 +201,10 @@ optim_method = {
     'SGD': lambda: optim.SGD(model.parameters(), lr=args.learning_rate)
 }[args.optimizer]()
 
-print('')
-print('Model parameters')
-print(model.parameters())
-print('')
+
+print('Model state:')
+for param_tensor in model.state_dict():
+    print(f'\t{param_tensor}\t{model.state_dict()[param_tensor].size()}')
 
 optimizer = KBCOptimizer(model, regularizer, optim_method, args.batch_size)
 
@@ -488,7 +488,7 @@ folder_name = '../results/{}/{}/{}'.format(args.model, args.dataset, train_no)
 
 for e in range(args.max_epochs):
 
-    print(model.W.clone().data.cpu().numpy())
+    print(model.W[0].clone().data.cpu().numpy())
 
     print('\n train epoch = ', e+1)
     cur_loss = optimizer.epoch(examples)
