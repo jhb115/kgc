@@ -977,7 +977,7 @@ class Context_ComplEx_v3(KBCModel):
         self.drop_layer1 = nn.Dropout(p=dropout_1)
         self.drop_layer_g = nn.Dropout(p=dropout_g)
 
-        self.Wo = nn.ParameterList(nn.Parameter(torch.randn((rank, 1))), nn.Parameter(torch.randn((rank, 1)))]))
+        self.Wo = nn.ParameterList([nn.Parameter(torch.randn((rank, 1))), nn.Parameter(torch.randn((rank, 1)))])
         self.b_g = nn.Parameter(torch.randn((1, 1)))
         self.Uo = nn.ParameterList([nn.Parameter(torch.randn((rank, 1))), nn.Parameter(torch.randn((rank, 1)))])
 
