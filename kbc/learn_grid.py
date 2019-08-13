@@ -488,8 +488,6 @@ folder_name = '../results/{}/{}/{}'.format(args.model, args.dataset, train_no)
 
 for e in range(args.max_epochs):
 
-    print(model.W[0].clone().data.cpu().numpy())
-
     print('\n train epoch = ', e+1)
     cur_loss = optimizer.epoch(examples)
 

@@ -25,18 +25,19 @@ def to_cmd(c, _path=None):
         f'--max_epoch 140 ' \
         f'--optimizer {c["optimizer"]} ' \
         f'--mkdir 1 --rank {c["rank"]} --load_pre_train 1 --max_NB {c["max_NB"]} --valid 3 ' \
-        f'--learning_rate 0.01 --reg {c["reg"]} --batch_size 300 --g_weight {c["g_weight"]} ' \
+        f'--learning_rate {c["learning_rate"]} --reg {c["reg"]} --batch_size 300 --g_weight {c["g_weight"]} ' \
         f'--ascending {c["ascending"]}'
     return command
 
 
 def main(argv):
     hyp_space = dict(
-        rank=[200, 400],
+        rank=[500],
         max_NB=[50, 150],
         g_weight=[0.03, 0.06, 0.1],
         reg=[0.01, 0.08],
         ascending=[-1, 1],
+        learning_rate=[0.01, 0.005],
         optimizer=['Adagrad', 'Adam'],
     )
 
