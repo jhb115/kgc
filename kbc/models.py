@@ -963,6 +963,7 @@ class Context_ComplEx_v3(KBCModel):
         nn.init.xavier_uniform_(self.b_w[0])
         nn.init.xavier_uniform_(self.b_w[1])
 
+
         self.drop_layer1 = nn.Dropout(p=dropout_1)
         self.drop_layer_g = nn.Dropout(p=dropout_g)
 

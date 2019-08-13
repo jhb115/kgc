@@ -18,13 +18,19 @@ from kbc.regularizers import Regularizer
 class KBCOptimizer(object):
     def __init__(
             self, model: KBCModel, regularizer: Regularizer, optimizer: optim.Optimizer, batch_size: int = 256,
-            verbose: bool = True
+            verbose: bool = True, n_freeze: int = 0
     ):
         self.model = model
         self.regularizer = regularizer
         self.optimizer = optimizer
         self.batch_size = batch_size
         self.verbose = verbose
+        self.n_freeze = n_freeze
+
+        if self.n_freeze > 0:
+            self.freeze_flag = 1
+        else:
+            self.freeze_flag = 0
 
     def epoch(self, examples: torch.LongTensor):
         actual_examples = examples[torch.randperm(examples.shape[0]), :]

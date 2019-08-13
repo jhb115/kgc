@@ -145,6 +145,11 @@ parser.addargument(
     help='Dropout on the g, used in v3'
 )
 
+parser.add_argument(
+    '--n_freeze', default=0, type=int,
+    help='Number of training epochs you wish to freeze the original embedding'
+)
+
 # Setup parser
 args = parser.parse_args()
 
@@ -188,6 +193,8 @@ regularizer = {
 device = 'cuda'
 model.to(device)
 
+
+# Need to filter out the frozen parameters
 optim_method = {
     'Adagrad': lambda: optim.Adagrad(model.parameters(), lr=args.learning_rate),
     'Adam': lambda: optim.Adam(model.parameters(), lr=args.learning_rate, betas=(args.decay1, args.decay2)),
@@ -472,6 +479,9 @@ test_hit10 = []
 folder_name = '../results/{}/{}/{}'.format(args.model, args.dataset, train_no)
 
 for e in range(args.max_epochs):
+
+    print(model.W.clone().data.cpu().numpy())
+
     print('\n train epoch = ', e+1)
     cur_loss = optimizer.epoch(examples)
 
@@ -485,7 +495,6 @@ for e in range(args.max_epochs):
 
             np.save(folder_name + '/forward_g', np.array(forward_g))
             np.save(folder_name + '/forward_alpha', np.array(forward_alpha))
-
 
         print("\n\t TRAIN: ", train_results)
 
