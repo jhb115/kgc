@@ -790,8 +790,8 @@ class Context_ComplEx_v2(KBCModel):
         self.embeddings[1].weight.data *= init_size
         self.embeddings[2].weight.data *= init_size  # For context
 
-        self.W = nn.Parameter(torch.randn((rank*2, rank))), nn.Parameter(torch.randn((rank*2, rank)))
-        self.b_w = nn.Parameter(torch.randn((1, rank))), nn.Parameter(torch.randn((1, rank)))
+        self.W = nn.ParameterList([nn.Parameter(torch.randn((rank*2, rank))), nn.Parameter(torch.randn((rank*2, rank)))])
+        self.b_w = nn.ParameterList([nn.Parameter(torch.randn((1, rank))), nn.Parameter(torch.randn((1, rank)))])
 
         nn.init.xavier_uniform_(self.W[0])
         nn.init.xavier_uniform_(self.W[1])
@@ -801,9 +801,9 @@ class Context_ComplEx_v2(KBCModel):
 
         self.drop_layer1 = nn.Dropout(p=0.5)
 
-        self.Wo = nn.Parameter(torch.randn((rank, 1))), nn.Parameter(torch.randn((rank, 1)))
+        self.Wo = nn.ParameterList([nn.Parameter(torch.randn((rank, 1))), nn.Parameter(torch.randn((rank, 1)))])
         self.b_g = nn.Parameter(torch.randn((1, 1)))
-        self.Uo = nn.Parameter(torch.randn((rank, 1))), nn.Parameter(torch.randn((rank, 1)))
+        self.Uo = nn.ParameterList([nn.Parameter(torch.randn((rank, 1))), nn.Parameter(torch.randn((rank, 1)))])
 
         nn.init.xavier_uniform_(self.Wo[0])
         nn.init.xavier_uniform_(self.Uo[0])
@@ -964,10 +964,8 @@ class Context_ComplEx_v3(KBCModel):
         self.embeddings[1].weight.data *= init_size
         self.embeddings[2].weight.data *= init_size  # For context
 
-        self.W = torch.randn((rank*2, rank), requires_grad=True).cuda(),\
-                 torch.randn((rank*2, rank), requires_grad=True).cuda()
-        self.b_w = torch.randn((1, rank), requires_grad=True).cuda(),\
-                   torch.randn((1, rank), requires_grad=True).cuda()  # bias term
+        self.W = nn.ParameterList([nn.Parameter(torch.randn((rank*2, rank))), nn.Parameter(torch.randn((rank*2, rank)))])
+        self.b_w = nn.ParameterList(nn.Parameter(torch.randn((1, rank))), nn.Parameter(torch.randn((1, rank))))
 
         nn.init.xavier_uniform_(self.W[0])
         nn.init.xavier_uniform_(self.W[1])
@@ -979,9 +977,9 @@ class Context_ComplEx_v3(KBCModel):
         self.drop_layer1 = nn.Dropout(p=dropout_1)
         self.drop_layer_g = nn.Dropout(p=dropout_g)
 
-        self.Wo = torch.randn((rank, 1), requires_grad=True).cuda(), torch.randn((rank, 1), requires_grad=True).cuda()
-        self.b_g = torch.randn((1, 1), requires_grad=True).cuda()
-        self.Uo = torch.randn((rank, 1), requires_grad=True).cuda(), torch.randn((rank, 1), requires_grad=True).cuda()
+        self.Wo = nn.ParameterList(nn.Parameter(torch.randn((rank, 1))), nn.Parameter(torch.randn((rank, 1)))]))
+        self.b_g = nn.Parameter(torch.randn((1, 1)))
+        self.Uo = nn.ParameterList([nn.Parameter(torch.randn((rank, 1))), nn.Parameter(torch.randn((rank, 1)))])
 
         nn.init.xavier_uniform_(self.Wo[0])
         nn.init.xavier_uniform_(self.Uo[0])
