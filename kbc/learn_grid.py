@@ -282,8 +282,12 @@ run_pre_train_flag = 0
 
 
 # Need to consider the case when args.model == 'Context_CP
-
-pre_model_name = {'Context_CP_v2': 'Context_CP', 'Context_ComplEx_v2': 'Context_ComplEx'}[args.model]
+try:
+    pre_model_name = {'Context_CP_v2': 'Context_CP',
+                      'Context_ComplEx_v2': 'Context_ComplEx',
+                      'Context_ComplEx': 'Context_ComplEx',
+                      'Context_ComplEx_v3': 'Context_ComplEx',
+                      'Context_CP': 'Context_CP'}[args.model]
 
 if args.load_pre_train == 1:
     pre_train_folder = '../pre_train/{}/{}/{}'.format(pre_model_name, args.dataset, str(args.rank))
