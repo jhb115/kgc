@@ -13,7 +13,7 @@ import configparser
 import torch
 from torch import optim
 from kbc.datasets import Dataset
-from kbc.models import CP, ComplEx, Context_CP, Context_ComplEx, Context_CP_v2, Context_ComplEx_v2
+from kbc.models import CP, ComplEx, Context_CP, Context_ComplEx, Context_CP_v2, Context_ComplEx_v2, Context_ComplEx_v3
 from kbc.regularizers import N2, N3, N4
 from kbc.optimizers import KBCOptimizer
 import os
@@ -135,6 +135,16 @@ parser.add_argument(
     help='1 if you wish to consider neighborhood degrees in ascending order, -1 otherwise'
 )
 
+parser.add_argument(
+    '--dropout_1', defualt=0.5, type=float,
+    help='Dropout on the first linear projection layer for query vector, used in v3'
+)
+
+parser.addargument(
+    '--dropout_g', default=0.3, type=float,
+    help='Dropout on the g, used in v3'
+)
+
 # Setup parser
 args = parser.parse_args()
 
@@ -162,6 +172,10 @@ model = {
     'Context_ComplEx_v2': lambda: Context_ComplEx_v2(dataset.get_shape(), args.rank, sorted_data, slice_dic,
                                                      max_NB=args.max_NB, init_size=args.init, data_name=args.dataset,
                                                      ascending=args.ascending),
+    'Context_ComplEx_v3': lambda: Context_ComplEx_v3(dataset.get_shape(), args.rank, sorted_data, slice_dic,
+                                                     max_NB=args.max_NB, init_size=args.init, data_name=args.dataset,
+                                                     ascending=args.ascending, dropout_1=args.dropout_1,
+                                                     dropout_g=args.dropout_g),
 }[args.model]()
 
 regularizer = {

@@ -289,7 +289,6 @@ class CP(KBCModel):
     def get_queries(self, queries: torch.Tensor):
         return self.lhs(queries[:, 0]).data * self.rel(queries[:, 1]).data
 
-
 class ComplEx(KBCModel):
     def __init__(
             self, sizes: Tuple[int, int, int], rank: int,
@@ -592,7 +591,10 @@ class Context_ComplEx(KBCModel):
                chunk_begin:chunk_begin + chunk_size
                ].transpose(0, 1)
 
-
+'''
+v2:
+Removes the linear layer which is used to calculate the neighborhood-context vector
+'''
 class Context_CP_v2(KBCModel):
     def __init__(
             self, sizes: Tuple[int, int, int], rank: int, sorted_data: np.ndarray,
@@ -756,7 +758,6 @@ class Context_CP_v2(KBCModel):
             chunk_begin:chunk_begin + chunk_size
         ].transpose(0, 1)
 
-
 class Context_ComplEx_v2(KBCModel):
     def __init__(
             self, sizes: Tuple[int, int, int], rank: int, sorted_data:np.ndarray,
@@ -904,6 +905,179 @@ class Context_ComplEx_v2(KBCModel):
 
         gated_e_c = (self.g * e_c[0] + (torch.ones((self.chunk_size, 1)).cuda() - self.g) * torch.ones_like(e_c[0]),
                      self.g * e_c[1])
+
+        srrr = lhs[0] * rel[0]
+        siri = lhs[1] * rel[1]
+        sirr = lhs[1] * rel[0]
+        srri = lhs[0] * rel[1]
+
+        to_score = self.embeddings[0].weight
+        to_score = to_score[:, :self.rank], to_score[:, self.rank:]
+
+        return (
+                ((srrr + siri) * gated_e_c[0] + (sirr + srri) * gated_e_c[1]) @ to_score[0].transpose(0, 1) +
+                ((srri + sirr) * gated_e_c[0] + (siri - srrr) * gated_e_c[1]) @ to_score[1].transpose(0, 1)
+        ), (
+            torch.sqrt(lhs[0]**2 + lhs[1]**2),
+            torch.sqrt(rel[0]**2 + rel[1]**2),
+            torch.sqrt(rhs[0]**2 + rhs[1]**2),
+            torch.sqrt(gated_e_c[0]**2 + gated_e_c[1]**2)
+        )
+
+
+'''
+v3:
+Removes the linear layer which is used to calculate the neighborhood-context vector
+Adds dropout layer on g
+Secondary Pre-training where ComplEx Embedding is Frozen
+'''
+class Context_ComplEx_v3(KBCModel):
+    def __init__(
+            self, sizes: Tuple[int, int, int], rank: int, sorted_data:np.ndarray,
+            slice_dic: np.ndarray, max_NB: int=50, init_size: float=1e-3,
+            data_name: str='FB15K', ascending=1, dropout_1=0.5, dropout_g=0.5
+    ):
+        super(Context_ComplEx, self).__init__()
+        n_s, n_r, n_o = sizes
+        self.sizes = [n_s, n_r, n_o, n_o]  #append another n_o for nb_o
+        self.rank = rank
+        self.data_name = data_name
+        self.context_flag = 1
+        self.flag = 0
+        self.ascending = ascending
+
+        self.embeddings = nn.ModuleList([
+            nn.Embedding(s, 2 * rank, sparse=True)
+            for s in self.sizes[:3]
+        ])
+        self.embeddings[0].weight.data *= init_size
+        self.embeddings[1].weight.data *= init_size
+        self.embeddings[2].weight.data *= init_size  # For context
+
+        self.W = torch.randn((rank*2, rank)).cuda(), torch.randn((rank*2, rank)).cuda()
+        self.b_w = torch.randn((1, rank)).cuda(), torch.randn((1, rank)).cuda()  # bias term
+
+        nn.init.xavier_uniform_(self.W[0])
+        nn.init.xavier_uniform_(self.W[1])
+
+        nn.init.xavier_uniform_(self.b_w[0])
+        nn.init.xavier_uniform_(self.b_w[1])
+
+        self.drop_layer1 = nn.Dropout(p=dropout_1)
+        self.drop_layer_g = nn.Dropout(p=dropout_g)
+
+        self.Wo = torch.randn((rank, 1)).cuda(), torch.randn((rank, 1)).cuda()
+        self.b_g = torch.randn((1, 1)).cuda()
+        self.Uo = torch.randn((rank, 1)).cuda(), torch.randn((rank, 1)).cuda()
+
+        nn.init.xavier_uniform_(self.Wo[0])
+        nn.init.xavier_uniform_(self.Uo[0])
+        nn.init.xavier_uniform_(self.Wo[1])
+        nn.init.xavier_uniform_(self.Uo[1])
+
+        nn.init.xavier_uniform_(self.b_g)
+
+        self.sorted_data = sorted_data
+        self.slice_dic = slice_dic
+        self.max_NB = max_NB
+
+    def get_neighbor(self, subj: torch.Tensor):
+        index_array = np.zeros(shape=(len(subj), self.max_NB), dtype=np.int32)
+
+        for i, each_subj in enumerate(subj):
+            _, start_i, end_i = self.slice_dic[each_subj]
+            length = end_i - start_i
+
+            if length > 0:
+                if self.max_NB >= length:
+                    index_array[i, :length] = self.sorted_data[start_i:end_i, 2]
+                else:  # Need to uniformly truncate
+                    hop = int(length / self.max_NB)
+                    index_array[i, :] = self.sorted_data[start_i:end_i:hop, 2][:self.max_NB]
+                if self.ascending == -1:
+                    index_array[i, :] = index_array[i, :][::-1]
+
+        index_tensor = torch.LongTensor(index_array).cuda()
+
+        return self.embeddings[2](index_tensor)
+
+    def score(self, x: torch.Tensor):
+
+        self.chunk_size = len(x)
+        self.flag += 1
+
+        lhs = self.embeddings[0](x[:, 0])
+        rel = self.embeddings[1](x[:, 1])
+        rhs = self.embeddings[0](x[:, 2])
+
+        lhs = lhs[:, :self.rank], lhs[:, self.rank:]
+        rel = rel[:, :self.rank], rel[:, self.rank:]
+        rhs = rhs[:, :self.rank], rhs[:, self.rank:]
+
+        # Concatenation of lhs, rel
+        trp_E = torch.cat((lhs[0], rel[0]), dim=1), torch.cat((lhs[1], rel[1]), dim=1)
+
+        w = (trp_E[0] @ self.W[0] - trp_E[1] @ self.W[1] + self.b_w[0],
+             trp_E[0] @ self.W[1] + trp_E[1] @ self.W[0] + self.b_w[1])
+
+        nb_E = self.get_neighbor(x[:, 0])
+        nb_E = nb_E[:, :, :self.rank], nb_E[:, :, self.rank:]  # check on this
+
+        # Take the real part of w @ nb_E
+        self.alpha = torch.softmax(torch.einsum('bk,bmk->bm', w[0], nb_E[0]) - torch.einsum('bk,bmk->bm', w[1], nb_E[1]),
+                                   dim=1)
+
+        e_c = torch.einsum('bm,bmk->bk', self.alpha, nb_E[0]), torch.einsum('bm,bmk->bk', self.alpha, nb_E[1])
+
+        # calculation of g
+        self.g = Sigmoid((lhs[0]*rel[0]-lhs[1]*rel[1]) @ self.Uo[0] - (lhs[1]*rel[0]+lhs[0]*rel[1]) @ self.Uo[1]
+                         + e_c[0] @ self.Wo[0] + self.b_g)
+
+        gated_e_c = (self.g * e_c[0] + (torch.ones((self.chunk_size, 1)).cuda() - self.g)*torch.ones_like(e_c[0]),
+                     self.g * e_c[1])
+
+        rror_rioi = rel[0]*rhs[0]+rel[1]*rhs[1]
+        rior = rel[1]*rhs[0]
+        rroi = rel[0]*rhs[1]
+
+        return torch.sum((lhs[0]*rror_rioi + lhs[1]*(rior + rroi))*gated_e_c[0]
+                         + (lhs[1]*rror_rioi + lhs[0]*(rior - rroi))*gated_e_c[1], 1, keepdim=True)
+
+    def forward(self, x):
+
+        self.chunk_size = len(x)
+        self.flag += 1
+
+        lhs = self.embeddings[0](x[:, 0])
+        rel = self.embeddings[1](x[:, 1])
+        rhs = self.embeddings[0](x[:, 2])
+
+        lhs = lhs[:, :self.rank], lhs[:, self.rank:]
+        rel = rel[:, :self.rank], rel[:, self.rank:]
+        rhs = rhs[:, :self.rank], rhs[:, self.rank:]
+
+        # Concatenation of lhs, rel
+        trp_E = (self.drop_layer1(torch.cat((lhs[0], rel[0]), dim=1)),
+                 self.drop_layer1(torch.cat((lhs[1], rel[1]), dim=1)))
+
+        w = (trp_E[0] @ self.W[0] - trp_E[1] @ self.W[1] + self.b_w[0],
+             trp_E[0] @ self.W[1] + trp_E[1] @ self.W[0] + self.b_w[1])
+
+        nb_E = self.get_neighbor(x[:, 0])
+        nb_E = nb_E[:, :, :self.rank], nb_E[:, :, self.rank:]  # check on this
+
+        # Take the real part of w @ nb_E
+        self.alpha = torch.softmax(torch.einsum('bk,bmk->bm', w[0], nb_E[0]) - torch.einsum('bk,bmk->bm', w[1], nb_E[1]),
+                                   dim=1)
+
+        e_c = (torch.einsum('bm,bmk->bk', self.alpha, nb_E[0]),
+               torch.einsum('bm,bmk->bk', self.alpha, nb_E[1]))
+
+        # calculation of g
+        self.g = Sigmoid((lhs[0]*rel[0]-lhs[1]*rel[1])@ self.Uo[0] - (lhs[1]*rel[0]+lhs[0]*rel[1])@ self.Uo[1]
+                         + e_c[0] @ self.Wo[0] + self.b_g)
+        g = self.drop_layer_g(self.g)
+        gated_e_c = (g * e_c[0] + (torch.ones((self.chunk_size, 1)).cuda() - g) * torch.ones_like(e_c[0]), g * e_c[1])
 
         srrr = lhs[0] * rel[0]
         siri = lhs[1] * rel[1]
