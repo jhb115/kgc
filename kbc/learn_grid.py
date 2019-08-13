@@ -136,7 +136,7 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    '--dropout_1', defualt=0.5, type=float,
+    '--dropout_1', default=0.5, type=float,
     help='Dropout on the first linear projection layer for query vector, used in v3'
 )
 
