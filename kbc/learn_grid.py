@@ -190,7 +190,7 @@ regularizer = {
     'N4': N4(args.reg, g_weight=args.g_weight)
 }[args.regularizer]
 
-device = 'cuda'
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 model.to(device)
 
 
