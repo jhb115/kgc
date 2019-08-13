@@ -189,6 +189,9 @@ class ComplEx(KBCModel):
             lhs[0] * rel[1] + lhs[1] * rel[0]
         ], 1)
 
+'''
+Correction -> requires_grad = True
+'''
 class Context_CP(KBCModel):
     def __init__(
             self, sizes: Tuple[int, int, int], rank: int, sorted_data: np.ndarray,
@@ -357,7 +360,10 @@ class Context_CP(KBCModel):
             chunk_begin:chunk_begin + chunk_size
         ].transpose(0, 1)
 
+'''
+Correction -> nn.Parameter(tensor)
 
+'''
 # Fix the requires_grad=True problem
 class Context_ComplEx(KBCModel):
     def __init__(
@@ -382,10 +388,10 @@ class Context_ComplEx(KBCModel):
         self.embeddings[1].weight.data *= init_size
         self.embeddings[2].weight.data *= init_size  # For context
 
-        self.W = torch.randn((rank*2, rank), requires_grad=True).cuda(), torch.randn((rank*2, rank), requires_grad=True).cuda()
-        self.b_w = torch.randn((1, rank), requires_grad=True).cuda(), torch.randn((1, rank), requires_grad=True).cuda()  # bias term
-        self.W2 = torch.randn((rank, rank), requires_grad=True).cuda(), torch.randn((rank, rank), requires_grad=True).cuda()
-        self.b_w2 = torch.randn((1, rank), requires_grad=True).cuda(), torch.randn((1, rank), requires_grad=True).cuda()
+        self.W = nn.Parameter(torch.randn((rank*2, rank))), nn.Parameter(torch.randn((rank*2, rank)))
+        self.b_w = nn.Parameter(torch.randn((1, rank))), nn.Parameter(torch.randn((1, rank)))
+        self.W2 = nn.Parameter(torch.randn((rank, rank))), nn.Parameter(torch.randn((rank, rank)))
+        self.b_w2 = nn.Parameter(torch.randn((1, rank))), nn.Parameter(torch.randn((1, rank)))
 
         nn.init.xavier_uniform_(self.W[0])
         nn.init.xavier_uniform_(self.W2[0])
@@ -400,9 +406,9 @@ class Context_ComplEx(KBCModel):
         self.drop_layer1 = nn.Dropout(p=0.5)
         self.drop_layer2 = nn.Dropout(p=0.5)
 
-        self.Wo = torch.randn((rank, 1), requires_grad=True).cuda(), torch.randn((rank, 1), requires_grad=True).cuda()
-        self.b_g = torch.randn((1, 1), requires_grad=True).cuda()
-        self.Uo = torch.randn((rank, 1), requires_grad=True).cuda(), torch.randn((rank, 1), requires_grad=True).cuda()
+        self.Wo = nn.Parameter(torch.randn((rank, 1))), nn.Parameter(torch.randn((rank, 1)))
+        self.b_g = nn.Parameter(torch.randn((1, 1)))
+        self.Uo = nn.Parameter(torch.randn((rank, 1))), nn.Parameter(torch.randn((rank, 1)))
 
         nn.init.xavier_uniform_(self.Wo[0])
         nn.init.xavier_uniform_(self.Uo[0])
@@ -595,6 +601,7 @@ class Context_ComplEx(KBCModel):
 
 '''
 v2:
+Correction -> requires_grad = True
 Removes the linear layer which is used to calculate the neighborhood-context vector
 '''
 class Context_CP_v2(KBCModel):
@@ -932,6 +939,7 @@ class Context_ComplEx_v2(KBCModel):
 
 '''
 v3:
+Correction -> requires_grad = True
 Removes the linear layer which is used to calculate the neighborhood-context vector
 Adds dropout layer on g
 Secondary Pre-training where ComplEx Embedding is Frozen
