@@ -195,7 +195,7 @@ device = torch.device('cuda')
 model.to(device)
 
 
-# Need to filter out the frozen parameters
+# Freeze the embeddings for n_freeze epochs
 if args.n_freeze > 0:
     if args.model in ['Context_CP', 'Context_CP_v2']:
         model.lhs.weight.requires_grad = False
@@ -205,25 +205,17 @@ if args.n_freeze > 0:
     elif args.model in ['Context_ComplEx', 'Context_ComplEx_v2', 'Context_ComplEx_v3']:
         for i in range(2):
             model.embeddings[i].weight.requires_grad = False
-    filtered_parameters = filter(lambda p: p.requires_grad, model.parameters())
-else:
-    filtered_parameters = model.parameters()
 
 optim_method = {
-    'Adagrad': lambda: optim.Adagrad(filtered_parameters, lr=args.learning_rate),
-    'RMSprop': lambda: optim.RMSProp(filtered_parameters, lr=args.learning_rate),
-    'SGD': lambda: optim.SGD(filtered_parameters, lr=args.learning_rate)
+    'Adagrad': lambda: optim.Adagrad(model.parameters(), lr=args.learning_rate),
+    'RMSprop': lambda: optim.RMSProp(model.parameters(), lr=args.learning_rate),
+    'SGD': lambda: optim.SGD(model.parameters(), lr=args.learning_rate)
 }[args.optimizer]()
 
-
-print('Model state:')
-for param_tensor in model.state_dict():
-    print(f'\t{param_tensor}\t{model.state_dict()[param_tensor].size()}')
-
-print('Model state in Optimizer')
-for param_tensor in optim_method.param_groups:
-    print(f'\t{param_tensor}')
-
+#
+# print('Model state:')
+# for param_tensor in model.state_dict():
+#     print(f'\t{param_tensor}\t{model.state_dict()[param_tensor].size()}')
 
 optimizer = KBCOptimizer(model, regularizer, optim_method, args.batch_size, n_freeze=args.n_freeze)
 

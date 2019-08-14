@@ -765,6 +765,10 @@ class Context_CP_v2(KBCModel):
             chunk_begin:chunk_begin + chunk_size
         ].transpose(0, 1)
 
+
+'''
+Fix g = 0
+'''
 class Context_ComplEx_v2(KBCModel):
     def __init__(
             self, sizes: Tuple[int, int, int], rank: int, sorted_data:np.ndarray,
@@ -866,7 +870,9 @@ class Context_ComplEx_v2(KBCModel):
         self.g = Sigmoid((lhs[0]*rel[0]-lhs[1]*rel[1]) @ self.Uo[0] - (lhs[1]*rel[0]+lhs[0]*rel[1]) @ self.Uo[1]
                          + e_c[0] @ self.Wo[0] + self.b_g)
 
-        gated_e_c = (self.g * e_c[0] + (torch.ones((self.chunk_size, 1)).cuda() - self.g)*torch.ones_like(e_c[0]),
+        self.g = torch.zeros((self.chunk_size, 1)).cuda()
+
+        gated_e_c = (self.g * e_c[0] + (torch.ones((self.chunk_size, 1)).cuda() - self.g)*torch.ones_like(e_c[0]).cuda(),
                      self.g * e_c[1])
 
         rror_rioi = rel[0]*rhs[0]+rel[1]*rhs[1]
@@ -909,6 +915,8 @@ class Context_ComplEx_v2(KBCModel):
         # calculation of g
         self.g = Sigmoid((lhs[0]*rel[0]-lhs[1]*rel[1])@ self.Uo[0] - (lhs[1]*rel[0]+lhs[0]*rel[1])@ self.Uo[1]
                          + e_c[0] @ self.Wo[0] + self.b_g)
+
+        self.g = torch.zeros((self.chunk_size, 1)).cuda()
 
         gated_e_c = (self.g * e_c[0] + (torch.ones((self.chunk_size, 1)).cuda() - self.g) * torch.ones_like(e_c[0]),
                      self.g * e_c[1])
@@ -961,6 +969,8 @@ class Context_ComplEx_v2(KBCModel):
         self.g = Sigmoid((lhs[0] * rel[0] - lhs[1] * rel[1]) @ self.Uo[0]
                     - (lhs[1] * rel[0] + lhs[0] * rel[1]) @ self.Uo[1]
                     + e_c[0] @ self.Wo[0] + self.b_g)
+
+        self.g = torch.zeros((self.chunk_size, 1)).cuda()
 
         gated_e_c = (self.g * e_c[0] + (torch.ones((self.chunk_size, 1)).cuda() - self.g) * torch.ones_like(e_c[0]),
                      self.g * e_c[1])
