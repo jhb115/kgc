@@ -1010,7 +1010,7 @@ class Context_ComplEx_v3(KBCModel):
         self.embeddings[2].weight.data *= init_size  # For context
 
         self.W = nn.ParameterList([nn.Parameter(torch.randn((rank*2, rank))), nn.Parameter(torch.randn((rank*2, rank)))])
-        self.b_w = nn.ParameterList(nn.Parameter(torch.randn((1, rank))), nn.Parameter(torch.randn((1, rank))))
+        self.b_w = nn.ParameterList([nn.Parameter(torch.randn((1, rank))), nn.Parameter(torch.randn((1, rank)))])
 
         nn.init.xavier_uniform_(self.W[0])
         nn.init.xavier_uniform_(self.W[1])
