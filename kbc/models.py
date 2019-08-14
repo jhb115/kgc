@@ -362,7 +362,6 @@ class Context_CP(KBCModel):
 
 '''
 Correction -> nn.Parameter(tensor)
-Correction -> using ModuleList
 '''
 # Fix the requires_grad=True problem
 class Context_ComplEx(KBCModel):
@@ -601,7 +600,6 @@ class Context_ComplEx(KBCModel):
 
 '''
 v2:
-Correction -> requires_grad = True
 Removes the linear layer which is used to calculate the neighborhood-context vector
 '''
 class Context_CP_v2(KBCModel):
@@ -933,6 +931,53 @@ class Context_ComplEx_v2(KBCModel):
             torch.sqrt(gated_e_c[0]**2 + gated_e_c[1]**2)
         )
 
+    def get_queries(self, queries: torch.Tensor):
+
+        self.chunk_size = len(queries)
+        self.flag += 1
+
+        lhs = self.embeddings[0](queries[:, 0])
+        rel = self.embeddings[1](queries[:, 1])
+
+        lhs = lhs[:, :self.rank], lhs[:, self.rank:]
+        rel = rel[:, :self.rank], rel[:, self.rank:]
+
+        # Concatenation of lhs, rel
+        trp_E = torch.cat((lhs[0], rel[0]), dim=1), torch.cat((lhs[1], rel[1]), dim=1)
+
+        w = (trp_E[0] @ self.W[0] - trp_E[1] @ self.W[1] + self.b_w[0],
+             trp_E[0] @ self.W[1] + trp_E[1] @ self.W[0] + self.b_w[1])
+
+        nb_E = self.get_neighbor(queries[:, 0])
+        nb_E = nb_E[:, :, :self.rank], nb_E[:, :, self.rank:]  # check on this
+
+        # Take the real part of w @ nb_E
+        self.alpha = torch.softmax(torch.einsum('bk,bmk->bm', w[0], nb_E[0]) - torch.einsum('bk,bmk->bm', w[1], nb_E[1]),
+                                   dim=1)
+
+        e_c = torch.einsum('bm,bmk->bk', self.alpha, nb_E[0]), torch.einsum('bm,bmk->bk', self.alpha, nb_E[1])
+
+        # calculation of g
+        self.g = Sigmoid((lhs[0] * rel[0] - lhs[1] * rel[1]) @ self.Uo[0]
+                    - (lhs[1] * rel[0] + lhs[0] * rel[1]) @ self.Uo[1]
+                    + e_c[0] @ self.Wo[0] + self.b_g)
+
+        gated_e_c = (self.g * e_c[0] + (torch.ones((self.chunk_size, 1)).cuda() - self.g) * torch.ones_like(e_c[0]),
+                     self.g * e_c[1])
+
+        srrr = lhs[0] * rel[0]
+        siri = lhs[1] * rel[1]
+        sirr = lhs[1] * rel[0]
+        srri = lhs[0] * rel[1]
+
+        return torch.cat(((srrr + siri) * gated_e_c[0] + (sirr + srri) * gated_e_c[1],
+                         (srri + sirr) * gated_e_c[0] + (siri - srrr) * gated_e_c[1]), 1)
+
+    def get_rhs(self, chunk_begin: int, chunk_size: int):
+        return self.embeddings[0].weight.data[
+               chunk_begin:chunk_begin + chunk_size
+               ].transpose(0, 1)
+
 
 '''
 v3:
@@ -1107,3 +1152,50 @@ class Context_ComplEx_v3(KBCModel):
             torch.sqrt(rhs[0]**2 + rhs[1]**2),
             torch.sqrt(gated_e_c[0]**2 + gated_e_c[1]**2)
         )
+
+    def get_queries(self, queries: torch.Tensor):
+
+        self.chunk_size = len(queries)
+        self.flag += 1
+
+        lhs = self.embeddings[0](queries[:, 0])
+        rel = self.embeddings[1](queries[:, 1])
+
+        lhs = lhs[:, :self.rank], lhs[:, self.rank:]
+        rel = rel[:, :self.rank], rel[:, self.rank:]
+
+        # Concatenation of lhs, rel
+        trp_E = torch.cat((lhs[0], rel[0]), dim=1), torch.cat((lhs[1], rel[1]), dim=1)
+
+        w = (trp_E[0] @ self.W[0] - trp_E[1] @ self.W[1] + self.b_w[0],
+             trp_E[0] @ self.W[1] + trp_E[1] @ self.W[0] + self.b_w[1])
+
+        nb_E = self.get_neighbor(queries[:, 0])
+        nb_E = nb_E[:, :, :self.rank], nb_E[:, :, self.rank:]  # check on this
+
+        # Take the real part of w @ nb_E
+        self.alpha = torch.softmax(torch.einsum('bk,bmk->bm', w[0], nb_E[0]) - torch.einsum('bk,bmk->bm', w[1], nb_E[1]),
+                                   dim=1)
+
+        e_c = torch.einsum('bm,bmk->bk', self.alpha, nb_E[0]), torch.einsum('bm,bmk->bk', self.alpha, nb_E[1])
+
+        # calculation of g
+        self.g = Sigmoid((lhs[0] * rel[0] - lhs[1] * rel[1]) @ self.Uo[0]
+                          - (lhs[1] * rel[0] + lhs[0] * rel[1]) @ self.Uo[1]
+                          + e_c[0] @ self.Wo[0] + self.b_g)
+
+        gated_e_c = (self.g * e_c[0] + (torch.ones((self.chunk_size, 1)).cuda() - self.g) * torch.ones_like(e_c[0]),
+                     self.g * e_c[1])
+
+        srrr = lhs[0] * rel[0]
+        siri = lhs[1] * rel[1]
+        sirr = lhs[1] * rel[0]
+        srri = lhs[0] * rel[1]
+
+        return torch.cat(((srrr + siri) * gated_e_c[0] + (sirr + srri) * gated_e_c[1],
+                         (srri + sirr) * gated_e_c[0] + (siri - srrr) * gated_e_c[1]), 1)
+
+    def get_rhs(self, chunk_begin: int, chunk_size: int):
+        return self.embeddings[0].weight.data[
+               chunk_begin:chunk_begin + chunk_size
+               ].transpose(0, 1)
