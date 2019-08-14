@@ -198,7 +198,7 @@ model.to(device)
 # Need to filter out the frozen parameters
 optim_method = {
     'Adagrad': lambda: optim.Adagrad(model.parameters(), lr=args.learning_rate),
-    'Adam': lambda: optim.Adam(model.parameters(), lr=args.learning_rate, betas=(args.decay1, args.decay2)),
+    'Adam': lambda: optim.SparseAdam(model.parameters(), lr=args.learning_rate, betas=(args.decay1, args.decay2)),
     'SGD': lambda: optim.SGD(model.parameters(), lr=args.learning_rate)
 }[args.optimizer]()
 
@@ -228,7 +228,7 @@ config_folder = '../results/{}/{}'.format(args.model, args.dataset)
 
 if not os.path.exists('../results'):
     os.mkdir('../results')
-model_list = ['ComplEx', 'CP', 'Context_CP', 'Context_ComplEx', 'Context_CP_v2', 'Context_ComplEx_v2']
+model_list = ['ComplEx', 'CP', 'Context_CP', 'Context_ComplEx', 'Context_CP_v2', 'Context_ComplEx_v2', 'Context_ComplEx_v3']
 dataset_list = ['FB15K', 'FB237', 'WN', 'WN18RR', 'YAGO3-10']
 
 # For actual model
@@ -318,7 +318,7 @@ if args.load_pre_train == 1:
             pre_train_optimizer = KBCOptimizer(pre_train_model, pre_train_regularizer, pre_train_optim,
                                                pre_train_args['batch_size'])
 
-    elif args.model == 'Context_ComplEx' or args.model == 'Context_ComplEx_v2':
+    elif args.model == 'Context_ComplEx' or args.model == 'Context_ComplEx_v2' or args.model == 'Context_ComplEx_v3':
         if os.path.exists(pre_train_folder + '/entity.pt'):
             # model.embeddings = torch.load(pre_train_folder + '/embeddings.pt')
             model.embeddings[0].load_state_dict(torch.load(pre_train_folder + '/entity.pt'))
@@ -460,7 +460,7 @@ if run_pre_train_flag:
             model.rel.load_state_dict(torch.load(pre_train_folder + '/rel.pt'))
             model.rhs.load_state_dict(torch.load(pre_train_folder + '/rhs.pt'))
 
-    elif args.model == 'Context_ComplEx' or args.model == 'Context_ComplEx_v2':
+    elif args.model == 'Context_ComplEx' or args.model == 'Context_ComplEx_v2' or args.model == 'Context_ComplEx_v3':
         if os.path.exists(pre_train_folder + 'entity.pt'):
             model.embeddings[0].load_state_dict(torch.load(pre_train_folder + '/entity.pt'))
             model.embeddings[1].load_state_dict(torch.load(pre_train_folder + '/relation.pt'))
