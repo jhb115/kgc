@@ -41,7 +41,7 @@ class KBCOptimizer(object):
 
     def epoch(self, examples: torch.LongTensor):
 
-        if self.freeze_flag == 0:
+        if self.freeze_flag == 0 and self.n_freeze > 0:
             if self.model_name == 'Context_CP':
                 self.model.lhs.weight.requires_grad = True
                 self.model.rel.weight.requires_grad = True

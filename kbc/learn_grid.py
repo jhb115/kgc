@@ -220,8 +220,7 @@ print('Model state:')
 for param_tensor in model.state_dict():
     print(f'\t{param_tensor}\t{model.state_dict()[param_tensor].size()}')
 
-optimizer = KBCOptimizer(model, regularizer, optim_method, args.batch_size)
-
+optimizer = KBCOptimizer(model, regularizer, optim_method, args.batch_size, n_freeze=args.n_freeze)
 
 def avg_both(mrrs: Dict[str, float], hits: Dict[str, torch.FloatTensor]):
     """
