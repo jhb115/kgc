@@ -51,7 +51,7 @@ class KBCOptimizer(object):
                                                 'rhs': self.model.rhs.parameter(),
                                                 'rel': self.model.rel.parameter()})
             elif self.model_name == 'Context_ComplEx':
-                for i in range(3):
+                for i in range(2):
                     self.model.embeddings[i].weight.requires_grad = True
                 self.optimizer.add_param_group({'embeddings': self.model.embeddings.parameters()})
 

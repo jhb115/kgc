@@ -203,7 +203,7 @@ if args.n_freeze > 0:
         model.rh.weight.requires_grad = False
 
     elif args.model in ['Context_ComplEx', 'Context_ComplEx_v2', 'Context_ComplEx_v3']:
-        for i in range(3):
+        for i in range(2):
             model.embeddings[i].weight.requires_grad = False
     filtered_parameters = filter(lambda p: p.requires_grad, model.parameters())
 else:
