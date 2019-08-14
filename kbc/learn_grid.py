@@ -51,7 +51,7 @@ parser.add_argument(
     help="Dataset in {}".format(datasets)
 )
 
-models = ['CP', 'ComplEx', 'Context_CP', 'Context_ComplEx', 'Context_CP_v2', 'Context_ComplEx_v2']
+models = ['CP', 'ComplEx', 'Context_CP', 'Context_ComplEx', 'Context_CP_v2', 'Context_ComplEx_v2', 'Context_ComplEx_v3']
 parser.add_argument(
     '--model', choices=models,
     help="Model in {}".format(models)
