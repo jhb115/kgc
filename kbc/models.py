@@ -610,7 +610,7 @@ class Context_CP_v2(KBCModel):
             slice_dic: np.ndarray, max_NB: int = 50, init_size: float = 1e-3,
             data_name: str = 'FB15K', ascending=1
     ):
-        super(Context_CP, self).__init__()
+        super(Context_CP_v2, self).__init__()
         self.sizes = sizes
         self.rank = rank
         self.data_name = data_name
@@ -773,7 +773,7 @@ class Context_ComplEx_v2(KBCModel):
             slice_dic: np.ndarray, max_NB: int=50, init_size: float=1e-3,
             data_name: str='FB15K', ascending=1
     ):
-        super(Context_ComplEx, self).__init__()
+        super(Context_ComplEx_v2, self).__init__()
         n_s, n_r, n_o = sizes
         self.sizes = [n_s, n_r, n_o, n_o]  #append another n_o for nb_o
         self.rank = rank
@@ -947,7 +947,7 @@ class Context_ComplEx_v3(KBCModel):
             slice_dic: np.ndarray, max_NB: int=50, init_size: float=1e-3,
             data_name: str='FB15K', ascending=1, dropout_1=0.5, dropout_g=0.5
     ):
-        super(Context_ComplEx, self).__init__()
+        super(Context_ComplEx_v3, self).__init__()
         n_s, n_r, n_o = sizes
         self.sizes = [n_s, n_r, n_o, n_o]  #append another n_o for nb_o
         self.rank = rank
