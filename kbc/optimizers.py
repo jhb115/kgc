@@ -28,11 +28,35 @@ class KBCOptimizer(object):
         self.n_freeze = n_freeze
 
         if self.n_freeze > 0:
-            self.freeze_flag = 1  # freeze the embedding of original embedding
+            self.freeze_flag = 1
+            # freeze the embedding of original embedding
+            # self.model.embeddings[0], self.model.embeddings[1], self.model.embeddings[2], self.model.embeddings[3]
         else:
             self.freeze_flag = 0
 
+        self.model_name = 'Context_ComplEx'
+
+    # need to define optimizer with frozen embeddings at the start (let require grad = False, filter out in the parameter)
+    # then we need to add this parameter by optim
+
     def epoch(self, examples: torch.LongTensor):
+
+        if self.freeze_flag == 0:
+            if self.model_name == 'Context_CP':
+                self.model.lhs.weight.requires_grad = True
+                self.model.rel.weight.requires_grad = True
+                self.model.rhs.weight.requires_grad = True
+
+                self.optimizer.add_param_group({'lhs': self.model.lhs.parameter(),
+                                                'rhs': self.model.rhs.parameter(),
+                                                'rel': self.model.rel.parameter()})
+            elif self.model_name == 'Context_ComplEx':
+                for i in range(3):
+                    self.model.embeddings[i].weight.requires_grad = True
+                self.optimizer.add_param_group({'embeddings': self.model.embeddings.parameters()})
+
+            self.freeze_flag = None
+
         actual_examples = examples[torch.randperm(examples.shape[0]), :]
         loss = nn.CrossEntropyLoss(reduction='mean')
 

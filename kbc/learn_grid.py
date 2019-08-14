@@ -196,10 +196,23 @@ model.to(device)
 
 
 # Need to filter out the frozen parameters
+if args.n_freeze > 0:
+    if args.model in ['Context_CP', 'Context_CP_v2']:
+        model.lhs.weight.requires_grad = False
+        model.rel.weight.requires_grad = False
+        model.rh.weight.requires_grad = False
+
+    elif args.model in ['Context_ComplEx', 'Context_ComplEx_v2', 'Context_ComplEx_v3']:
+        for i in range(3):
+            model.embeddings[i].weight.requires_grad = False
+    filtered_parameters = filter(lambda p: p.requires_grad, model.parameters())
+else:
+    filtered_parameters = model.parameters()
+
 optim_method = {
-    'Adagrad': lambda: optim.Adagrad(model.parameters(), lr=args.learning_rate),
-    'RMSprop': lambda: optim.RMSProp(model.parameters(), lr=args.learning_rate),
-    'SGD': lambda: optim.SGD(model.parameters(), lr=args.learning_rate)
+    'Adagrad': lambda: optim.Adagrad(filtered_parameters, lr=args.learning_rate),
+    'RMSprop': lambda: optim.RMSProp(filtered_parameters, lr=args.learning_rate),
+    'SGD': lambda: optim.SGD(filtered_parameters, lr=args.learning_rate)
 }[args.optimizer]()
 
 
@@ -490,6 +503,10 @@ folder_name = '../results/{}/{}/{}'.format(args.model, args.dataset, train_no)
 for e in range(args.max_epochs):
 
     print('\n train epoch = ', e+1)
+
+    if e == args.n_freeze and args.n_freeze > 0:
+        optimizer.freeze_flag = 0
+
     cur_loss = optimizer.epoch(examples)
 
     if (e + 1) % args.valid == 0 or (e+1) == args.max_epochs:
