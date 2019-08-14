@@ -52,7 +52,7 @@ class Dataset(object):
     def get_sorted_train(self):
         sorted_file_path = self.root / 'sorted_train.pickle'
         slice_file_path = self.root / 'slice_train.pickle'
-        if os.path.exists(sorted_file_path) and os.path.exists(slice_file_path) and 0:
+        if os.path.exists(sorted_file_path) and os.path.exists(slice_file_path):
             # load data if exists
             print('Sorted train set loaded')
             return pickle.load(open(sorted_file_path, 'rb')), \

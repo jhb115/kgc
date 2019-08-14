@@ -28,7 +28,7 @@ class KBCOptimizer(object):
         self.n_freeze = n_freeze
 
         if self.n_freeze > 0:
-            self.freeze_flag = 1
+            self.freeze_flag = 1  # freeze the embedding of original embedding
         else:
             self.freeze_flag = 0
 
