@@ -479,12 +479,14 @@ class Context_ComplEx(KBCModel):
         gated_e_c = (self.g * e_c[0] + (torch.ones((self.chunk_size, 1)).cuda() - self.g)*torch.ones_like(e_c[0]),
                      self.g * e_c[1])
 
-        rror_rioi = rel[0]*rhs[0]+rel[1]*rhs[1]
-        rior = rel[1]*rhs[0]
-        rroi = rel[0]*rhs[1]
+        srrr = lhs[0] * rel[0]
+        siri = lhs[1] * rel[1]
+        sirr = lhs[1] * rel[0]
+        srri = lhs[0] * rel[1]
 
-        return torch.sum((lhs[0]*rror_rioi + lhs[1]*(rior + rroi))*gated_e_c[0]
-                         + (lhs[1]*rror_rioi + lhs[0]*(rior - rroi))*gated_e_c[1], 1, keepdim=True)
+        return torch.sum(((srrr - siri) * e_c[0] + (sirr + srri) * e_c[1])*rhs[0] +
+                         ((sirr + srri) * e_c[0] + (siri - srrr) * e_c[1])*rhs[1]
+                         , 1, keepdim=True)
 
     def forward(self, x):
 
@@ -538,7 +540,7 @@ class Context_ComplEx(KBCModel):
         to_score = to_score[:, :self.rank], to_score[:, self.rank:]
 
         return (
-                ((srrr + siri) * gated_e_c[0] + (sirr + srri) * gated_e_c[1]) @ to_score[0].transpose(0, 1) +
+                ((srrr - siri) * gated_e_c[0] + (sirr + srri) * gated_e_c[1]) @ to_score[0].transpose(0, 1) +
                 ((srri + sirr) * gated_e_c[0] + (siri - srrr) * gated_e_c[1]) @ to_score[1].transpose(0, 1)
         ), (
             torch.sqrt(lhs[0]**2 + lhs[1]**2),
@@ -590,7 +592,7 @@ class Context_ComplEx(KBCModel):
         sirr = lhs[1] * rel[0]
         srri = lhs[0] * rel[1]
 
-        return torch.cat(((srrr + siri) * gated_e_c[0] + (sirr + srri) * gated_e_c[1],
+        return torch.cat(((srrr - siri) * gated_e_c[0] + (sirr + srri) * gated_e_c[1],
                          (srri + sirr) * gated_e_c[0] + (siri - srrr) * gated_e_c[1]), 1)
 
     def get_rhs(self, chunk_begin: int, chunk_size: int):
@@ -879,7 +881,7 @@ class Context_ComplEx_v2(KBCModel):
         rior = rel[1]*rhs[0]
         rroi = rel[0]*rhs[1]
 
-        return torch.sum((lhs[0]*rror_rioi + lhs[1]*(rior + rroi))*gated_e_c[0]
+        return torch.sum((lhs[0]*rror_rioi + lhs[1]*(-rior + rroi))*gated_e_c[0]
                          + (lhs[1]*rror_rioi + lhs[0]*(rior - rroi))*gated_e_c[1], 1, keepdim=True)
 
     def forward(self, x):
@@ -930,7 +932,7 @@ class Context_ComplEx_v2(KBCModel):
         to_score = to_score[:, :self.rank], to_score[:, self.rank:]
 
         return (
-                ((srrr + siri) * gated_e_c[0] + (sirr + srri) * gated_e_c[1]) @ to_score[0].transpose(0, 1) +
+                ((srrr + siri) * gated_e_c[0] + (-sirr + srri) * gated_e_c[1]) @ to_score[0].transpose(0, 1) +
                 ((srri + sirr) * gated_e_c[0] + (siri - srrr) * gated_e_c[1]) @ to_score[1].transpose(0, 1)
         ), (
             torch.sqrt(lhs[0]**2 + lhs[1]**2),
@@ -1114,7 +1116,7 @@ class Context_ComplEx_v3(KBCModel):
         rior = rel[1]*rhs[0]
         rroi = rel[0]*rhs[1]
 
-        return torch.sum((lhs[0]*rror_rioi + lhs[1]*(rior + rroi))*gated_e_c[0]
+        return torch.sum((lhs[0]*rror_rioi + lhs[1]*(-rior + rroi))*gated_e_c[0]
                          + (lhs[1]*rror_rioi + lhs[0]*(rior - rroi))*gated_e_c[1], 1, keepdim=True)
 
     def forward(self, x):
