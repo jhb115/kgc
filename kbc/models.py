@@ -1018,19 +1018,19 @@ class Context_ComplEx_v3(KBCModel):
         self.flag = 0
         self.ascending = ascending
 
-        # self.embeddings = nn.ModuleList([
-        #     nn.Embedding(s, 2 * rank, sparse=True)
-        #     for s in self.sizes[:3]
-        # ])
-
         self.embeddings = nn.ModuleList([
             nn.Embedding(s, 2 * rank, sparse=True)
-            for s in self.sizes[:2]
+            for s in self.sizes[:3]
         ])
+
+        # self.embeddings = nn.ModuleList([
+        #     nn.Embedding(s, 2 * rank, sparse=True)
+        #     for s in self.sizes[:2]
+        # ])
 
         self.embeddings[0].weight.data *= init_size
         self.embeddings[1].weight.data *= init_size
-        # self.embeddings[2].weight.data *= init_size  # For context
+        self.embeddings[2].weight.data *= init_size  # For context
 
         self.W = nn.ParameterList([nn.Parameter(torch.randn((rank*2, rank))), nn.Parameter(torch.randn((rank*2, rank)))])
         self.b_w = nn.ParameterList([nn.Parameter(torch.randn((1, rank))), nn.Parameter(torch.randn((1, rank)))])
@@ -1078,8 +1078,8 @@ class Context_ComplEx_v3(KBCModel):
 
         index_tensor = torch.LongTensor(index_array).cuda()
 
-        # return self.embeddings[2](index_tensor)
-        return self.embeddings[0](index_tensor)
+        return self.embeddings[2](index_tensor)
+        #return self.embeddings[0](index_tensor)
 
     def score(self, x: torch.Tensor):
 
