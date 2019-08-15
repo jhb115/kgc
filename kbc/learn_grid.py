@@ -565,11 +565,10 @@ for e in range(args.max_epochs):
             summary_config['summary']['best_hits@10'] = str(max_test_hits)
             torch.save(model.state_dict(), folder_name + '/model_state.pt')
 
-        if best_model_flag == 1 and ((e+1) % (args.valid*3) == 0):
-            test_g.append(model.g.clone().data.cpu().numpy())
-            test_alpha.append(model.alpha.clone().data.cpu().numpy())
-            np.save(folder_name + '/test_g', np.array(test_g))
-            np.save(folder_name + '/test_alpha', np.array(test_alpha))
+        test_g.append(model.g.clone().data.cpu().numpy())
+        test_alpha.append(model.alpha.clone().data.cpu().numpy())
+        np.save(folder_name + '/test_g', np.array(test_g))
+        np.save(folder_name + '/test_alpha', np.array(test_alpha))
 
         config['e'] = e
         pickle.dump(config, open(folder_name + '/config.p', 'wb'))
