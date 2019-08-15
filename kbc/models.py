@@ -364,6 +364,8 @@ class Context_CP(KBCModel):
 Correction -> nn.Parameter(tensor)
 '''
 # Fix the requires_grad=True problem
+
+
 class Context_ComplEx(KBCModel):
     def __init__(
             self, sizes: Tuple[int, int, int], rank: int, sorted_data:np.ndarray,
@@ -474,7 +476,7 @@ class Context_ComplEx(KBCModel):
 
         # calculation of g
         self.g = Sigmoid((lhs[0]*rel[0]-lhs[1]*rel[1]) @ self.Uo[0] - (lhs[1]*rel[0]+lhs[0]*rel[1]) @ self.Uo[1]
-                    + e_c[0] @ self.Wo[0] + self.b_g)
+                          + e_c[0] @ self.Wo[0] + self.b_g)
 
         gated_e_c = (self.g * e_c[0] + (torch.ones((self.chunk_size, 1)).cuda() - self.g)*torch.ones_like(e_c[0]),
                      self.g * e_c[1])
@@ -484,8 +486,8 @@ class Context_ComplEx(KBCModel):
         sirr = lhs[1] * rel[0]
         srri = lhs[0] * rel[1]
 
-        return torch.sum(((srrr - siri) * e_c[0] + (sirr + srri) * e_c[1])*rhs[0] +
-                         ((sirr + srri) * e_c[0] + (siri - srrr) * e_c[1])*rhs[1]
+        return torch.sum(((srrr - siri) * gated_e_c[0] + (sirr + srri) * gated_e_c[1])*rhs[0] +
+                         ((sirr + srri) * gated_e_c[0] + (siri - srrr) * gated_e_c[1])*rhs[1]
                          , 1, keepdim=True)
 
     def forward(self, x):
@@ -877,12 +879,14 @@ class Context_ComplEx_v2(KBCModel):
         gated_e_c = (self.g * e_c[0] + (torch.ones((self.chunk_size, 1)).cuda() - self.g)*torch.ones_like(e_c[0]).cuda(),
                      self.g * e_c[1])
 
-        rror_rioi = rel[0]*rhs[0]+rel[1]*rhs[1]
-        rior = rel[1]*rhs[0]
-        rroi = rel[0]*rhs[1]
+        srrr = lhs[0] * rel[0]
+        siri = lhs[1] * rel[1]
+        sirr = lhs[1] * rel[0]
+        srri = lhs[0] * rel[1]
 
-        return torch.sum((lhs[0]*rror_rioi + lhs[1]*(-rior + rroi))*gated_e_c[0]
-                         + (lhs[1]*rror_rioi + lhs[0]*(rior - rroi))*gated_e_c[1], 1, keepdim=True)
+        return torch.sum(((srrr - siri) * gated_e_c[0] + (sirr + srri) * gated_e_c[1]) * rhs[0] +
+                         ((sirr + srri) * gated_e_c[0] + (siri - srrr) * gated_e_c[1]) * rhs[1]
+                         , 1, keepdim=True)
 
     def forward(self, x):
 
@@ -932,7 +936,7 @@ class Context_ComplEx_v2(KBCModel):
         to_score = to_score[:, :self.rank], to_score[:, self.rank:]
 
         return (
-                ((srrr + siri) * gated_e_c[0] + (-sirr + srri) * gated_e_c[1]) @ to_score[0].transpose(0, 1) +
+                ((srrr - siri) * gated_e_c[0] + (srri - sirr) * gated_e_c[1]) @ to_score[0].transpose(0, 1) +
                 ((srri + sirr) * gated_e_c[0] + (siri - srrr) * gated_e_c[1]) @ to_score[1].transpose(0, 1)
         ), (
             torch.sqrt(lhs[0]**2 + lhs[1]**2),
@@ -982,8 +986,8 @@ class Context_ComplEx_v2(KBCModel):
         sirr = lhs[1] * rel[0]
         srri = lhs[0] * rel[1]
 
-        return torch.cat(((srrr + siri) * gated_e_c[0] + (sirr + srri) * gated_e_c[1],
-                         (srri + sirr) * gated_e_c[0] + (siri - srrr) * gated_e_c[1]), 1)
+        return torch.cat(((srrr - siri) * gated_e_c[0] + (sirr + srri) * gated_e_c[1],
+                          (srri + sirr) * gated_e_c[0] + (siri - srrr) * gated_e_c[1]), 1)
 
     def get_rhs(self, chunk_begin: int, chunk_size: int):
         return self.embeddings[0].weight.data[
@@ -1112,12 +1116,14 @@ class Context_ComplEx_v3(KBCModel):
         gated_e_c = (self.g * e_c[0] + (torch.ones((self.chunk_size, 1)).cuda() - self.g)*torch.ones_like(e_c[0]),
                      self.g * e_c[1])
 
-        rror_rioi = rel[0]*rhs[0]+rel[1]*rhs[1]
-        rior = rel[1]*rhs[0]
-        rroi = rel[0]*rhs[1]
+        srrr = lhs[0] * rel[0]
+        siri = lhs[1] * rel[1]
+        sirr = lhs[1] * rel[0]
+        srri = lhs[0] * rel[1]
 
-        return torch.sum((lhs[0]*rror_rioi + lhs[1]*(-rior + rroi))*gated_e_c[0]
-                         + (lhs[1]*rror_rioi + lhs[0]*(rior - rroi))*gated_e_c[1], 1, keepdim=True)
+        return torch.sum(((srrr - siri) * gated_e_c[0] + (sirr + srri) * gated_e_c[1]) * rhs[0] +
+                         ((sirr + srri) * gated_e_c[0] + (siri - srrr) * gated_e_c[1]) * rhs[1]
+                         , 1, keepdim=True)
 
     def forward(self, x):
 
@@ -1164,13 +1170,13 @@ class Context_ComplEx_v3(KBCModel):
         to_score = to_score[:, :self.rank], to_score[:, self.rank:]
 
         return (
-                ((srrr + siri) * gated_e_c[0] + (sirr + srri) * gated_e_c[1]) @ to_score[0].transpose(0, 1) +
-                ((srri + sirr) * gated_e_c[0] + (siri - srrr) * gated_e_c[1]) @ to_score[1].transpose(0, 1)
+               ((srrr - siri) * gated_e_c[0] + (sirr + srri) * gated_e_c[1]) @ to_score[0].transpose(0, 1) +
+               ((srri + sirr) * gated_e_c[0] + (siri - srrr) * gated_e_c[1]) @ to_score[1].transpose(0, 1)
         ), (
-            torch.sqrt(lhs[0]**2 + lhs[1]**2),
-            torch.sqrt(rel[0]**2 + rel[1]**2),
-            torch.sqrt(rhs[0]**2 + rhs[1]**2),
-            torch.sqrt(gated_e_c[0]**2 + gated_e_c[1]**2)
+           torch.sqrt(lhs[0] ** 2 + lhs[1] ** 2),
+           torch.sqrt(rel[0] ** 2 + rel[1] ** 2),
+           torch.sqrt(rhs[0] ** 2 + rhs[1] ** 2),
+           torch.sqrt(gated_e_c[0] ** 2 + gated_e_c[1] ** 2)
         )
 
     def get_queries(self, queries: torch.Tensor):
@@ -1201,8 +1207,8 @@ class Context_ComplEx_v3(KBCModel):
 
         # calculation of g
         self.g = Sigmoid((lhs[0] * rel[0] - lhs[1] * rel[1]) @ self.Uo[0]
-                          - (lhs[1] * rel[0] + lhs[0] * rel[1]) @ self.Uo[1]
-                          + e_c[0] @ self.Wo[0] + self.b_g)
+                         - (lhs[1] * rel[0] + lhs[0] * rel[1]) @ self.Uo[1]
+                         + e_c[0] @ self.Wo[0] + self.b_g)
 
         gated_e_c = (self.g * e_c[0] + (torch.ones((self.chunk_size, 1)).cuda() - self.g) * torch.ones_like(e_c[0]),
                      self.g * e_c[1])
@@ -1212,8 +1218,8 @@ class Context_ComplEx_v3(KBCModel):
         sirr = lhs[1] * rel[0]
         srri = lhs[0] * rel[1]
 
-        return torch.cat(((srrr + siri) * gated_e_c[0] + (sirr + srri) * gated_e_c[1],
-                         (srri + sirr) * gated_e_c[0] + (siri - srrr) * gated_e_c[1]), 1)
+        return torch.cat(((srrr - siri) * gated_e_c[0] + (sirr + srri) * gated_e_c[1],
+                          (srri + sirr) * gated_e_c[0] + (siri - srrr) * gated_e_c[1]), 1)
 
     def get_rhs(self, chunk_begin: int, chunk_size: int):
         return self.embeddings[0].weight.data[
