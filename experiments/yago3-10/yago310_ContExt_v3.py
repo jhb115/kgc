@@ -36,7 +36,7 @@ def main(argv):
         max_NB=[50, 150],
         g_weight=[0.03, 0.08],
         reg=[0.01, 0.08],
-        ascending=[-1, 1],
+        ascending=[-1],
         optimizer=['Adagrad'],
         n_freeze=[0, 20]
     )
