@@ -192,6 +192,7 @@ class ComplEx(KBCModel):
 '''
 Correction -> requires_grad = True
 '''
+
 class Context_CP(KBCModel):
     def __init__(
             self, sizes: Tuple[int, int, int], rank: int, sorted_data: np.ndarray,
@@ -1003,6 +1004,172 @@ Adds dropout layer on g
 Secondary Pre-training where ComplEx Embedding is Frozen
 Use the same embedding as the ComplEx
 '''
+
+
+class Context_CP_v3(KBCModel):
+    def __init__(
+            self, sizes: Tuple[int, int, int], rank: int, sorted_data: np.ndarray,
+            slice_dic: np.ndarray, max_NB: int = 50, init_size: float = 1e-3,
+            data_name: str = 'FB15K', ascending=1
+    ):
+        super(Context_CP_v3, self).__init__()
+        self.sizes = sizes
+        self.rank = rank
+        self.data_name = data_name
+        self.context_flag = 1
+        self.ascending = ascending
+        self.flag = 0
+
+        self.lhs = nn.Embedding(sizes[0], rank, sparse=True)
+        self.rel = nn.Embedding(sizes[1], rank, sparse=True)
+        self.rhs = nn.Embedding(sizes[2], rank, sparse=True)
+        self.ctxt = nn.Embedding(sizes[2], rank, sparse=True)
+        # Embedding for context
+
+        self.lhs.weight.data *= init_size
+        self.rel.weight.data *= init_size
+        self.rhs.weight.data *= init_size
+        self.ctxt.weight.data *= init_size
+
+        # Context related parameters
+        self.W = nn.Linear(int(2 * rank), rank, bias=True)  # W for w = [lhs; rel; rhs]^T W
+
+        self.drop_layer1 = nn.Dropout(p=0.5)  # apply dropout to only forward
+
+        self.Wo = nn.Linear(rank, 1, bias=True)
+        self.Uo = nn.Linear(rank, 1, bias=True)
+
+        nn.init.xavier_uniform_(self.W.weight)  # Xavier initialization
+        nn.init.xavier_uniform_(self.W2.weight)
+
+        self.sorted_data = sorted_data
+        self.slice_dic = slice_dic
+        self.max_NB = max_NB
+
+    def get_neighbor(self, subj: torch.Tensor):
+        # return neighbor (N_subject, N_nb_max, k)
+        index_array = np.zeros(shape=(len(subj), self.max_NB), dtype=np.int32)
+
+        for i, each_subj in enumerate(subj):
+            _, start_i, end_i = self.slice_dic[each_subj]
+            length = end_i - start_i
+
+            if length > 0:
+                if self.max_NB >= length:
+                    index_array[i, :length] = self.sorted_data[start_i:end_i, 2]
+                else:  # Need to uniformly truncate
+                    hop = int(length / self.max_NB)
+                    index_array[i, :] = self.sorted_data[start_i:end_i:hop, 2][:self.max_NB]
+                if self.ascending == -1:
+                    index_array[i, :] = index_array[i, :][::-1]
+
+        # Convert index_array into a long tensor for indexing the embedding.
+        index_tensor = torch.LongTensor(index_array).cuda()
+
+        return self.ctxt(index_tensor)
+
+    def score(self, x: torch.Tensor):
+
+        self.chunk_size = len(x)
+        self.flag += 1
+
+        lhs = self.lhs(x[:, 0])
+        rel = self.rel(x[:, 1])
+        rhs = self.rhs(x[:, 2])
+
+        # concatenation of lhs, rel
+        trp_E = torch.cat((lhs, rel), dim=1)  # (previous)
+
+        # Get attention weight vector, where W.shape == (3k, k)
+        # w = self.bn1(self.W(trp_E))  # w.shape == (chunk_size, k) and batch-norm
+        w = self.W(trp_E)  # w.shape == (chunk_size, k) and batch-norm
+        # Get nb_E
+        nb_E = self.get_neighbor(x[:, 0])  # nb_E.shape == (chunk_size, max_NB, k)
+
+        self.alpha = torch.softmax(torch.einsum('bk,bmk->bm', w, nb_E), dim=1)
+        # alpha.shape == (chunk_size, max_NB)
+
+        # Get context vector
+        e_c = torch.einsum('bm,bmk->bk', self.alpha, nb_E)
+        # extra linear layer and batch-norm
+
+        # Gate
+        self.g = Sigmoid(self.Uo(lhs*rel) + self.Wo(e_c))
+
+        gated_e_c = self.g * e_c + (torch.ones((self.chunk_size, 1)).cuda() - self.g) * torch.ones_like(e_c).cuda()
+
+        # Get tot_score
+        tot_score = torch.sum(lhs * rel * rhs * gated_e_c, 1, keepdim=True)
+
+        return tot_score
+
+    def forward(self, x: torch.Tensor):
+
+        self.chunk_size = len(x)
+        self.flag += 1
+
+        lhs = self.lhs(x[:, 0])
+        rel = self.rel(x[:, 1])
+        rhs = self.rhs(x[:, 2])
+
+        # concatenation of lhs, rel, rhs
+        trp_E = torch.cat((lhs, rel), dim=1)  # (previous)
+
+        # Get attention weight vector, where W.shape == (3k, k)
+        w = self.W(self.drop_layer1(trp_E))
+        # w.shape == (chunk_size, k) and batch-norm, dropout
+
+        # Get nb_E
+        nb_E = self.get_neighbor(x[:, 0])  # nb_E.shape == (chunk_size, max_NB, k)
+
+        self.alpha = torch.softmax(torch.einsum('bk,bmk->bm', w, nb_E), dim=1)
+        # alpha.shape == (chunk_size, max_NB)
+
+        e_c = torch.einsum('bm,bmk->bk', self.alpha, nb_E)
+        # extra linear layer and batch-normalization
+
+        # Gate
+        self.g = Sigmoid(self.Uo(lhs * rel) + self.Wo(e_c))
+
+        gated_e_c = self.g * e_c + (torch.ones((self.chunk_size, 1)).cuda() - self.g) * torch.ones_like(e_c).cuda()
+
+        # Get tot_score
+        tot_forward = (lhs * rel * gated_e_c) @ self.rhs.weight.t()
+
+        return tot_forward, (lhs, rel, rhs, gated_e_c)
+
+    def get_queries(self, x: torch.Tensor):  # need to include context part
+        # x is a numpy array (equivalent to queries)
+
+        self.chunk_size = len(x)
+        self.flag += 1
+
+        lhs = self.lhs(x[:, 0])
+        rel = self.rel(x[:, 1])
+
+        # concatenation of lhs, rel, rhs
+        trp_E = torch.cat((lhs, rel), dim=1)  # trp_E.shape == (chunk_size, 3k) previous
+
+        # w = self.bn1(self.W(trp_E))  # w.shape == (chunk_size, k) and added batch-norm
+        w = self.W(trp_E)  # w.shape == (chunk_size, k) and added batch-norm
+        nb_E = self.get_neighbor(x[:, 0])  # nb_E.shape == (chunk_size, max_NB, k)
+
+        self.alpha = torch.softmax(torch.einsum('bk,bmk->bm', w, nb_E), dim=1)
+        # alpha.shape == (chunk_size, max_NB)
+
+        e_c = torch.einsum('bm,bmk->bk', self.alpha, nb_E)
+        self.g = Sigmoid(self.Uo(lhs * rel) + self.Wo(e_c))
+
+        gated_e_c = self.g * e_c + (torch.ones((self.chunk_size, 1)).cuda() - self.g) * torch.ones_like(e_c).cuda()
+
+        return lhs.data * rel.data * gated_e_c.data
+
+    def get_rhs(self, chunk_begin: int, chunk_size: int):
+        return self.rhs.weight.data[
+            chunk_begin:chunk_begin + chunk_size
+        ].transpose(0, 1)
+
+
 class Context_ComplEx_v3(KBCModel):
     def __init__(
             self, sizes: Tuple[int, int, int], rank: int, sorted_data:np.ndarray,
