@@ -19,7 +19,7 @@ def summary(configuration):
 
 
 def to_cmd(c, _path=None):
-    command = f'python kbc/learn_grid.py --dataset FB237 ' \
+    command = f'python kbc/learn_grid.py --dataset WN18RR ' \
         f'--model Context_CP_v2 ' \
         f'--regularizer N4 ' \
         f'--max_epoch 140 ' \
@@ -60,7 +60,7 @@ def main(argv):
 #$ -S /bin/bash
 #$ -o /home/jeunbyun/sgelogs
 #$ -j y
-#$ -N fb237_Contact_v3
+#$ -N wn18rr_Contact_v3
 #$ -l tmem=9G
 #$ -l h_rt=92:00:00
 #$ -l gpu=1
