@@ -20,7 +20,7 @@ def summary(configuration):
 
 def to_cmd(c, _path=None):
     command = f'python kbc/learn_grid.py --dataset WN18RR ' \
-        f'--model Context_ComplEx_v2 ' \
+        f'--model Context_ComplEx_v3 ' \
         f'--regularizer N4 ' \
         f'--max_epoch 140 ' \
         f'--optimizer {c["optimizer"]} ' \

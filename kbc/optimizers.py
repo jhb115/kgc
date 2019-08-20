@@ -26,6 +26,7 @@ class KBCOptimizer(object):
         self.batch_size = batch_size
         self.verbose = verbose
         self.n_freeze = n_freeze
+        self.loss_list = []
 
         if self.n_freeze > 0:
             self.freeze_flag = 1
@@ -77,6 +78,7 @@ class KBCOptimizer(object):
                     l_reg = self.regularizer.forward(factors)
                     l = l_fit + l_reg
 
+                self.loss_list.append(l)
                 self.optimizer.zero_grad()
                 l.backward()
                 self.optimizer.step()

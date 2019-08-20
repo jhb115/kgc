@@ -528,6 +528,8 @@ for e in range(args.max_epochs):
         summary_config[train_no]['curr_train_hit10'] = str(hits1310[2])
         summary_config[train_no]['curr_train_mrr'] = str(train_results['MRR'])
 
+        np.save(folder_name + '/loss', np.array(optimizer.loss_list))
+
         np.save(folder_name + '/train_mrr', np.array(train_mrr))
         np.save(folder_name + '/train_hit1', np.array(train_hit1))
         np.save(folder_name + '/train_hit3', np.array(train_hit3))
