@@ -78,10 +78,11 @@ class KBCOptimizer(object):
                     l_reg = self.regularizer.forward(factors)
                     l = l_fit + l_reg
 
-                self.loss_list.append(l)
                 self.optimizer.zero_grad()
                 l.backward()
                 self.optimizer.step()
                 b_begin += self.batch_size
                 bar.update(input_batch.shape[0])
                 bar.set_postfix(loss=f'{l.item():.0f}')
+
+                self.loss_list.append(l.clone().data.cpu().numpy())

@@ -1227,6 +1227,24 @@ class Context_ComplEx_v3(KBCModel):
         self.slice_dic = slice_dic
         self.max_NB = max_NB
 
+    def attention_mask(self, subj: torch.Tensor):
+        index_array = np.zeros(shape=(len(subj), self.max_NB), dtype=np.int32)
+
+        for i, each_subj in enumerate(subj):
+            _, start_i, end_i = self.slice_dic[each_subj]
+            length = end_i - start_i
+
+            if length > 0:
+                if self.max_NB >= length:
+                    index_array[i, :length] = self.sorted_data[start_i:end_i, 2]
+                else:  # Need to uniformly truncate
+                    hop = int(length / self.max_NB)
+                    index_array[i, :] = self.sorted_data[start_i:end_i:hop, 2][:self.max_NB]
+                if self.ascending == -1:
+                    index_array[i, :] = index_array[i, :][::-1]
+
+        return index_array
+
     def get_neighbor(self, subj: torch.Tensor):
         index_array = np.zeros(shape=(len(subj), self.max_NB), dtype=np.int32)
 
@@ -1247,6 +1265,8 @@ class Context_ComplEx_v3(KBCModel):
 
         return self.embeddings[2](index_tensor)
         #return self.embeddings[0](index_tensor)
+
+    def
 
     def score(self, x: torch.Tensor):
 
