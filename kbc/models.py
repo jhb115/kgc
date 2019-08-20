@@ -1266,8 +1266,6 @@ class Context_ComplEx_v3(KBCModel):
         return self.embeddings[2](index_tensor)
         #return self.embeddings[0](index_tensor)
 
-    def
-
     def score(self, x: torch.Tensor):
 
         self.chunk_size = len(x)
