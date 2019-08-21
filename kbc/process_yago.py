@@ -14,7 +14,8 @@ import numpy as np
 
 from collections import defaultdict
 
-DATA_PATH = '../dataset/processed_data'  # this is where the processed ata gets stored..
+DATA_PATH = pkg_resources.resource_filename('kbc', 'data/')  # this is where the processed data get stored.
+
 os.makedirs(DATA_PATH)
 
 def prepare_dataset(path='../dataset/raw_data', name='YAGO3-10'):  # this path is where the raw data lies
@@ -32,7 +33,7 @@ def prepare_dataset(path='../dataset/raw_data', name='YAGO3-10'):  # this path i
     entities, relations = set(), set()
     for f in files:
         file_path = os.path.join(path, f)
-        to_read = open(file_path, 'r')
+        to_read = open(file_path + '.txt', 'r')
         for line in to_read.readlines():
             lhs, rel, rhs = line.strip().split('\t')
             entities.add(lhs)
@@ -56,7 +57,7 @@ def prepare_dataset(path='../dataset/raw_data', name='YAGO3-10'):  # this path i
     # map train/test/valid with the ids
     for f in files:
         file_path = os.path.join(path, f)
-        to_read = open(file_path, 'r')
+        to_read = open(file_path + '.txt', 'r')
         examples = []
         for line in to_read.readlines():
             lhs, rel, rhs = line.strip().split('\t')
@@ -109,7 +110,7 @@ def prepare_dataset(path='../dataset/raw_data', name='YAGO3-10'):  # this path i
 if __name__ == "__main__":
     print("Preparing dataset {}".format('YAGO3-10'))
     try:
-        prepare_dataset('../dataset/raw_dataset', 'YAGO3-10')
+        prepare_dataset('../dataset/raw_data/YAGO3-10', 'YAGO3-10')
     except OSError as e:
         if e.errno == errno.EEXIST:
             print(e)
