@@ -485,7 +485,7 @@ forward_g = []
 test_g = []
 forward_alpha = []
 test_alpha = []
-foward_target_o = []
+forward_target_o = []
 test_target_o = []
 
 forward_nb_index = []
