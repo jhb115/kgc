@@ -1244,14 +1244,19 @@ class Context_ComplEx_v3(KBCModel):
                 if self.ascending == -1:
                     index_array[i, :] = index_array[i, :][::-1]
 
+        self.index_array = index_array
         index_tensor = torch.LongTensor(index_array).cuda()
 
-        return self.embeddings[2](index_tensor), index_array  # index_array for attention mask
+        return self.embeddings[2](index_tensor)  # index_array for attention mask
         #return self.embeddings[0](index_tensor), index_array  # when we are to use same embedding for the neighbor
 
     def score(self, x: torch.Tensor):
 
         self.chunk_size = len(x)
+
+        if self..evaluation_mode:
+            self.x = x
+
         self.flag += 1
 
         lhs = self.embeddings[0](x[:, 0])
@@ -1268,7 +1273,7 @@ class Context_ComplEx_v3(KBCModel):
         w = (trp_E[0] @ self.W[0] - trp_E[1] @ self.W[1] + self.b_w[0],
              trp_E[0] @ self.W[1] + trp_E[1] @ self.W[0] + self.b_w[1])
 
-        nb_E, index_array = self.get_neighbor(x[:, 0])
+        nb_E = self.get_neighbor(x[:, 0])
         nb_E = nb_E[:, :, :self.rank], nb_E[:, :, self.rank:]  # check on this
 
         # Take the real part of w @ nb_E
@@ -1313,7 +1318,7 @@ class Context_ComplEx_v3(KBCModel):
         w = (trp_E[0] @ self.W[0] - trp_E[1] @ self.W[1] + self.b_w[0],
              trp_E[0] @ self.W[1] + trp_E[1] @ self.W[0] + self.b_w[1])
 
-        nb_E, index_array = self.get_neighbor(x[:, 0])
+        nb_E = self.get_neighbor(x[:, 0])
         nb_E = nb_E[:, :, :self.rank], nb_E[:, :, self.rank:]  # check on this
 
         # Take the real part of w @ nb_E
@@ -1364,7 +1369,7 @@ class Context_ComplEx_v3(KBCModel):
         w = (trp_E[0] @ self.W[0] - trp_E[1] @ self.W[1] + self.b_w[0],
              trp_E[0] @ self.W[1] + trp_E[1] @ self.W[0] + self.b_w[1])
 
-        nb_E, index_array = self.get_neighbor(queries[:, 0])
+        nb_E = self.get_neighbor(queries[:, 0])
         nb_E = nb_E[:, :, :self.rank], nb_E[:, :, self.rank:]  # check on this
 
         # Take the real part of w @ nb_E

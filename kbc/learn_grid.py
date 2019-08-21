@@ -485,6 +485,12 @@ forward_g = []
 test_g = []
 forward_alpha = []
 test_alpha = []
+
+forward_nb_index = []
+forward_spo_index = []
+test_nb_index = []
+test_spo_index = []
+
 best_model_flag = 0
 
 hits_name = ['_hits@1', '_hits@3', '_hits@10']
@@ -514,12 +520,20 @@ for e in range(args.max_epochs):
 
         train_results = avg_both(*dataset.eval(model, 'train', 50000))
 
-        if best_model_flag == 1 and ((e+1) % (args.valid*3) == 0):
-            forward_g.append(model.g.clone().data.cpu().numpy())
-            forward_alpha.append(model.alpha.clone().data.cpu().numpy())
+        forward_g.append(model.g.clone().data.cpu().numpy())
+        forward_alpha.append(model.alpha.clone().data.cpu().numpy())
 
+
+        if (e+1) % (args.valid * 3) == 0:
             np.save(folder_name + '/forward_g', np.array(forward_g))
             np.save(folder_name + '/forward_alpha', np.array(forward_alpha))
+
+            if args.evaluation_mode:
+                forward_nb_index.append(model.index_array)
+                forward_spo_index.append(model.x.clone().data.cpu().numpy())
+
+                np.save(folder_name + '/forward_nb_index', np.array(forward_nb_index))
+                np.save(folder_name + '/forward_spo_index', np.array(forward_spo_index))
 
         print("\n\t TRAIN: ", train_results)
 
@@ -572,10 +586,19 @@ for e in range(args.max_epochs):
             summary_config['summary']['best_hits@10'] = str(max_test_hits)
             torch.save(model.state_dict(), folder_name + '/model_state.pt')
 
-        test_g.append(model.g.clone().data.cpu().numpy())
-        test_alpha.append(model.alpha.clone().data.cpu().numpy())
-        np.save(folder_name + '/test_g', np.array(test_g))
-        np.save(folder_name + '/test_alpha', np.array(test_alpha))
+        if (e + 1) % (args.valid * 3) == 0:
+            test_g.append(model.g.clone().data.cpu().numpy())
+            test_alpha.append(model.alpha.clone().data.cpu().numpy())
+            np.save(folder_name + '/test_g', np.array(test_g))
+            np.save(folder_name + '/test_alpha', np.array(test_alpha))
+
+            if args.evaluation_mode:
+                test_nb_index.append(model.index_array)
+                test_spo_index.append(model.x.clone().data.cpu().numpy())
+
+                np.save(folder_name + '/test_nb_index', np.array(test_nb_index))
+                np.save(folder_name + '/test_spo_index', np.array(test_spo_index))
+
 
         config['e'] = e
         pickle.dump(config, open(folder_name + '/config.p', 'wb'))
