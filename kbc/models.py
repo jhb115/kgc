@@ -1255,7 +1255,7 @@ class Context_ComplEx_v3(KBCModel):
         self.chunk_size = len(x)
 
         if self.evaluation_mode:
-            self.target_o = x
+            self.target_o = x[:, 2]
 
         self.flag += 1
 
