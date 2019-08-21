@@ -9,6 +9,7 @@ import os
 import errno
 from pathlib import Path
 import pickle
+import shutil
 
 import numpy as np
 
@@ -16,7 +17,9 @@ from collections import defaultdict
 
 DATA_PATH = pkg_resources.resource_filename('kbc', 'data/')  # this is where the processed data get stored.
 
-os.makedirs(DATA_PATH)
+if os.path.exists(DATA_PATH + '/YAGO3-10'):
+    shutil.rmtree(DATA_PATH + '/YAGO3-10')
+
 
 def prepare_dataset(path='../dataset/raw_data', name='YAGO3-10'):  # this path is where the raw data lies
     """
