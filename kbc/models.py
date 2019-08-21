@@ -1227,24 +1227,6 @@ class Context_ComplEx_v3(KBCModel):
         self.slice_dic = slice_dic
         self.max_NB = max_NB
 
-    def attention_mask(self, subj: torch.Tensor):
-        index_array = np.zeros(shape=(len(subj), self.max_NB), dtype=np.int32)
-
-        for i, each_subj in enumerate(subj):
-            _, start_i, end_i = self.slice_dic[each_subj]
-            length = end_i - start_i
-
-            if length > 0:
-                if self.max_NB >= length:
-                    index_array[i, :length] = self.sorted_data[start_i:end_i, 2]
-                else:  # Need to uniformly truncate
-                    hop = int(length / self.max_NB)
-                    index_array[i, :] = self.sorted_data[start_i:end_i:hop, 2][:self.max_NB]
-                if self.ascending == -1:
-                    index_array[i, :] = index_array[i, :][::-1]
-
-        return index_array
-
     def get_neighbor(self, subj: torch.Tensor):
         index_array = np.zeros(shape=(len(subj), self.max_NB), dtype=np.int32)
 
@@ -1263,8 +1245,8 @@ class Context_ComplEx_v3(KBCModel):
 
         index_tensor = torch.LongTensor(index_array).cuda()
 
-        return self.embeddings[2](index_tensor)
-        #return self.embeddings[0](index_tensor)
+        return self.embeddings[2](index_tensor), index_array  # index_array for attention mask
+        #return self.embeddings[0](index_tensor), index_array  # when we are to use same embedding for the neighbor
 
     def score(self, x: torch.Tensor):
 
@@ -1285,7 +1267,7 @@ class Context_ComplEx_v3(KBCModel):
         w = (trp_E[0] @ self.W[0] - trp_E[1] @ self.W[1] + self.b_w[0],
              trp_E[0] @ self.W[1] + trp_E[1] @ self.W[0] + self.b_w[1])
 
-        nb_E = self.get_neighbor(x[:, 0])
+        nb_E, index_array = self.get_neighbor(x[:, 0])
         nb_E = nb_E[:, :, :self.rank], nb_E[:, :, self.rank:]  # check on this
 
         # Take the real part of w @ nb_E
@@ -1330,7 +1312,7 @@ class Context_ComplEx_v3(KBCModel):
         w = (trp_E[0] @ self.W[0] - trp_E[1] @ self.W[1] + self.b_w[0],
              trp_E[0] @ self.W[1] + trp_E[1] @ self.W[0] + self.b_w[1])
 
-        nb_E = self.get_neighbor(x[:, 0])
+        nb_E, index_array = self.get_neighbor(x[:, 0])
         nb_E = nb_E[:, :, :self.rank], nb_E[:, :, self.rank:]  # check on this
 
         # Take the real part of w @ nb_E
@@ -1381,7 +1363,7 @@ class Context_ComplEx_v3(KBCModel):
         w = (trp_E[0] @ self.W[0] - trp_E[1] @ self.W[1] + self.b_w[0],
              trp_E[0] @ self.W[1] + trp_E[1] @ self.W[0] + self.b_w[1])
 
-        nb_E = self.get_neighbor(queries[:, 0])
+        nb_E, index_array = self.get_neighbor(queries[:, 0])
         nb_E = nb_E[:, :, :self.rank], nb_E[:, :, self.rank:]  # check on this
 
         # Take the real part of w @ nb_E
