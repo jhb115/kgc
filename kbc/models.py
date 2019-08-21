@@ -1174,7 +1174,8 @@ class Context_ComplEx_v3(KBCModel):
     def __init__(
             self, sizes: Tuple[int, int, int], rank: int, sorted_data:np.ndarray,
             slice_dic: np.ndarray, max_NB: int=50, init_size: float=1e-3,
-            data_name: str='FB15K', ascending=1, dropout_1=0.5, dropout_g=0.5
+            data_name: str='FB15K', ascending=1, dropout_1=0.5, dropout_g=0.5,
+            evaluation_mode = False
     ):
         super(Context_ComplEx_v3, self).__init__()
         n_s, n_r, n_o = sizes
@@ -1184,6 +1185,7 @@ class Context_ComplEx_v3(KBCModel):
         self.context_flag = 1
         self.flag = 0
         self.ascending = ascending
+        self.evaluation_mode = evaluation_mode
 
         self.embeddings = nn.ModuleList([
             nn.Embedding(s, 2 * rank, sparse=True)
@@ -1207,7 +1209,6 @@ class Context_ComplEx_v3(KBCModel):
 
         nn.init.xavier_uniform_(self.b_w[0])
         nn.init.xavier_uniform_(self.b_w[1])
-
 
         self.drop_layer1 = nn.Dropout(p=dropout_1)
         self.drop_layer_g = nn.Dropout(p=dropout_g)

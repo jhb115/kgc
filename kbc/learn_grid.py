@@ -150,6 +150,11 @@ parser.add_argument(
     help='Number of training epochs you wish to freeze the original embedding'
 )
 
+parser.add_argument(
+    '--evaluation_mode', default=0, type=int, choices=[0, 1],
+    help='Whther to get an attention mask or not'
+)
+
 # Setup parser
 args = parser.parse_args()
 
