@@ -14,10 +14,10 @@ import numpy as np
 
 from collections import defaultdict
 
-DATA_PATH = '../dataset/YAGO3-10'
+DATA_PATH = '../dataset/processed_data'  # this is where the processed ata gets stored..
+os.makedirs(DATA_PATH)
 
-
-def prepare_dataset(path, name):
+def prepare_dataset(path='../dataset/raw_data', name='YAGO3-10'):  # this path is where the raw data lies
     """
     Given a path to a folder containing tab separated files :
      train, test, valid
@@ -107,20 +107,13 @@ def prepare_dataset(path, name):
 
 
 if __name__ == "__main__":
-    datasets = ['FB15K', 'WN', 'WN18RR', 'FB237', 'YAGO3-10']
-    for d in datasets:
-        print("Preparing dataset {}".format(d))
-        try:
-            prepare_dataset(
-                os.path.join(
-                    os.path.dirname(os.path.realpath(__file__)), 'src_data', d
-                ),
-                d
-            )
-        except OSError as e:
-            if e.errno == errno.EEXIST:
-                print(e)
-                print("File exists. skipping...")
-            else:
-                raise
+    print("Preparing dataset {}".format('YAGO3-10'))
+    try:
+        prepare_dataset('../dataset/raw_dataset', 'YAGO3-10')
+    except OSError as e:
+        if e.errno == errno.EEXIST:
+            print(e)
+            print("File exists. skipping...")
+        else:
+            raise
 
