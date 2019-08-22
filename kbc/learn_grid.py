@@ -531,11 +531,9 @@ for e in range(args.max_epochs):
             np.save(folder_name + '/forward_alpha', np.array(forward_alpha))
 
             if args.evaluation_mode:
-                forward_target_o.append(model.target_o.clone().data.cpu().numpy())
                 forward_nb_index.append(model.index_array)
-                forward_spo_index.append(model.x.clone().data.cpu().numpy())
+                forward_spo_index.append(model.spo.clone().data.cpu().numpy())
 
-                np.save(folder_name + '/forward_target_o', np.array(forward_target_o))
                 np.save(folder_name + '/forward_nb_index', np.array(forward_nb_index))
                 np.save(folder_name + '/forward_spo_index', np.array(forward_spo_index))
 
@@ -597,11 +595,9 @@ for e in range(args.max_epochs):
             np.save(folder_name + '/test_alpha', np.array(test_alpha))
 
             if args.evaluation_mode:
-                test_target_o.append(model.target_o.clone().data.cpu().numpy())
                 test_nb_index.append(model.index_array)
-                test_spo_index.append(model.x.clone().data.cpu().numpy())
+                test_spo_index.append(model.spo.clone().data.cpu().numpy())
 
-                np.save(folder_name + '/test_target_o', np.array(test_target_o))
                 np.save(folder_name + '/test_nb_index', np.array(test_nb_index))
                 np.save(folder_name + '/test_spo_index', np.array(test_spo_index))
 
