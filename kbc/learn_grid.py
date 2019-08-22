@@ -185,7 +185,7 @@ model = {
     'Context_ComplEx_v3': lambda: Context_ComplEx_v3(dataset.get_shape(), args.rank, sorted_data, slice_dic,
                                                      max_NB=args.max_NB, init_size=args.init, data_name=args.dataset,
                                                      ascending=args.ascending, dropout_1=args.dropout_1,
-                                                     dropout_g=args.dropout_g),
+                                                     dropout_g=args.dropout_g, evaluation_mode=args.evaluation_mode),
 }[args.model]()
 
 regularizer = {
