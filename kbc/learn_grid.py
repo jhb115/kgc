@@ -343,11 +343,11 @@ if args.load_pre_train == 1:
 
             pre_train_args = {'model': 'ComplEx', 'regularizer': 'N3', 'max_epoch': 80, 'save_pre_train': 1}
 
-            if args.dataset == 'FB237':
+            if args.dataset == 'FB237' or args.dataset == 'FB15K':
                 pre_train_args['learning_rate'] = 0.1
                 pre_train_args['batch_size'] = 100
                 pre_train_args['reg'] = 0.05
-            elif args.dataset == 'WN18RR':
+            elif args.dataset == 'WN18RR' or args.dataset == 'WN18RR':
                 pre_train_args['learning_rate'] = 0.1
                 pre_train_args['batch_size'] = 100
                 pre_train_args['reg'] = 0.1
