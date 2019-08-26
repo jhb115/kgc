@@ -8,9 +8,7 @@ import os.path
 import sys
 import logging
 
-'''
-Without linear projection in the attention layer
-'''
+
 def cartesian_product(dicts):
     return (dict(zip(dicts, x)) for x in itertools.product(*dicts.values()))
 
@@ -22,7 +20,7 @@ def summary(configuration):
 
 def to_cmd(c, _path=None):
     command = f'python kbc/learn_grid.py --dataset YAGO3-10 ' \
-        f'--model Context_ComplEx_v3 ' \
+        f'--model Context_CP_v2 ' \
         f'--regularizer N4 ' \
         f'--max_epoch 100 ' \
         f'--optimizer {c["optimizer"]} ' \
@@ -34,7 +32,7 @@ def to_cmd(c, _path=None):
 
 def main(argv):
     hyp_space = dict(
-        rank=[500],
+        rank=[1000],
         max_NB=[50, 150],
         g_weight=[0.03, 0.08],
         reg=[0.01, 0.08],
@@ -44,8 +42,6 @@ def main(argv):
     )
 
     configurations = list(cartesian_product(hyp_space))
-
-    # Check that we are on the UCLCS cluster first
 
     command_lines = set()
     for cfg in configurations:
@@ -64,7 +60,7 @@ def main(argv):
 #$ -S /bin/bash
 #$ -o /home/jeunbyun/sgelogs
 #$ -j y
-#$ -N yago_ContExt_v3
+#$ -N yago_Contact_v3
 #$ -l tmem=9G
 #$ -l h_rt=92:00:00
 #$ -l gpu=1
