@@ -20,6 +20,8 @@ DATA_PATH = pkg_resources.resource_filename('kbc', 'data/')  # this is where the
 if os.path.exists(DATA_PATH + '/YAGO3-10'):
     shutil.rmtree(DATA_PATH + '/YAGO3-10')
 
+if os.path.exists(DATA_PATH + '/WN18RR'):
+    shutil.rmtree(DATA_PATH + '/WN18RR')
 
 def prepare_dataset(path='../dataset/raw_data', name='YAGO3-10'):  # this path is where the raw data lies
     """
@@ -111,13 +113,14 @@ def prepare_dataset(path='../dataset/raw_data', name='YAGO3-10'):  # this path i
 
 
 if __name__ == "__main__":
-    print("Preparing dataset {}".format('YAGO3-10'))
-    try:
-        prepare_dataset('../dataset/raw_data/YAGO3-10', 'YAGO3-10')
-    except OSError as e:
-        if e.errno == errno.EEXIST:
-            print(e)
-            print("File exists. skipping...")
-        else:
-            raise
+    for each_data in ['YAGO3-10', 'WN18RR']:
+        print("Preparing dataset {}".format(each_data))
+        try:
+            prepare_dataset('../dataset/raw_data/'+each_data, each_data)
+        except OSError as e:
+            if e.errno == errno.EEXIST:
+                print(e)
+                print("File exists. skipping...")
+            else:
+                raise
 
