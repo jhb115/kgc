@@ -1190,7 +1190,7 @@ class Context_ComplEx_v3(KBCModel):
         self.padding_idx = n_o + 1
 
         self.embeddings = nn.ModuleList([
-            nn.Embedding(s + 1, 2 * rank, sparse=True, padding_idx=self.padding_idx)
+            nn.Embedding(s, 2 * rank, sparse=True, padding_idx=self.padding_idx)
             for s in self.sizes[:3]
         ])  # the index with s+1 -> padding with 0
 
