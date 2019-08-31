@@ -11,6 +11,7 @@ from typing import Tuple, List, Dict
 import torch
 from torch import nn
 import numpy as np
+import random
 from torch.nn import functional as F, Parameter
 from torch.nn.init import xavier_normal_
 
@@ -1186,11 +1187,12 @@ class Context_ComplEx_v3(KBCModel):
         self.flag = 0
         self.ascending = ascending
         self.evaluation_mode = evaluation_mode
+        self.padding_idx = n_o + 1
 
         self.embeddings = nn.ModuleList([
-            nn.Embedding(s, 2 * rank, sparse=True)
+            nn.Embedding(s + 1, 2 * rank, sparse=True, padding_idx=self.padding_idx)
             for s in self.sizes[:3]
-        ])
+        ])  # the index with s+1 -> padding with 0
 
         # self.embeddings = nn.ModuleList([
         #     nn.Embedding(s, 2 * rank, sparse=True)
@@ -1229,26 +1231,25 @@ class Context_ComplEx_v3(KBCModel):
         self.max_NB = max_NB
 
     def get_neighbor(self, subj: torch.Tensor):
-        index_array = np.zeros(shape=(len(subj), self.max_NB), dtype=np.int32)
-
+        index_array = np.full((len(subj), self.max_NB), self.padding_idx, dtype=np.int32)
+        # -1 indicates that this is padded value
+        # Need to move sorted_data and slice_dic into gpu as tensor
         for i, each_subj in enumerate(subj):
             _, start_i, end_i = self.slice_dic[each_subj]
             length = end_i - start_i
 
             if length > 0:
-                if self.max_NB >= length:
-                    index_array[i, :length] = self.sorted_data[start_i:end_i, 2]
+                if self.max_NB >= length:  # padded with -1 at the end
+                    index_array[i, :length] = np.random.permutation(self.sorted_data[start_i:end_i, 2])
                 else:  # Need to uniformly truncate
-                    hop = int(length / self.max_NB)
-                    index_array[i, :] = self.sorted_data[start_i:end_i:hop, 2][:self.max_NB]
-                if self.ascending == -1:
-                    index_array[i, :] = index_array[i, :][::-1]
+                    index_array[i, :] = random.sample(self.sorted_data[start_i:end_i, 2], k=self.max_NB)
+                #if self.ascending == -1:
+                #    index_array[i, :] = index_array[i, :][::-1]
 
         self.index_array = index_array
         index_tensor = torch.LongTensor(index_array).cuda()
 
-        return self.embeddings[2](index_tensor)  # index_array for attention mask
-        #return self.embeddings[0](index_tensor), index_array  # when we are to use same embedding for the neighbor
+        return self.embeddings[2](index_tensor)  #padded embeddings = [0., 0. ,... 0.]
 
     def score(self, x: torch.Tensor):
 
@@ -1276,9 +1277,10 @@ class Context_ComplEx_v3(KBCModel):
         nb_E = self.get_neighbor(x[:, 0])
         nb_E = nb_E[:, :, :self.rank], nb_E[:, :, self.rank:]  # check on this
 
-        # Take the real part of w @ nb_E
-        self.alpha = torch.softmax(torch.einsum('bk,bmk->bm', w[0], nb_E[0]) - torch.einsum('bk,bmk->bm', w[1], nb_E[1]),
-                                   dim=1)
+        w_nb_E = torch.einsum('bk,bmk->bm', w[0], nb_E[0]) - torch.einsum('bk,bmk->bm', w[1], nb_E[1])
+        w_nb_E = torch.where(w_nb_E == 0., -float('inf'), w_nb_E)
+
+        self.alpha = torch.softmax(w_nb_E, dim=1)
 
         e_c = torch.einsum('bm,bmk->bk', self.alpha, nb_E[0]), torch.einsum('bm,bmk->bk', self.alpha, nb_E[1])
 
@@ -1319,11 +1321,12 @@ class Context_ComplEx_v3(KBCModel):
              trp_E[0] @ self.W[1] + trp_E[1] @ self.W[0] + self.b_w[1])
 
         nb_E = self.get_neighbor(x[:, 0])
-        nb_E = nb_E[:, :, :self.rank], nb_E[:, :, self.rank:]  # check on this
+        nb_E = nb_E[:, :, :self.rank], nb_E[:, :, self.rank:]
 
-        # Take the real part of w @ nb_E
-        self.alpha = torch.softmax(torch.einsum('bk,bmk->bm', w[0], nb_E[0]) - torch.einsum('bk,bmk->bm', w[1], nb_E[1]),
-                                   dim=1)
+        w_nb_E = torch.einsum('bk,bmk->bm', w[0], nb_E[0]) - torch.einsum('bk,bmk->bm', w[1], nb_E[1])
+        w_nb_E = torch.where(w_nb_E == 0., -float('inf'), w_nb_E)
+
+        self.alpha = torch.softmax(w_nb_E, dim=1)
 
         e_c = (torch.einsum('bm,bmk->bk', self.alpha, nb_E[0]),
                torch.einsum('bm,bmk->bk', self.alpha, nb_E[1]))
@@ -1372,9 +1375,10 @@ class Context_ComplEx_v3(KBCModel):
         nb_E = self.get_neighbor(queries[:, 0])
         nb_E = nb_E[:, :, :self.rank], nb_E[:, :, self.rank:]  # check on this
 
-        # Take the real part of w @ nb_E
-        self.alpha = torch.softmax(torch.einsum('bk,bmk->bm', w[0], nb_E[0]) - torch.einsum('bk,bmk->bm', w[1], nb_E[1]),
-                                   dim=1)
+        w_nb_E = torch.einsum('bk,bmk->bm', w[0], nb_E[0]) - torch.einsum('bk,bmk->bm', w[1], nb_E[1])
+        w_nb_E = torch.where(w_nb_E == 0., -float('inf'), w_nb_E)
+
+        self.alpha = torch.softmax(w_nb_E, dim=1)
 
         e_c = torch.einsum('bm,bmk->bk', self.alpha, nb_E[0]), torch.einsum('bm,bmk->bk', self.alpha, nb_E[1])
 
