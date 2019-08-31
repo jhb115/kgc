@@ -1278,7 +1278,7 @@ class Context_ComplEx_v3(KBCModel):
         nb_E = nb_E[:, :, :self.rank], nb_E[:, :, self.rank:]  # check on this
 
         w_nb_E = torch.einsum('bk,bmk->bm', w[0], nb_E[0]) - torch.einsum('bk,bmk->bm', w[1], nb_E[1])
-        w_nb_E = torch.where(w_nb_E == 0., -float('inf'), w_nb_E)
+        w_nb_E = torch.where(w_nb_E == 0., torch.tensor(-float('inf')), w_nb_E)
 
         self.alpha = torch.softmax(w_nb_E, dim=1)
 
@@ -1324,7 +1324,7 @@ class Context_ComplEx_v3(KBCModel):
         nb_E = nb_E[:, :, :self.rank], nb_E[:, :, self.rank:]
 
         w_nb_E = torch.einsum('bk,bmk->bm', w[0], nb_E[0]) - torch.einsum('bk,bmk->bm', w[1], nb_E[1])
-        w_nb_E = torch.where(w_nb_E == 0., -float('inf'), w_nb_E)
+        w_nb_E = torch.where(w_nb_E == 0., torch.tensor(-float('inf')), w_nb_E)
 
         self.alpha = torch.softmax(w_nb_E, dim=1)
 
@@ -1376,7 +1376,7 @@ class Context_ComplEx_v3(KBCModel):
         nb_E = nb_E[:, :, :self.rank], nb_E[:, :, self.rank:]  # check on this
 
         w_nb_E = torch.einsum('bk,bmk->bm', w[0], nb_E[0]) - torch.einsum('bk,bmk->bm', w[1], nb_E[1])
-        w_nb_E = torch.where(w_nb_E == 0., -float('inf'), w_nb_E)
+        w_nb_E = torch.where(w_nb_E == 0., torch.tensor(-float('inf')), w_nb_E)
 
         self.alpha = torch.softmax(w_nb_E, dim=1)
 
