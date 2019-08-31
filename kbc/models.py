@@ -1243,7 +1243,7 @@ class Context_ComplEx_v3(KBCModel):
                 if self.max_NB >= length:  # padded with -1 at the end
                     index_array[i, :length] = np.random.permutation(self.sorted_data[start_i:end_i, 2])
                 else:  # Need to uniformly truncate
-                    index_array[i, :] = random.sample(self.sorted_data[start_i:end_i, 2], k=self.max_NB)
+                    index_array[i, :] = np.random.choice(self.sorted_data[start_i:end_i, 2], self.max_NB, replace=False)
                 #if self.ascending == -1:
                 #    index_array[i, :] = index_array[i, :][::-1]
 
