@@ -1227,30 +1227,26 @@ class Context_ComplEx_v3(KBCModel):
 
         nn.init.xavier_uniform_(self.b_g)
 
-        self.sorted_data = sorted_data
-        self.slice_dic = slice_dic
+        self.sorted_data = torch.cuda.IntTensor(sorted_data)
+        self.slice_dic = torch.cuda.IntTensor(slice_dic)
         self.max_NB = max_NB
 
     def get_neighbor(self, subj: torch.Tensor):
-        index_array = np.full((len(subj), self.max_NB), self.padding_idx, dtype=np.int32)
-        # -1 indicates that this is padded value
-        # Need to move sorted_data and slice_dic into gpu as tensor
+        index_array = torch.full((len(subj), self.max_NB), self.padding_idx, dtype=torch.long).cuda()
+
         for i, each_subj in enumerate(subj):
             _, start_i, end_i = self.slice_dic[each_subj]
             length = end_i - start_i
 
             if length > 0:
                 if self.max_NB >= length:  # padded with -1 at the end
-                    index_array[i, :length] = np.random.permutation(self.sorted_data[start_i:end_i, 2])
+                    index_array[i, :length] = self.sorted_data[start_i:end_i, 2][torch.randperm(length).cuda()]
                 else:  # Need to uniformly truncate
-                    index_array[i, :] = np.random.choice(self.sorted_data[start_i:end_i, 2], self.max_NB, replace=False)
-                #if self.ascending == -1:
-                #    index_array[i, :] = index_array[i, :][::-1]
+                    index_array[i, :] = torch.multinomial(self.sorted_data[start_i:end_i, 2], self.max_NB, replace=False)
 
-        self.index_array = index_array
-        index_tensor = torch.LongTensor(index_array).cuda()
+        self.index_array = index_array.clone().data.cpu().numpy()
 
-        return self.embeddings[2](index_tensor)  #padded embeddings = [0., 0. ,... 0.]
+        return self.embeddings[2](index_array)  #padded embeddings = [0., 0. ,... 0.]
 
     def score(self, x: torch.Tensor):
 
