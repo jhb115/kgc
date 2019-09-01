@@ -1242,7 +1242,8 @@ class Context_ComplEx_v3(KBCModel):
                 if self.max_NB >= length:  # padded with -1 at the end
                     index_array[i, :length] = self.sorted_data[start_i:end_i, 2][torch.randperm(length).cuda()]
                 else:  # Need to uniformly truncate
-                    index_array[i, :] = torch.multinomial(self.sorted_data[start_i:end_i, 2], self.max_NB, replace=False)
+                    index_array[i, :] = torch.multinomial(self.sorted_data[start_i:end_i, 2], self.max_NB,
+                                                          replacement=False)
 
         self.index_array = index_array.clone().data.cpu().numpy()
 
