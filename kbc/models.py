@@ -1031,6 +1031,7 @@ class Context_CP_v3(KBCModel):
         self.W = nn.Linear(int(2 * rank), rank, bias=True)  # W for w = [lhs; rel; rhs]^T W
 
         self.drop_layer1 = nn.Dropout(p=0.5)  # apply dropout to only forward
+        self.drop_layer_g = nn.Dropout(p=0.3)
 
         self.Wo = nn.Linear(rank, 1, bias=True)
         self.Uo = nn.Linear(rank, 1, bias=True)
@@ -1126,6 +1127,7 @@ class Context_CP_v3(KBCModel):
 
         # Gate
         self.g = Sigmoid(self.Uo(lhs * rel) + self.Wo(e_c))
+        self.g = self.drop_layer_g(self.g)
 
         gated_e_c = self.g * e_c + (torch.ones((self.chunk_size, 1)).cuda() - self.g) * torch.ones_like(e_c).cuda()
 
