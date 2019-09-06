@@ -26,9 +26,9 @@ def to_cmd(c, _path=None):
         f'--regularizer N4 ' \
         f'--max_epoch 140 ' \
         f'--optimizer {c["optimizer"]} ' \
-        f'--mkdir 1 --rank {c["rank"]} --load_pre_train 1 --max_NB {c["max_NB"]} --valid 3 ' \
+        f'--mkdir 1 --rank {c["rank"]} --load_pre_train 0 --max_NB {c["max_NB"]} --valid 3 ' \
         f'--learning_rate 0.01 --reg {c["reg"]} --batch_size 500 --g_weight {c["g_weight"]} ' \
-        f'--ascending {c["ascending"]} --n_freeze {c["n_freeze"]}'
+        f'--n_freeze {c["n_freeze"]} --evaluation_mode 1'
     return command
 
 
@@ -38,7 +38,6 @@ def main(argv):
         max_NB=[50, 150],
         g_weight=[0.03, 0.08],
         reg=[0.01, 0.08],
-        ascending=[-1],
         optimizer=['Adagrad'],
         n_freeze=[0, 20]
     )
@@ -64,7 +63,7 @@ def main(argv):
 #$ -S /bin/bash
 #$ -o /home/jeunbyun/sgelogs
 #$ -j y
-#$ -N fb237_ContExt_v3
+#$ -N pr_grid_fb237_ContExt_v3
 #$ -l tmem=9G
 #$ -l h_rt=92:00:00
 #$ -l gpu=1
