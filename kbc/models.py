@@ -191,7 +191,7 @@ class ContExt(KBCModel):
             data_name: str='FB15K', ascending=1, dropout_1=0.5, dropout_g=0.5,
             evaluation_mode = False
     ):
-        super(Context_ComplEx, self).__init__()
+        super(ContExt, self).__init__()
         n_s, n_r, n_o = sizes
         self.sizes = [n_s, n_r, n_o, n_o]  #append another n_o for nb_o
         self.rank = rank
