@@ -6,7 +6,7 @@ import configparser
 import torch
 from torch import optim
 from kbc.datasets import Dataset
-from kbc.models import CP, ComplEx, Context_CP, Context_ComplEx, Context_CP_v2, Context_ComplEx_v2, Context_ComplEx_v3
+from kbc.prev_models import CP, ComplEx, Context_CP, Context_ComplEx, Context_CP_v2, Context_ComplEx_v2, Context_ComplEx_v3
 from kbc.regularizers import N2, N3, N4
 from kbc.optimizers import KBCOptimizer
 import os
