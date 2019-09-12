@@ -244,18 +244,22 @@ class ContExt(KBCModel):
         self.slice_dic = torch.cuda.IntTensor(slice_dic)
         self.max_NB = max_NB
 
-    def get_neighbor(self, subj: torch.Tensor):
+    def get_neighbor(self, subj: torch.Tensor, obj: torch.Tensor):
         index_array = torch.full((len(subj), self.max_NB), self.padding_idx, dtype=torch.long).cuda()
 
         for i, each_subj in enumerate(subj):
-            _, start_i, end_i = self.slice_dic[each_subj]
+            _, start_i, end_i = torch.index_select(self.slice_dic, 0, each_subj)
             length = end_i - start_i
 
             if length > 0:
                 if self.max_NB >= length:  # padded with -1 at the end
-                    index_array[i, :length] = self.sorted_data[start_i:end_i, 2][torch.randperm(length).cuda()]
+                    rnd_idx = torch.randperm(length, dtype=torch.int32) + \
+                              torch.full((length, ), start_i, dtype=torch.int32)
                 else:  # Need to uniformly truncate
-                    index_array[i, :] = self.sorted_data[start_i:end_i, 2][torch.randperm(length).cuda()][:self.max_NB]
+                    rnd_idx = torch.randperm(length, dtype=torch.int32) + \
+                              torch.full((length,), start_i, dtype=torch.int32)
+                    rnd_idx = rnd_idx[:self.max_NB].cuda()
+                index_array[i, :] = torch.index_select(self.sorted_data, 2, rnd_idx)
 
         self.index_array = index_array.clone().data.cpu().numpy()
 
@@ -345,6 +349,7 @@ class ContExt(KBCModel):
         self.g = Sigmoid((lhs[0]*rel[0]-lhs[1]*rel[1])@ self.Uo[0] - (lhs[1]*rel[0]+lhs[0]*rel[1])@ self.Uo[1]
                          + e_c[0] @ self.Wo[0] + self.b_g)
         g = self.drop_layer_g(self.g)
+
         gated_e_c = (g * e_c[0] + (torch.ones((self.chunk_size, 1)).cuda() - g) * torch.ones_like(e_c[0]), g * e_c[1])
 
         srrr = lhs[0] * rel[0]
@@ -362,7 +367,7 @@ class ContExt(KBCModel):
            torch.sqrt(lhs[0] ** 2 + lhs[1] ** 2),
            torch.sqrt(rel[0] ** 2 + rel[1] ** 2),
            torch.sqrt(rhs[0] ** 2 + rhs[1] ** 2),
-           torch.sqrt(gated_e_c[0] ** 2 + gated_e_c[1] ** 2)
+           g * torch.sqrt(e_c[0]**2 + e_c[1] ** 2)
         )
 
     def get_queries(self, queries: torch.Tensor):
