@@ -252,14 +252,10 @@ class ContExt(KBCModel):
             length = end_i - start_i
 
             if length > 0:
-                if self.max_NB >= length:  # padded with -1 at the end
-                    rnd_idx = torch.randperm(length, dtype=torch.int32) + \
-                              torch.full((length, ), start_i, dtype=torch.int32)
-                else:  # Need to uniformly truncate
-                    rnd_idx = torch.randperm(length, dtype=torch.int32) + \
-                              torch.full((length,), start_i, dtype=torch.int32)
-                    rnd_idx = rnd_idx[:self.max_NB].cuda()
-                index_array[i, :] = torch.index_select(self.sorted_data, 2, rnd_idx)
+                rnd_idx = torch.randperm(length, dtype=torch.int32) + torch.full((length,), start_i, dtype=torch.int32)
+                if self.max_NB < length:
+                    rnd_idx = rnd_idx[:self.max_NB]
+                index_array[i, :] = torch.index_select(self.sorted_data, 2, rnd_idx.cuda())
 
         self.index_array = index_array.clone().data.cpu().numpy()
 
