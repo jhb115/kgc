@@ -255,7 +255,7 @@ class ContExt(KBCModel):
                 rnd_idx = torch.randperm(length, dtype=torch.int32) + torch.full((length,), start_i, dtype=torch.int32)
                 rnd_idx.cuda()
                 index_array = torch.index_select(self.sorted_data, 2, rnd_idx)
-                index_array = index_array[index_array != obj[i]]
+                index_array = index_array[index_array != obj[i]]  # remove any target o included in the neighborhood
                 if len(index_array) > self.max_NB:
                     index_array = index_array[:self.max_NB]
 
