@@ -1,5 +1,3 @@
-
-
 import argparse
 from typing import Dict
 import pickle
@@ -8,19 +6,26 @@ import configparser
 import torch
 from torch import optim
 from kbc.datasets import Dataset
-from kbc.models import CP, ComplEx, ConvE, Context_CP, Context_ComplEx
+from kbc.prev_models import CP, ComplEx, Context_CP, Context_ComplEx, Context_CP_v2, Context_ComplEx_v2, Context_ComplEx_v3
 from kbc.regularizers import N2, N3, N4
 from kbc.optimizers import KBCOptimizer
 import os
 import numpy as np
 
-# python kbc/learn.py --dataset 'FB15K' --model 'Context_CP' --regularizer 'N3' --max_epoch 1 --max_NB 50 --mkdir True
-
-#For reproducilibility
+# For reproducilibility
 np.random.seed(0)
 torch.manual_seed(0)
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
+
+'''
+List of Hyperparameters to tune:
+rank = [100, 200, 400]
+batch_size = [300]
+learning_rate = [0.05]
+g_weight = [0, 0.03]
+max_NB = [10, 100]
+'''
 
 big_datasets = ['FB15K', 'WN', 'WN18RR', 'FB237', 'YAGO3-10']
 datasets = big_datasets
@@ -29,7 +34,6 @@ parser = argparse.ArgumentParser(
     description="Relational learning contraption"
 )
 
-#Maybe we don't need this
 parser.add_argument(
     '--g_weight', type=float, default=0.,
     help='weights on the g regularization term'
@@ -40,7 +44,7 @@ parser.add_argument(
     help="Dataset in {}".format(datasets)
 )
 
-models = ['CP', 'ComplEx', 'ConvE', 'Context_CP', 'Context_ComplEx']
+models = ['CP', 'ComplEx', 'Context_CP', 'Context_ComplEx', 'Context_CP_v2', 'Context_ComplEx_v2', 'Context_ComplEx_v3']
 parser.add_argument(
     '--model', choices=models,
     help="Model in {}".format(models)
@@ -97,33 +101,6 @@ parser.add_argument(
     help="decay rate for second moment estimate in Adam"
 )
 
-# Parser argument for ConvE
-# Dropout
-parser.add_argument(
-    '--dropouts', default=(0.3, 0.3, 0.3), type=float,
-    help="Dropout rates for each layer in ConvE"
-)
-# Boolean for the bias in ConvE layers
-parser.add_argument(
-    '--use_bias', default=True, type=bool,
-    help="Using or not using bias for the ConvE layers"
-)
-
-parser.add_argument(
-    '--kernel_size', default=(3, 3), nargs='+', type=int,
-    help="Kernel Size"
-)
-
-parser.add_argument(
-    '--output_channel', default=32, type=int,
-    help="Number of output channel"
-)
-
-parser.add_argument(
-    '--hw', default=(10, 20), nargs='+', type=int,
-    help="False or (Height, Width) shape for 2D reshaping entity embedding"
-)
-
 # For Context-based models
 parser.add_argument(
     '--max_NB', default=50, type=int,
@@ -137,47 +114,71 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    '--save_pre_train', default=0, type=int, choices=[0,1],
+    '--save_pre_train', default=0, type=int, choices=[0, 1],
     help='1 if you wish to pre-train and save the embedding on non-context-based model'
 )
 
 parser.add_argument(
-    '--load_pre_train', default=0, type=int, choices=[0,1],
+    '--load_pre_train', default=0, type=int, choices=[0, 1],
     help='1 if you wish to load the saved pre-train the embedding for Context-based model'
 )
 
 parser.add_argument(
-    '--ascending', default=1, type=int, choices=[-1,1],
+    '--ascending', default=1, type=int, choices=[-1, 1],
     help='1 if you wish to consider neighborhood degrees in ascending order, -1 otherwise'
+)
+
+parser.add_argument(
+    '--dropout_1', default=0.5, type=float,
+    help='Dropout on the first linear projection layer for query vector, used in v3'
+)
+
+parser.add_argument(
+    '--dropout_g', default=0.3, type=float,
+    help='Dropout on the g, used in v3'
+)
+
+parser.add_argument(
+    '--n_freeze', default=0, type=int,
+    help='Number of training epochs you wish to freeze the original embedding'
+)
+
+parser.add_argument(
+    '--evaluation_mode', default=0, type=int, choices=[0, 1],
+    help='Whther to get an attention mask or not'
 )
 
 # Setup parser
 args = parser.parse_args()
 
-
 # Get Dataset
-# maybe we don't need the argument for use_colab
 dataset = Dataset(args.dataset)
-if args.model in ['CP', 'ComplEx', 'ConvE']:  # For non-context model
+if args.model in ['CP', 'ComplEx']:
     unsorted_examples = torch.from_numpy(dataset.get_train().astype('int64'))
     examples = unsorted_examples
-else:  # Get sorted examples for context model
+else:
     sorted_data, slice_dic = dataset.get_sorted_train()
     examples = torch.from_numpy(dataset.get_train().astype('int64'))
 
-
-print(dataset.get_shape())
 model = {
     'CP': lambda: CP(dataset.get_shape(), args.rank, args.init),
     'ComplEx': lambda: ComplEx(dataset.get_shape(), args.rank, args.init),
-    'ConvE': lambda: ConvE(dataset.get_shape(), args.rank, tuple(args.dropouts), args.use_bias, tuple(args.hw),
-                           tuple(args.kernel_size), args.output_channel),
     'Context_CP': lambda: Context_CP(dataset.get_shape(), args.rank, sorted_data, slice_dic,
                                      max_NB=args.max_NB, init_size=args.init, data_name=args.dataset,
                                      ascending=args.ascending),
     'Context_ComplEx': lambda: Context_ComplEx(dataset.get_shape(), args.rank, sorted_data, slice_dic,
                                                max_NB=args.max_NB, init_size=args.init, data_name=args.dataset,
-                                               ascending=args.ascending)
+                                               ascending=args.ascending),
+    'Context_CP_v2': lambda: Context_CP_v2(dataset.get_shape(), args.rank, sorted_data, slice_dic,
+                                           max_NB=args.max_NB, init_size=args.init, data_name=args.dataset,
+                                           ascending=args.ascending),
+    'Context_ComplEx_v2': lambda: Context_ComplEx_v2(dataset.get_shape(), args.rank, sorted_data, slice_dic,
+                                                     max_NB=args.max_NB, init_size=args.init, data_name=args.dataset,
+                                                     ascending=args.ascending),
+    'Context_ComplEx_v3': lambda: Context_ComplEx_v3(dataset.get_shape(), args.rank, sorted_data, slice_dic,
+                                                     max_NB=args.max_NB, init_size=args.init, data_name=args.dataset,
+                                                     ascending=args.ascending, dropout_1=args.dropout_1,
+                                                     dropout_g=args.dropout_g, evaluation_mode=args.evaluation_mode),
 }[args.model]()
 
 regularizer = {
@@ -187,19 +188,34 @@ regularizer = {
     'N4': N4(args.reg, g_weight=args.g_weight)
 }[args.regularizer]
 
-device = 'cuda'
+#device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+device = torch.device('cuda')
 model.to(device)
 
-if args.model == "ConvE":
-    model.init()
+
+# Freeze the embeddings for n_freeze epochs
+if args.n_freeze > 0:
+    if args.model in ['Context_CP', 'Context_CP_v2']:
+        model.lhs.weight.requires_grad = False
+        model.rel.weight.requires_grad = False
+        model.rh.weight.requires_grad = False
+
+    elif args.model in ['Context_ComplEx', 'Context_ComplEx_v2', 'Context_ComplEx_v3']:
+        for i in range(2):
+            model.embeddings[i].weight.requires_grad = False
 
 optim_method = {
     'Adagrad': lambda: optim.Adagrad(model.parameters(), lr=args.learning_rate),
-    'Adam': lambda: optim.Adam(model.parameters(), lr=args.learning_rate, betas=(args.decay1, args.decay2)),
+    'RMSprop': lambda: optim.RMSProp(model.parameters(), lr=args.learning_rate),
     'SGD': lambda: optim.SGD(model.parameters(), lr=args.learning_rate)
 }[args.optimizer]()
 
-optimizer = KBCOptimizer(model, regularizer, optim_method, args.batch_size)
+#
+# print('Model state:')
+# for param_tensor in model.state_dict():
+#     print(f'\t{param_tensor}\t{model.state_dict()[param_tensor].size()}')
+
+optimizer = KBCOptimizer(model, regularizer, optim_method, args.batch_size, n_freeze=args.n_freeze)
 
 def avg_both(mrrs: Dict[str, float], hits: Dict[str, torch.FloatTensor]):
     """
@@ -214,7 +230,263 @@ def avg_both(mrrs: Dict[str, float], hits: Dict[str, torch.FloatTensor]):
 
 
 cur_loss = 0
-test_i = 0
+
+config_folder = '../results/{}/{}'.format(args.model, args.dataset)
+
+if not os.path.exists('../results'):
+    os.mkdir('../results')
+model_list = ['ComplEx', 'CP', 'Context_CP', 'Context_ComplEx', 'Context_CP_v2', 'Context_ComplEx_v2', 'Context_ComplEx_v3']
+dataset_list = ['FB15K', 'FB237', 'WN', 'WN18RR', 'YAGO3-10']
+
+# For actual model
+# saves file summary_config.ini to ../results/model/data
+for each_model in model_list:
+    if not os.path.exists('../results/{}'.format(each_model)):
+        os.mkdir('../results/{}'.format(each_model))
+
+    for each_data in dataset_list:
+        folder_name = '../results/{}/{}'.format(each_model, each_data)
+        if not os.path.exists(folder_name):
+            os.mkdir(folder_name)
+        # check if the summary configuration file exists or not,
+        if not os.path.exists(folder_name + '/summary_config.ini'):
+            # make config summary file
+            summary_config = configparser.ConfigParser()
+            summary_config['summary'] = {'model': each_model,
+                                         'dataset': each_data,
+                                         'best_mrr': '0',
+                                         'best_hits@10': '0',
+                                         'best_train_no': '?'}
+
+            with open(folder_name + '/summary_config.ini', 'w') as configfile:
+                summary_config.write(configfile)
+
+# Configuration for pre-training
+if not os.path.exists('../pre_train'):
+    os.mkdir('../pre_train')
+
+model_list = ['ComplEx', 'CP']
+dataset_list = ['FB15K', 'FB237', 'WN', 'WN18RR', 'YAGO3-10']
+
+for each_model in model_list:
+    folder_name = '../pre_train/{}'.format('Context_'+each_model)
+    # folder_name = '../pre_train/model
+    if not os.path.exists(folder_name):
+        os.mkdir(folder_name)
+
+    for each_data in dataset_list:
+        if not os.path.exists('{}/{}'.format(folder_name, each_data)):
+            os.mkdir('{}/{}'.format(folder_name, each_data))
+            # ../pre_train/model/data
+
+        # create ../pre_train/model/data/summary_config.ini
+        if not os.path.exists('{}/{}/{}'.format(folder_name, each_data, 'summary_config.ini')):
+            summary_config = configparser.ConfigParser()
+            summary_config['summary'] = {'model': each_model, 'dataset': each_data}
+            with open('{}/{}/{}'.format(folder_name, each_data, 'summary_config.ini'), 'w') as configfile:
+                summary_config.write(configfile)
+
+run_pre_train_flag = 0
+
+
+# Need to consider the case when args.model == 'Context_CP
+pre_model_name = {'Context_CP_v2': 'Context_CP',
+                  'Context_ComplEx_v2': 'Context_ComplEx',
+                  'Context_ComplEx': 'Context_ComplEx',
+                  'Context_ComplEx_v3': 'Context_ComplEx',
+                  'Context_CP': 'Context_CP'}[args.model]
+
+if args.load_pre_train == 1:
+    pre_train_folder = '../pre_train/{}/{}/{}'.format(pre_model_name, args.dataset, str(args.rank))
+    # ../pre_train/model/data/rank
+
+    if not os.path.exists(pre_train_folder):
+        os.mkdir(pre_train_folder)
+        run_pre_train_flag = 1
+
+    if args.model == 'Context_CP' or args.model == 'Context_CP_v2':
+        if os.path.exists(pre_train_folder + '/lhs.pt'):
+            model.lhs.load_state_dict(torch.load(pre_train_folder + '/lhs.pt'))
+            model.rel.load_state_dict(torch.load(pre_train_folder + '/rel.pt'))
+            model.rhs.load_state_dict(torch.load(pre_train_folder + '/rhs.pt'))
+        else:
+            run_pre_train_flag = 1
+            pre_train_args = {'model': 'CP', 'regularizer': 'N3', 'max_epoch': 80, 'batch_size': 300,
+                              'save_pre_train': 1, 'learning_rate': 0.1, 'reg': 0.1, 'dataset': args.dataset,
+                              'rank': args.rank, 'init': args.init}
+
+            pre_train_dataset = Dataset(args.dataset)
+            unsorted_examples = torch.from_numpy(pre_train_dataset.get_train().astype('int64'))
+            pre_train_model = CP(pre_train_dataset.get_shape(), args.rank, args.init)
+            pre_train_regularizer = N3(pre_train_args['reg'])
+            device = 'cuda'
+            pre_train_model.to(device)
+            pre_train_optim = optim.Adagrad(pre_train_model.parameters(), lr=pre_train_args['learning_rate'])
+            pre_train_optimizer = KBCOptimizer(pre_train_model, pre_train_regularizer, pre_train_optim,
+                                               pre_train_args['batch_size'])
+
+    elif args.model == 'Context_ComplEx' or args.model == 'Context_ComplEx_v2' or args.model == 'Context_ComplEx_v3':
+        if os.path.exists(pre_train_folder + '/entity.pt'):
+            # model.embeddings = torch.load(pre_train_folder + '/embeddings.pt')
+            model.embeddings[0].load_state_dict(torch.load(pre_train_folder + '/entity.pt'))
+            model.embeddings[1].load_state_dict(torch.load(pre_train_folder + '/relation.pt'))
+        else:
+            run_pre_train_flag = 1
+            # Does not have a pre-trained embedding. Need to run pre-training ComplEx
+
+            pre_train_args = {'model': 'ComplEx', 'regularizer': 'N3', 'max_epoch': 80, 'save_pre_train': 1}
+
+            if args.dataset == 'FB237' or args.dataset == 'FB15K':
+                pre_train_args['learning_rate'] = 0.1
+                pre_train_args['batch_size'] = 100
+                pre_train_args['reg'] = 0.05
+            elif args.dataset == 'WN18RR' or args.dataset == 'WN18RR':
+                pre_train_args['learning_rate'] = 0.1
+                pre_train_args['batch_size'] = 100
+                pre_train_args['reg'] = 0.1
+            elif args.dataset == 'YAGO3-10':
+                pre_train_args['learning_rate'] = 0.1
+                pre_train_args['batch_size'] = 1000
+                pre_train_args['reg'] = 0.005
+
+            pre_train_args['rank'] = args.rank
+            pre_train_args['init'] = args.init
+
+            pre_train_dataset = Dataset(args.dataset)
+            unsorted_examples = torch.from_numpy(pre_train_dataset.get_train().astype('int64'))
+            pre_train_model = ComplEx(pre_train_dataset.get_shape(), args.rank, args.init)
+            pre_train_regularizer = N3(pre_train_args['reg'])
+            device = 'cuda'
+            pre_train_model.to(device)
+            pre_train_optim = optim.Adagrad(pre_train_model.parameters(), lr=pre_train_args['learning_rate'])
+            pre_train_optimizer = KBCOptimizer(pre_train_model, pre_train_regularizer, pre_train_optim,
+                                               pre_train_args['batch_size'])
+
+# summary_config is config file for actual model
+summary_config = configparser.ConfigParser()
+# load ../results/model/dataset/summary_config.ini
+summary_config.read('../results/{}/{}/summary_config.ini'.format(args.model, args.dataset))
+
+train_no = 1
+
+while os.path.exists('../results/{}/{}/train{}'.format(args.model, args.dataset, str(train_no))):
+    train_no += 1
+
+train_no = 'train' + str(train_no)
+os.mkdir('../results/{}/{}/{}'.format(args.model, args.dataset, train_no))
+config = vars(args)
+pickle.dump(config, open('../results/{}/{}/{}/config.p'.format(args.model, args.dataset, train_no), 'wb'))
+
+summary_config[train_no] = {}
+for key in config.keys():
+    summary_config[train_no][str(key)] = str(config[key])
+
+summary_config['summary']['Currently_running_experiment'] = '{} on {}'.format(args.model, args.dataset)
+
+with open('../results/{}/{}/summary_config.ini'.format(args.model, args.dataset), 'w') as configfile:
+    summary_config.write(configfile)
+
+
+# For running pre-training
+if run_pre_train_flag:
+    pre_train_config = configparser.ConfigParser()
+    pre_train_config_folder = '../pre_train/{}/{}'.format(pre_model_name, args.dataset)
+    pre_train_config.read(pre_train_config_folder + '/summary_config.ini')
+
+    # For each dataset and for each model
+    pre_train_config[train_no] = {}
+
+    for key in pre_train_args:
+        pre_train_config[train_no][str(key)] = str(pre_train_args[key])
+
+    with open(pre_train_config_folder + '/summary_config.ini', 'w') as configfile:
+        pre_train_config.write(configfile)
+
+    pre_train_folder = '../pre_train/{}/{}/{}'.format(pre_model_name, args.dataset, str(args.rank))
+
+    train_mrr = []
+    train_hit10 = []
+    test_mrr = []
+    test_hit10 = []
+
+    pre_train_config[train_no]['best_mrr'] = str(0)
+
+    for e in range(pre_train_args['max_epoch']):
+        print('pre_train epoch = ', e)
+        cur_loss = pre_train_optimizer.epoch(examples)
+
+        if (e + 1) % args.valid == 0 or (e + 1) == args.max_epochs:
+            train_results = avg_both(*pre_train_dataset.eval(pre_train_model, 'train', 50000))
+            train_mrr.append(train_results['MRR'])
+            hits1310 = train_results['hits@[1,3,10]'].numpy()
+            train_hit10.append(hits1310[2])
+
+            results = avg_both(*pre_train_dataset.eval(pre_train_model, 'test', -1))
+            test_mrr.append(results['MRR'])
+            hits1310 = results['hits@[1,3,10]'].numpy()
+            test_hit10.append(hits1310[2])
+
+            pre_train_save_folder = '../pre_train/{}/{}/{}'.format(pre_model_name, args.dataset, str(args.rank))
+
+            np.save('{}/{}'.format(pre_train_folder, 'train_mrr'), np.array(train_mrr))
+            np.save('{}/{}'.format(pre_train_folder, 'train_hit10'), np.array(train_hit10))
+            np.save('{}/{}'.format(pre_train_folder, 'test_mrr'), np.array(test_mrr))
+            np.save('{}/{}'.format(pre_train_folder, 'test_hit10'), np.array(test_hit10))
+
+        pre_train_config[train_no]['e'] = str(e)
+
+        with open(pre_train_config_folder + '/summary_config.ini', 'w') as configfile:
+            pre_train_config.write(configfile)
+
+    max_test_mrr = max(np.array(test_mrr))
+    max_test_hit10 = np.array(test_hit10)[np.argmax(np.array(test_mrr))]
+
+    pre_train_config[train_no]['best_mrr'] = str(max_test_mrr)
+    pre_train_config[train_no]['best_test10'] = str(max_test_hit10)
+
+    with open(pre_train_config_folder + '/summary_config.ini', 'w') as configfile:
+        pre_train_config.write(configfile)
+
+    if pre_train_args['model'] == 'CP':
+        torch.save(pre_train_model.lhs.state_dict(), pre_train_folder + '/lhs.pt')
+        torch.save(pre_train_model.rel.state_dict(), pre_train_folder + '/rel.pt')
+        torch.save(model.rhs.state_dict(), pre_train_folder + '/rhs.pt')
+    elif pre_train_args['model'] == 'ComplEx':
+        torch.save(pre_train_model.embeddings[0].state_dict(), pre_train_folder + '/entity.pt')
+        torch.save(pre_train_model.embeddings[1].state_dict(), pre_train_folder + '/relation.pt')
+
+    del pre_train_dataset
+    del unsorted_examples
+    del pre_train_model
+    del pre_train_optim
+    del pre_train_optimizer
+
+    if args.model == 'Context_CP' or args.model == 'Context_CP_v2':
+        if os.path.exists(pre_train_folder + 'lhs.pt'):
+            model.lhs.load_state_dict(torch.load(pre_train_folder + '/lhs.pt'))
+            model.rel.load_state_dict(torch.load(pre_train_folder + '/rel.pt'))
+            model.rhs.load_state_dict(torch.load(pre_train_folder + '/rhs.pt'))
+
+    elif args.model == 'Context_ComplEx' or args.model == 'Context_ComplEx_v2' or args.model == 'Context_ComplEx_v3':
+        if os.path.exists(pre_train_folder + 'entity.pt'):
+            model.embeddings[0].load_state_dict(torch.load(pre_train_folder + '/entity.pt'))
+            model.embeddings[1].load_state_dict(torch.load(pre_train_folder + '/relation.pt'))
+
+
+# Relevant variables to store
+forward_g = []
+test_g = []
+forward_alpha = []
+test_alpha = []
+forward_target_o = []
+test_target_o = []
+
+forward_nb_index = []
+forward_spo_index = []
+test_nb_index = []
+test_spo_index = []
+
+best_model_flag = 0
 
 hits_name = ['_hits@1', '_hits@3', '_hits@10']
 
@@ -228,111 +500,35 @@ test_hit1 = []
 test_hit3 = []
 test_hit10 = []
 
-#check if the directory exists
-results_folder = '../results/{}/{}'.format(args.model, args.dataset)
-
-# Load pre-trained embeddings
-if args.save_pre_train == 1:
-    pre_train_folder = '../pre_train/{}/{}/{}'.format('Context_' + args.model, args.dataset, str(args.rank))
-if args.load_pre_train == 1:
-    pre_train_folder = '../pre_train/{}/{}/{}'.format(args.model, args.dataset, str(args.rank))
-    if args.model == 'Context_CP':
-        model.lhs.load_state_dict(torch.load(pre_train_folder + '/lhs.pt'))
-        model.rel.load_state_dict(torch.load(pre_train_folder + '/rel.pt'))
-        model.rhs.load_state_dict(torch.load(pre_train_folder + '/rhs.pt'))
-    elif args.model == 'Context_ComplEx':
-        # model.embeddings = torch.load(pre_train_folder + '/embeddings.pt')
-        model.embeddings[0].load_state_dict(torch.load(pre_train_folder + '/entity.pt'))
-        model.embeddings[1].load_state_dict(torch.load(pre_train_folder + '/relation.pt'))
-
-# make appropriate directories and folders for storing the results
-if args.mkdir:
-    if not os.path.exists('../results'):
-        os.mkdir('../results')
-    model_list = ['ComplEx', 'ConvE', 'CP', 'Context_CP', 'Context_ComplEx', 'Context_ConvE']
-    dataset_list = ['FB15K', 'FB237', 'WN', 'WN18RR', 'YAGO3-10']
-
-    for each_model in model_list:
-        if not os.path.exists('../results/{}'.format(each_model)):
-            os.mkdir('../results/{}'.format(each_model))
-
-        for each_data in dataset_list:
-            if not os.path.exists('../results/{}/{}'.format(each_model, each_data)):
-                os.mkdir('../results/{}/{}'.format(each_model, each_data))
-
-    if not os.path.exists('./debug'):  # for saving debugging files; delete this at the end
-        os.mkdir('./debug')
-
-    if args.save_pre_train == 1:
-        # this is where the pre-trained emebedding will be saved
-        if not os.path.exists('../pre_train'):
-            os.mkdir('../pre_train')
-
-        model_list = ['ComplEx', 'ConvE', 'CP']
-        dataset_list = ['FB15K', 'FB237', 'WN', 'WN18RR', 'YAGO3-10']
-
-        for each_model in model_list:
-            if not os.path.exists('../pre_train/{}'.format('Context_'+each_model)):
-                os.mkdir('../pre_train/{}'.format('Context_'+each_model))
-
-            for each_data in dataset_list:
-                if not os.path.exists('../pre_train/{}/{}'.format('Context_'+each_model, each_data)):
-                    os.mkdir('../pre_train/{}/{}'.format('Context_'+each_model, each_data))
-
-        if not os.path.exists('../pre_train/{}/{}/{}'.format('Context_'+args.model, args.dataset, str(args.rank))):
-            os.mkdir('../pre_train/{}/{}/{}'.format('Context_'+args.model, args.dataset, str(args.rank)))
-
-if not os.path.exists(results_folder):
-    raise Exception('You do not have folder named:{}'.format(results_folder))
-
-train_no = 1
-
-while os.path.exists(results_folder + '/train' + str(train_no)):
-    train_no += 1
-
-folder_name = results_folder + '/train' + str(train_no)
-os.mkdir(folder_name)
-
-# Save the configuration file
-config = vars(args)
-
-pickle.dump(config, open(folder_name + '/config.p', 'wb'))
-
-config_ini = configparser.ConfigParser()
-config_ini['setup'] = {}
-
-for key in config.keys():
-    config_ini['setup'][str(key)] = str(config[key])
-
-# Comments about the model
-# Flag that we use batch-norm and dropout
-config_ini['setup']['only dropout no batch norm'] = 'True'
-config_ini['setup']['product score function'] = 'True'
-
-with open(folder_name + '/config.ini', 'w') as configfile:
-    config_ini.write(configfile)
+folder_name = '../results/{}/{}/{}'.format(args.model, args.dataset, train_no)
 
 for e in range(args.max_epochs):
+
     print('\n train epoch = ', e+1)
+
+    if e == args.n_freeze and args.n_freeze > 0:
+        optimizer.freeze_flag = 0
+
     cur_loss = optimizer.epoch(examples)
 
     if (e + 1) % args.valid == 0 or (e+1) == args.max_epochs:
-        torch.save(model.state_dict(), folder_name + '/model_state.pt')
-        # save the model if the mrr or hits@10 is best among all
 
-        if args.save_pre_train:  # save only the embeddings (for pre-training)
-            if args.model == 'CP':
-                torch.save(model.lhs.state_dict(), pre_train_folder + '/lhs.pt')
-                torch.save(model.rel.state_dict(), pre_train_folder + '/rel.pt')
-                torch.save(model.rhs.state_dict(), pre_train_folder + '/rhs.pt')
-                with open(pre_train_folder + '/config.ini', 'w') as configfile:
-                    config_ini.write(configfile)
-            elif args.model == 'ComplEx':
-                torch.save(model.embeddings[0].state_dict(), pre_train_folder+'/entity.pt')
-                torch.save(model.embeddings[1].state_dict(), pre_train_folder+'/relation.pt')
-        model.i = 0
         train_results = avg_both(*dataset.eval(model, 'train', 50000))
-        model.i = 1
+
+        forward_g.append(model.g.clone().data.cpu().numpy())
+        forward_alpha.append(model.alpha.clone().data.cpu().numpy())
+
+
+        if (e+1) % (args.valid * 3) == 0:
+            np.save(folder_name + '/forward_g', np.array(forward_g))
+            np.save(folder_name + '/forward_alpha', np.array(forward_alpha))
+
+            if args.evaluation_mode:
+                forward_nb_index.append(model.index_array)
+                forward_spo_index.append(model.spo.clone().data.cpu().numpy())
+
+                np.save(folder_name + '/forward_nb_index', np.array(forward_nb_index))
+                np.save(folder_name + '/forward_spo_index', np.array(forward_spo_index))
 
         print("\n\t TRAIN: ", train_results)
 
@@ -343,11 +539,15 @@ for e in range(args.max_epochs):
         train_hit3.append(hits1310[1])
         train_hit10.append(hits1310[2])
 
+        summary_config[train_no]['curr_train_hit10'] = str(hits1310[2])
+        summary_config[train_no]['curr_train_mrr'] = str(train_results['MRR'])
+
+        np.save(folder_name + '/loss', np.array(optimizer.loss_list))
+
         np.save(folder_name + '/train_mrr', np.array(train_mrr))
         np.save(folder_name + '/train_hit1', np.array(train_hit1))
         np.save(folder_name + '/train_hit3', np.array(train_hit3))
         np.save(folder_name + '/train_hit10', np.array(train_hit10))
-
 
         results = avg_both(*dataset.eval(model, 'test', -1))
 
@@ -366,19 +566,48 @@ for e in range(args.max_epochs):
         np.save(folder_name + '/test_hit3', np.array(test_hit3))
         np.save(folder_name + '/test_hit10', np.array(test_hit10))
 
-        if args.save_pre_train:
-            np.save(pre_train_folder + '/test_mrr', np.array(test_mrr))
+        max_test_mrr = max(np.array(test_mrr))
+        max_test_hits = max(np.array(test_hit10))
+        summary_config[train_no]['max_test_hit10'] = str(max_test_hits)
+        summary_config[train_no]['max_test_mrr'] = str(max_test_mrr)
 
-        config_ini['setup']['max_hit10'] = str(max(np.array(test_hit10)))
-        config_ini['setup']['max_mrr'] = str(max(np.array(test_mrr)))
+        summary_config[train_no]['curr_test_hit10'] = str(hits1310[2])
+        summary_config[train_no]['curr_test_mrr'] = str(results['MRR'])
+
+        if max_test_mrr >= float(summary_config['summary']['best_mrr']):
+            best_model_flag = 1
+            summary_config['summary']['best_train_no'] = str(train_no)
+            summary_config['summary']['best_mrr'] = str(max_test_mrr)
+            summary_config['summary']['best_hits@10'] = str(max_test_hits)
+            torch.save(model.state_dict(), folder_name + '/model_state.pt')
+
+        if (e + 1) % (args.valid * 3) == 0:
+            test_g.append(model.g.clone().data.cpu().numpy())
+            test_alpha.append(model.alpha.clone().data.cpu().numpy())
+            np.save(folder_name + '/test_g', np.array(test_g))
+            np.save(folder_name + '/test_alpha', np.array(test_alpha))
+
+            if args.evaluation_mode:
+                test_nb_index.append(model.index_array)
+                test_spo_index.append(model.spo.clone().data.cpu().numpy())
+
+                np.save(folder_name + '/test_nb_index', np.array(test_nb_index))
+                np.save(folder_name + '/test_spo_index', np.array(test_spo_index))
+
 
         config['e'] = e
         pickle.dump(config, open(folder_name + '/config.p', 'wb'))
 
-        config_ini['setup']['e'] = str(e)
+        summary_config[train_no]['e'] = str(e)
 
-        with open(folder_name + '/config.ini', 'w') as configfile:
-            config_ini.write(configfile)
+        # Update ../results/model/dataset/summary_config.ini file
+        with open('../results/{}/{}/summary_config.ini'.format(args.model, args.dataset), 'w') as configfile:
+            summary_config.write(configfile)
 
-        test_i += 1
+eps = 0.002
+if (max(np.array(test_mrr)) == np.array(test_mrr)[-1]) and (abs(np.array(test_mrr)[-1] - np.array(test_mrr)[-2]) > eps):
+    # torch.save(model.state_dict(), folder_name + '/model_state.pt')
+    summary_config['summary']['{} not fully trained'.format(train_no)] = 'True'
 
+    with open('../results/{}/{}/summary_config.ini'.format(args.model, args.dataset), 'w') as configfile:
+        summary_config.write(configfile)
