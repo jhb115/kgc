@@ -21,7 +21,7 @@ def summary(configuration):
 
 
 def to_cmd(c, _path=None):
-    command = f'python kbc/learn_grid.py --dataset WN ' \
+    command = f'python kgc/learn_grid.py --dataset WN ' \
         f'--model Context_ComplEx_v3 ' \
         f'--regularizer N4 ' \
         f'--max_epoch 140 ' \
@@ -80,7 +80,7 @@ date
 export LANG="en_US.utf8"
 export LANGUAGE="en_US:en"
 
-cd /home/jeunbyun/jeung_project/kbc
+cd /home/jeunbyun/jeung_project/kgc
 
 """.format(nb_jobs)
 

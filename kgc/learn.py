@@ -5,10 +5,10 @@ import configparser
 
 import torch
 from torch import optim
-from kbc.datasets import Dataset
-from kbc.prev_models import CP, ComplEx, Context_CP, Context_ComplEx, Context_CP_v2, Context_ComplEx_v2, Context_ComplEx_v3
-from kbc.regularizers import N2, N3, N4
-from kbc.optimizers import KBCOptimizer
+from kgc.datasets import Dataset
+from kgc.models import CP, ComplEx, ContExt
+from kgc.regularizers import N2, N3, N4
+from kgc.optimizers import KBCOptimizer
 import os
 import numpy as np
 
@@ -27,8 +27,7 @@ g_weight = [0, 0.03]
 max_NB = [10, 100]
 '''
 
-big_datasets = ['FB15K', 'WN', 'WN18RR', 'FB237', 'YAGO3-10']
-datasets = big_datasets
+datasets = ['WN18RR', 'FB237', 'YAGO3-10']
 
 parser = argparse.ArgumentParser(
     description="Relational learning contraption"
@@ -44,7 +43,7 @@ parser.add_argument(
     help="Dataset in {}".format(datasets)
 )
 
-models = ['CP', 'ComplEx', 'Context_CP', 'Context_ComplEx', 'Context_CP_v2', 'Context_ComplEx_v2', 'Context_ComplEx_v3']
+models = ['CP', 'ComplEx', 'ContExt']
 parser.add_argument(
     '--model', choices=models,
     help="Model in {}".format(models)
@@ -163,22 +162,10 @@ else:
 model = {
     'CP': lambda: CP(dataset.get_shape(), args.rank, args.init),
     'ComplEx': lambda: ComplEx(dataset.get_shape(), args.rank, args.init),
-    'Context_CP': lambda: Context_CP(dataset.get_shape(), args.rank, sorted_data, slice_dic,
-                                     max_NB=args.max_NB, init_size=args.init, data_name=args.dataset,
-                                     ascending=args.ascending),
-    'Context_ComplEx': lambda: Context_ComplEx(dataset.get_shape(), args.rank, sorted_data, slice_dic,
-                                               max_NB=args.max_NB, init_size=args.init, data_name=args.dataset,
-                                               ascending=args.ascending),
-    'Context_CP_v2': lambda: Context_CP_v2(dataset.get_shape(), args.rank, sorted_data, slice_dic,
-                                           max_NB=args.max_NB, init_size=args.init, data_name=args.dataset,
-                                           ascending=args.ascending),
-    'Context_ComplEx_v2': lambda: Context_ComplEx_v2(dataset.get_shape(), args.rank, sorted_data, slice_dic,
-                                                     max_NB=args.max_NB, init_size=args.init, data_name=args.dataset,
-                                                     ascending=args.ascending),
-    'Context_ComplEx_v3': lambda: Context_ComplEx_v3(dataset.get_shape(), args.rank, sorted_data, slice_dic,
-                                                     max_NB=args.max_NB, init_size=args.init, data_name=args.dataset,
-                                                     ascending=args.ascending, dropout_1=args.dropout_1,
-                                                     dropout_g=args.dropout_g, evaluation_mode=args.evaluation_mode),
+    'ContExt': lambda: ContExt(dataset.get_shape(), args.rank, sorted_data, slice_dic,
+                               max_NB=args.max_NB, init_size=args.init, data_name=args.dataset,
+                               ascending=args.ascending, dropout_1=args.dropout_1,
+                               dropout_g=args.dropout_g, evaluation_mode=args.evaluation_mode),
 }[args.model]()
 
 regularizer = {
@@ -192,7 +179,6 @@ regularizer = {
 device = torch.device('cuda')
 model.to(device)
 
-
 # Freeze the embeddings for n_freeze epochs
 if args.n_freeze > 0:
     if args.model in ['Context_CP', 'Context_CP_v2']:
@@ -200,7 +186,7 @@ if args.n_freeze > 0:
         model.rel.weight.requires_grad = False
         model.rh.weight.requires_grad = False
 
-    elif args.model in ['Context_ComplEx', 'Context_ComplEx_v2', 'Context_ComplEx_v3']:
+    elif args.model in ['ContExt']:
         for i in range(2):
             model.embeddings[i].weight.requires_grad = False
 
@@ -210,7 +196,6 @@ optim_method = {
     'SGD': lambda: optim.SGD(model.parameters(), lr=args.learning_rate)
 }[args.optimizer]()
 
-#
 # print('Model state:')
 # for param_tensor in model.state_dict():
 #     print(f'\t{param_tensor}\t{model.state_dict()[param_tensor].size()}')
@@ -235,8 +220,9 @@ config_folder = '../results/{}/{}'.format(args.model, args.dataset)
 
 if not os.path.exists('../results'):
     os.mkdir('../results')
-model_list = ['ComplEx', 'CP', 'Context_CP', 'Context_ComplEx', 'Context_CP_v2', 'Context_ComplEx_v2', 'Context_ComplEx_v3']
-dataset_list = ['FB15K', 'FB237', 'WN', 'WN18RR', 'YAGO3-10']
+
+model_list = ['ComplEx', 'CP', 'ContExt']
+dataset_list = ['FB237', 'WN18RR', 'YAGO3-10']
 
 # For actual model
 # saves file summary_config.ini to ../results/model/data
@@ -266,7 +252,7 @@ if not os.path.exists('../pre_train'):
     os.mkdir('../pre_train')
 
 model_list = ['ComplEx', 'CP']
-dataset_list = ['FB15K', 'FB237', 'WN', 'WN18RR', 'YAGO3-10']
+dataset_list = ['FB237', 'WN18RR', 'YAGO3-10']
 
 for each_model in model_list:
     folder_name = '../pre_train/{}'.format('Context_'+each_model)
@@ -290,11 +276,8 @@ run_pre_train_flag = 0
 
 
 # Need to consider the case when args.model == 'Context_CP
-pre_model_name = {'Context_CP_v2': 'Context_CP',
-                  'Context_ComplEx_v2': 'Context_ComplEx',
-                  'Context_ComplEx': 'Context_ComplEx',
-                  'Context_ComplEx_v3': 'Context_ComplEx',
-                  'Context_CP': 'Context_CP'}[args.model]
+pre_model_name = {'Contact': 'Contact',
+                  'ContExt': 'ContExt'}[args.model]
 
 if args.load_pre_train == 1:
     pre_train_folder = '../pre_train/{}/{}/{}'.format(pre_model_name, args.dataset, str(args.rank))
@@ -304,7 +287,7 @@ if args.load_pre_train == 1:
         os.mkdir(pre_train_folder)
         run_pre_train_flag = 1
 
-    if args.model == 'Context_CP' or args.model == 'Context_CP_v2':
+    if args.model == 'Contact':
         if os.path.exists(pre_train_folder + '/lhs.pt'):
             model.lhs.load_state_dict(torch.load(pre_train_folder + '/lhs.pt'))
             model.rel.load_state_dict(torch.load(pre_train_folder + '/rel.pt'))
@@ -325,7 +308,7 @@ if args.load_pre_train == 1:
             pre_train_optimizer = KBCOptimizer(pre_train_model, pre_train_regularizer, pre_train_optim,
                                                pre_train_args['batch_size'])
 
-    elif args.model == 'Context_ComplEx' or args.model == 'Context_ComplEx_v2' or args.model == 'Context_ComplEx_v3':
+    elif args.model == 'ContExt':
         if os.path.exists(pre_train_folder + '/entity.pt'):
             # model.embeddings = torch.load(pre_train_folder + '/embeddings.pt')
             model.embeddings[0].load_state_dict(torch.load(pre_train_folder + '/entity.pt'))
@@ -461,13 +444,13 @@ if run_pre_train_flag:
     del pre_train_optim
     del pre_train_optimizer
 
-    if args.model == 'Context_CP' or args.model == 'Context_CP_v2':
+    if args.model == 'Contact':
         if os.path.exists(pre_train_folder + 'lhs.pt'):
             model.lhs.load_state_dict(torch.load(pre_train_folder + '/lhs.pt'))
             model.rel.load_state_dict(torch.load(pre_train_folder + '/rel.pt'))
             model.rhs.load_state_dict(torch.load(pre_train_folder + '/rhs.pt'))
 
-    elif args.model == 'Context_ComplEx' or args.model == 'Context_ComplEx_v2' or args.model == 'Context_ComplEx_v3':
+    elif args.model == 'ContExt':
         if os.path.exists(pre_train_folder + 'entity.pt'):
             model.embeddings[0].load_state_dict(torch.load(pre_train_folder + '/entity.pt'))
             model.embeddings[1].load_state_dict(torch.load(pre_train_folder + '/relation.pt'))
@@ -517,7 +500,6 @@ for e in range(args.max_epochs):
 
         forward_g.append(model.g.clone().data.cpu().numpy())
         forward_alpha.append(model.alpha.clone().data.cpu().numpy())
-
 
         if (e+1) % (args.valid * 3) == 0:
             np.save(folder_name + '/forward_g', np.array(forward_g))

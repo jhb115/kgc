@@ -5,8 +5,8 @@ import torch
 from torch import nn
 from torch import optim
 
-from kbc.models import KBCModel
-from kbc.regularizers import Regularizer
+from kgc.models import KBCModel
+from kgc.regularizers import Regularizer
 
 # include pre-training functionality
 

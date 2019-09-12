@@ -2,8 +2,8 @@
 from setuptools import setup
 
 setup(
-    name='kbc',
+    name='kgc',
     ext_package='',
-    packages=['kbc'],
-    package_data={'kbc': ['data/**/*']},
+    packages=['kgc'],
+    package_data={'kgc': ['data/**/*']},
 )

@@ -5,10 +5,10 @@ from typing import Dict, Tuple, List
 
 import numpy as np
 import torch
-from kbc.models import KBCModel
+from kgc.models import KBCModel
 import os
 
-DATA_PATH = Path(pkg_resources.resource_filename('kbc', 'data/'))
+DATA_PATH = Path(pkg_resources.resource_filename('kgc', 'data/'))
 
 class Dataset(object):
     def __init__(self, name: str):

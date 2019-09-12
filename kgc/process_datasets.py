@@ -9,7 +9,7 @@ import numpy as np
 
 from collections import defaultdict
 
-DATA_PATH = pkg_resources.resource_filename('kbc', 'data/')
+DATA_PATH = pkg_resources.resource_filename('kgc', 'data/')
 
 
 def prepare_dataset(path, name):

@@ -1,7 +1,7 @@
 import torch
-from kbc.models import Context_ComplEx
+from kgc.models import Context_ComplEx
 import numpy as np
-from kbc.datasets import Dataset
+from kgc.datasets import Dataset
 
 dataset = Dataset('WN18RR')
 sorted_data, slice_dic = dataset.get_sorted_train()

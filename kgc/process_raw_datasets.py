@@ -10,7 +10,7 @@ import numpy as np
 
 from collections import defaultdict
 
-DATA_PATH = pkg_resources.resource_filename('kbc', 'data/')  # this is where the processed data get stored.
+DATA_PATH = pkg_resources.resource_filename('kgc', 'data/')  # this is where the processed data get stored.
 
 if os.path.exists(DATA_PATH + '/YAGO3-10'):
     shutil.rmtree(DATA_PATH + '/YAGO3-10')

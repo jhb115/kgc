@@ -1,7 +1,7 @@
 from pathlib import Path
 import pkg_resources
 import pickle
-from kbc.datasets import Dataset
+from kgc.datasets import Dataset
 import matplotlib.pyplot as plt
 
 #%%%
@@ -82,7 +82,7 @@ plt.show()
 
 
 
-DATA_PATH = Path(pkg_resources.resource_filename('kbc', 'data/'))
+DATA_PATH = Path(pkg_resources.resource_filename('kgc', 'data/'))
 print(DATA_PATH)
 
 data_list = ['FB15K', 'FB237', 'WN', 'WN18RR', 'YAGO3-10']
@@ -176,7 +176,7 @@ They are all Equal
 # Check if all entities in valid and test exist in train
 # FB237, WN18RR, YAGO3-10 HAVE UNOBSERVED ENTITIES IN TRAIN AND VALID SET
 
-DATA_PATH = Path(pkg_resources.resource_filename('kbc', 'data/'))
+DATA_PATH = Path(pkg_resources.resource_filename('kgc', 'data/'))
 print(DATA_PATH)
 
 data_list = ['FB15K', 'FB237', 'WN', 'WN18RR', 'YAGO3-10']
@@ -241,7 +241,7 @@ YAGO3-10
 #%%%
 # Check if all relations in valid and test exist in train
 # All relationships in train set found in valid and test set
-DATA_PATH = Path(pkg_resources.resource_filename('kbc', 'data/'))
+DATA_PATH = Path(pkg_resources.resource_filename('kgc', 'data/'))
 print(DATA_PATH)
 
 data_list = ['FB15K', 'FB237', 'WN', 'WN18RR', 'YAGO3-10']
@@ -273,7 +273,7 @@ for each_data in data_list:
 Check if valid and test set also have reciprocals
 '''
 
-from kbc.datasets import Dataset
+from kgc.datasets import Dataset
 
 data_list = ['FB15K', 'FB237', 'WN', 'WN18RR', 'YAGO3-10']
 file_type = ['train', 'valid', 'test']
@@ -477,7 +477,7 @@ class Context_CP(nn.Module):
 #%%%
 #Test
 
-from kbc.datasets import Dataset
+from kgc.datasets import Dataset
 
 mydata = Dataset('FB15K', use_colab=False)
 sorted_data, slice_dic = mydata.get_sorted_train()
@@ -504,11 +504,11 @@ class my_model(nn.Module):
 
 test_CP = my_model()
 
-torch.save(test_CP.lhs.state_dict(), './kbc/scrap_data/lhs.pt')
+torch.save(test_CP.lhs.state_dict(), './kgc/scrap_data/lhs.pt')
 
 #%%%
 mymodel2 = my_model()
-mymodel2.lhs.load_state_dict(torch.load('./kbc/scrap_data/lhs.pt'))
+mymodel2.lhs.load_state_dict(torch.load('./kgc/scrap_data/lhs.pt'))
 #%%%
 
 import torch
