@@ -18,6 +18,9 @@ if os.path.exists(DATA_PATH + '/YAGO3-10'):
 if os.path.exists(DATA_PATH + '/WN18RR'):
     shutil.rmtree(DATA_PATH + '/WN18RR')
 
+if os.path.exists(DATA_PATH + '/FB237'):
+    shutil.rmtree(DATA_PATH + '/FB237')
+
 def prepare_dataset(path='../dataset/raw_data', name='YAGO3-10'):  # this path is where the raw data lies
     """
     Given a path to a folder containing tab separated files :
@@ -108,7 +111,7 @@ def prepare_dataset(path='../dataset/raw_data', name='YAGO3-10'):  # this path i
 
 
 if __name__ == "__main__":
-    for each_data in ['YAGO3-10', 'WN18RR']:
+    for each_data in ['YAGO3-10', 'WN18RR', 'FB237']:
         print("Preparing dataset {}".format(each_data))
         try:
             prepare_dataset('../dataset/raw_data/'+each_data, each_data)
