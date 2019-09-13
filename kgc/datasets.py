@@ -46,50 +46,40 @@ class Dataset(object):
         sorted_file_path = self.root / 'sorted_train.pickle'
         slice_file_path = self.root / 'slice_train.pickle'
         if os.path.exists(sorted_file_path) and os.path.exists(slice_file_path):
-            # load data if exists
             print('Sorted train set loaded')
             return pickle.load(open(sorted_file_path, 'rb')), \
-                    pickle.load(open(slice_file_path, 'rb'))
-        else:  # create data if not exists
+                   pickle.load(open(slice_file_path, 'rb'))
+        else:
             print('Create new sorted list')
             train = self.get_train().astype('int64')
 
             train = train[train[:, 0].argsort()]  # sorts the dataset in order with respect to subject entity id
-            i = 0
-            curr_ent = train[0, 0]
 
-            print('Min entity id for {} is {}'.format(self.name, curr_ent))
+            i = 0  # each triple
 
-            ent_idx_list = list(range(curr_ent, max(train[:, 0]) + 1 + curr_ent))
+            print('Min entity id for {} is {}'.format(self.name, train[0, 0]))
 
             slice_dic = []
             start = 0
+            ent_idx = 0
+
             while i < len(train):
                 prev_ent = curr_ent
-                ent_idx = ent_idx_list[len(slice_dic)]
                 curr_ent = train[i, 0]
 
                 if prev_ent != curr_ent:
-                    while ent_idx_list[len(slice_dic) + 1] != curr_ent:
-                        slice_dic.append([ent_idx_list[len(slice_dic) + 1], start, start, 0])
-                    slice_dic.append([prev_ent, start, i, i - start])  # slice_dic[i] == (subject, start, end, degree)
+                    while ent_idx != curr_ent:
+                        slice_dic.append([start, start])
+                    slice_dic.append([start, i])  # slice_dic[i] == (start, end)
                     start = i
                     ent_idx += 1
 
                 if i == len(train) - 1:
-                    slice_dic.append([curr_ent, start, i+1, i+1 - start])
+                    slice_dic.append([start, i+1])
 
                 i += 1
 
             slice_dic = np.array(slice_dic, dtype=np.int64)
-            slice_dic = slice_dic[slice_dic[:, 0].argsort()]
-
-            nb_degrees = slice_dic[train[:, 2], 3]
-
-            i_train = np.lexsort((nb_degrees, train[:, 0]))
-            # sort in terms of degrees of neighbouring nodes first then sort with respect to train id
-            train = train[i_train]
-            slice_dic = slice_dic[:, :3]
 
             pickle.dump(train, open(sorted_file_path, 'wb'))
             pickle.dump(slice_dic, open(slice_file_path, 'wb'))
@@ -100,54 +90,48 @@ class Dataset(object):
         2-hop neighborhood
         :return: 2_hop_sorted_train, 2_hop_slice_train
         '''
-        sorted_file_path = self.root / 'two_hop_sorted.pickle'
+        sorted_file_path = self.root / 'two_hop_list.pickle'
         slice_file_path = self.root / 'two_hop_slice.pickle'
         if os.path.exists(sorted_file_path) and os.path.exists(slice_file_path):
             # load data if exists
             print('Sorted train set loaded')
-            return pickle.load(open(sorted_file_path, 'rb')), \
-                   pickle.load(open(slice_file_path, 'rb'))
+            return pickle.load(open(sorted_file_path, 'rb')), pickle.load(open(slice_file_path, 'rb'))
         else:  # create data if not exists
             print('Create new sorted list')
             one_hop_sorted, one_hop_slice = self.get_sorted_train()  # sorted-train and slice-dic
-            # one_hop_sorted = [ [subj, rel, obj] ]
-            # one_hop_slice = [ [subj, start, end, length] ]
 
             i = 0
             two_start = 0
             two_end = 0
 
-            # two_hop_sorted = [ obj1, obj2, obj3, ..., objN ]
-            # two_hop_slice = [ [start, end] ... ]
-
-            two_hop_sorted = []
+            two_hop_list = []
             two_hop_slice = []
 
             while i < len(one_hop_slice):
 
                 # add one hop neighbors to candidate_nb
-                _, one_start, one_end = one_hop_slice[i]
+                one_start, one_end = one_hop_slice[i]
                 curr_one_hop_nb = one_hop_sorted[one_start:one_end, 2]
-                two_hop_sorted += curr_one_hop_nb
+                two_hop_list += curr_one_hop_nb
                 two_end += len(curr_one_hop_nb)
 
-                #add two hop neighbors to candidate_nb
+                # add two hop neighbors to candidate_nb
                 for each_obj in curr_one_hop_nb:
-                    _, each_start, each_end = one_hop_slice[each_obj]
-                    two_hop_sorted += one_hop_sorted[each_start:each_end, 2]
+                    each_start, each_end = one_hop_slice[each_obj]
+                    two_hop_list += one_hop_sorted[each_start:each_end, 2]
                     two_end += each_end - each_start
 
                 two_hop_slice.append([two_start, two_end])
                 two_start = two_end
                 i += 1
 
-            two_hop_sorted = np.array(two_hop_sorted)
+            two_hop_list = np.array(two_hop_list)
             two_hop_slice = np.array(two_hop_slice)
 
-            pickle.dump(two_hop_sorted, open(sorted_file_path, 'rb'))
+            pickle.dump(two_hop_list, open(sorted_file_path, 'rb'))
             pickle.dump(two_hop_slice, open(slice_file_path, 'rb'))
 
-            return two_hop_sorted, two_hop_slice
+            return two_hop_list, two_hop_slice
 
     def eval(
             self, model: KBCModel, split: str, n_queries: int = -1, missing_eval: str = 'both',
