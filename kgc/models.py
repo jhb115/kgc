@@ -244,37 +244,20 @@ class ContExt(KBCModel):
         self.slice_dic = torch.cuda.IntTensor(slice_dic)
         self.max_NB = max_NB
 
-    def forward_get_neighbor(self, subj: torch.Tensor, obj: torch.Tensor):
+    def get_neighbor(self, subj: torch.Tensor, forward_flag: bool = True, obj: torch.Tensor = None):
+        #  if forward_flag = Flase -> obj = None
         index_array = torch.full((len(subj), self.max_NB), self.padding_idx, dtype=torch.long).cuda()
 
         for i, each_subj in enumerate(subj):
-            _, start_i, end_i = torch.index_select(self.slice_dic, 0, each_subj)
+            start_i, end_i = torch.index_select(self.slice_dic, 0, each_subj)
             length = end_i - start_i
 
             if length > 0:
                 rnd_idx = torch.randperm(length, dtype=torch.int32) + torch.full((length,), start_i, dtype=torch.int32)
                 rnd_idx.cuda()
                 index_array = torch.index_select(self.sorted_data, 2, rnd_idx)
-                index_array = index_array[index_array != obj[i]]  # remove any target o included in the neighborhood
-                if len(index_array) > self.max_NB:
-                    index_array = index_array[:self.max_NB]
-
-        self.index_array = index_array.clone().data.cpu().numpy()
-
-        return self.embeddings[2](index_array)
-
-
-    def score_get_neighbor(self, subj: torch.Tensor):
-        index_array = torch.full((len(subj), self.max_NB), self.padding_idx, dtype=torch.long).cuda()
-
-        for i, each_subj in enumerate(subj):
-            _, start_i, end_i = torch.index_select(self.slice_dic, 0, each_subj)
-            length = end_i - start_i
-
-            if length > 0:
-                rnd_idx = torch.randperm(length, dtype=torch.int32) + torch.full((length, ), start_i, dtype=torch.int32)
-                rnd_idx.cuda()
-                index_array = torch.index_select(self.sorted_data, 2, rnd_idx)
+                if forward_flag:
+                    index_array = index_array[index_array != obj[i]]  # remove any target o included in the neighborhood
                 if len(index_array) > self.max_NB:
                     index_array = index_array[:self.max_NB]
 
@@ -305,7 +288,7 @@ class ContExt(KBCModel):
         w = (trp_E[0] @ self.W[0] - trp_E[1] @ self.W[1] + self.b_w[0],
              trp_E[0] @ self.W[1] + trp_E[1] @ self.W[0] + self.b_w[1])
 
-        nb_E = self.score_get_neighbor(x[:, 0])
+        nb_E = self.get_neighbor(x[:, 0], forward_flag=False)
         nb_E = nb_E[:, :, :self.rank], nb_E[:, :, self.rank:]  # check on this
 
         w_nb_E = torch.einsum('bk,bmk->bm', w[0], nb_E[0]) - torch.einsum('bk,bmk->bm', w[1], nb_E[1])
@@ -351,7 +334,7 @@ class ContExt(KBCModel):
         w = (trp_E[0] @ self.W[0] - trp_E[1] @ self.W[1] + self.b_w[0],
              trp_E[0] @ self.W[1] + trp_E[1] @ self.W[0] + self.b_w[1])
 
-        nb_E = self.forward_get_neighbor(x[:, 0], x[:, 2])
+        nb_E = self.get_neighbor(x[:, 0], forward_flag=True, obj=x[:, 2])
         nb_E = nb_E[:, :, :self.rank], nb_E[:, :, self.rank:]
 
         w_nb_E = torch.einsum('bk,bmk->bm', w[0], nb_E[0]) - torch.einsum('bk,bmk->bm', w[1], nb_E[1])
@@ -404,7 +387,7 @@ class ContExt(KBCModel):
         w = (trp_E[0] @ self.W[0] - trp_E[1] @ self.W[1] + self.b_w[0],
              trp_E[0] @ self.W[1] + trp_E[1] @ self.W[0] + self.b_w[1])
 
-        nb_E = self.score_get_neighbor(queries[:, 0])
+        nb_E = self.get_neighbor(queries[:, 0], forward_flag=False)
         nb_E = nb_E[:, :, :self.rank], nb_E[:, :, self.rank:]  # check on this
 
         w_nb_E = torch.einsum('bk,bmk->bm', w[0], nb_E[0]) - torch.einsum('bk,bmk->bm', w[1], nb_E[1])
