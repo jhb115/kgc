@@ -186,7 +186,7 @@ class ComplEx(KBCModel):
 
 class ContExt(KBCModel):
     def __init__(
-            self, sizes: Tuple[int, int, int], rank: int, sorted_data:np.ndarray,
+            self, sizes: Tuple[int, int, int], rank: int, nb_list:np.ndarray,
             slice_dic: np.ndarray, max_NB: int=50, init_size: float=1e-3,
             data_name: str='FB15K', ascending=1, dropout_1=0.5, dropout_g=0.5,
             evaluation_mode = False
@@ -240,12 +240,12 @@ class ContExt(KBCModel):
 
         nn.init.xavier_uniform_(self.b_g)
 
-        self.sorted_data = torch.cuda.IntTensor(sorted_data)
+        self.nb_list = torch.cuda.IntTensor(nb_list)
         self.slice_dic = torch.cuda.IntTensor(slice_dic)
         self.max_NB = max_NB
 
     def get_neighbor(self, subj: torch.Tensor, forward_flag: bool = True, obj: torch.Tensor = None):
-        #  if forward_flag = Flase -> obj = None
+        #  if forward_flag = False -> obj = None
         index_array = torch.full((len(subj), self.max_NB), self.padding_idx, dtype=torch.long).cuda()
 
         for i, each_subj in enumerate(subj):
@@ -255,7 +255,7 @@ class ContExt(KBCModel):
             if length > 0:
                 rnd_idx = torch.randperm(length, dtype=torch.int32) + torch.full((length,), start_i, dtype=torch.int32)
                 rnd_idx.cuda()
-                index_array = torch.index_select(self.sorted_data, 2, rnd_idx)
+                index_array = self.nb_list[rnd_idx]
                 if forward_flag:
                     index_array = index_array[index_array != obj[i]]  # remove any target o included in the neighborhood
                 if len(index_array) > self.max_NB:

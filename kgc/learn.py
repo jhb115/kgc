@@ -144,7 +144,12 @@ parser.add_argument(
 
 parser.add_argument(
     '--evaluation_mode', default=0, type=int, choices=[0, 1],
-    help='Whther to get an attention mask or not'
+    help='Whether to get an attention mask or not'
+)
+
+parser.add_argument(
+    '--n_hop_nb', default=1, type=int, choices=[1, 2],
+    help='How many hops to consider'
 )
 
 # Setup parser
@@ -156,13 +161,18 @@ if args.model in ['CP', 'ComplEx']:
     unsorted_examples = torch.from_numpy(dataset.get_train().astype('int64'))
     examples = unsorted_examples
 else:
-    sorted_data, slice_dic = dataset.get_sorted_train()
+    if args.n_hop_nb == 1:
+        sorted_data, slice_dic = dataset.get_sorted_train()
+        nb_list = sorted_data[:, 2]
+        del sorted_data
+    else:
+        nb_list, slice_dic = dataset.get_2hop_nb()
     examples = torch.from_numpy(dataset.get_train().astype('int64'))
 
 model = {
     'CP': lambda: CP(dataset.get_shape(), args.rank, args.init),
     'ComplEx': lambda: ComplEx(dataset.get_shape(), args.rank, args.init),
-    'ContExt': lambda: ContExt(dataset.get_shape(), args.rank, sorted_data, slice_dic,
+    'ContExt': lambda: ContExt(dataset.get_shape(), args.rank, nb_list, slice_dic,
                                max_NB=args.max_NB, init_size=args.init, data_name=args.dataset,
                                ascending=args.ascending, dropout_1=args.dropout_1,
                                dropout_g=args.dropout_g, evaluation_mode=args.evaluation_mode),
