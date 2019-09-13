@@ -54,8 +54,6 @@ class Dataset(object):
             print('Create new sorted list')
             train = self.get_train().astype('int64')
 
-            train = np.array(list(filter(lambda each_trp: each_trp[0] != each_trp[2], train)))  # removes any self loops
-
             train = train[train[:, 0].argsort()]  # sorts the dataset in order with respect to subject entity id
             i = 0
             curr_ent = train[0, 0]
@@ -96,6 +94,57 @@ class Dataset(object):
             pickle.dump(train, open(sorted_file_path, 'wb'))
             pickle.dump(slice_dic, open(slice_file_path, 'wb'))
             return train, slice_dic
+
+    def get_2hop_nb(self):
+        '''
+        2-hop neighborhood
+        :return: 2_hop_sorted_train, 2_hop_slice_train
+        '''
+        sorted_file_path = self.root / 'two_hop_sorted.pickle'
+        slice_file_path = self.root / 'two_hop_slice.pickle'
+        if os.path.exists(sorted_file_path) and os.path.exists(slice_file_path):
+            # load data if exists
+            print('Sorted train set loaded')
+            return pickle.load(open(sorted_file_path, 'rb')), \
+                   pickle.load(open(slice_file_path, 'rb'))
+        else:  # create data if not exists
+            print('Create new sorted list')
+            one_hop_sorted, one_hop_slice = self.get_sorted_train()  # sorted-train and slice-dic
+            # one_hop_sorted = [ [subj, rel, obj] ]
+            # one_hop_slice = [ [subj, start, end, length] ]
+
+            i = 0
+            two_start = 0
+            two_end = 0
+
+            # two_hop_sorted = [ obj1, obj2, obj3, ..., objN ]
+            # two_hop_slice = [ [start, end] ... ]
+
+            two_hop_sorted = []
+            two_hop_slice = []
+
+            while i < len(one_hop_slice):
+
+                # add one hop neighbors to candidate_nb
+                _, one_start, one_end = one_hop_slice[i]
+                curr_one_hop_nb = one_hop_sorted[one_start:one_end, 2]
+                two_hop_sorted += curr_one_hop_nb
+                two_end += len(curr_one_hop_nb)
+
+                #add two hop neighbors to candidate_nb
+                for each_obj in curr_one_hop_nb:
+                    _, each_start, each_end = one_hop_slice[each_obj]
+                    two_hop_sorted += one_hop_sorted[each_start:each_end, 2]
+                    two_end += each_end - each_start
+
+                two_hop_slice.append([two_start, two_end])
+                two_start = two_end
+                i += 1
+
+            pickle.dump(two_hop_sorted, open(sorted_file_path, 'rb'))
+            pickle.dump(two_hop_slice, open(slice_file_path, 'rb'))
+
+            return two_hop_sorted, two_hop_slice
 
     def eval(
             self, model: KBCModel, split: str, n_queries: int = -1, missing_eval: str = 'both',
