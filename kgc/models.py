@@ -206,7 +206,7 @@ class ContExt(KBCModel):
             nn.Embedding(n_s, 2 * rank, sparse=True),
             nn.Embedding(n_r, 2 * rank, sparse=True),
             nn.Embedding(n_o+1, 2 * rank, sparse=True, padding_idx=self.padding_idx)
-        ])  # the index with s+1 -> padding with 0
+        ])
 
         # self.embeddings = nn.ModuleList([
         #     nn.Embedding(s, 2 * rank, sparse=True)
