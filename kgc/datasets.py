@@ -62,6 +62,7 @@ class Dataset(object):
             slice_dic = []
             start = 0
             ent_idx = 0
+            curr_ent = train[0, 0]
 
             while i < len(train):
                 prev_ent = curr_ent
