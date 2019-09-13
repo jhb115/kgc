@@ -141,6 +141,9 @@ class Dataset(object):
                 two_start = two_end
                 i += 1
 
+            two_hop_sorted = np.array(two_hop_sorted)
+            two_hop_slice = np.array(two_hop_slice)
+
             pickle.dump(two_hop_sorted, open(sorted_file_path, 'rb'))
             pickle.dump(two_hop_slice, open(slice_file_path, 'rb'))
 
