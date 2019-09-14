@@ -42,12 +42,12 @@ class Dataset(object):
         copy[:, 1] += self.n_predicates // 2  # has been multiplied by two.
         return np.vstack((self.data['train'], copy))
 
-    def get_sorted_train(self):
-        sorted_file_path = self.root / 'sorted_train.pickle'
-        slice_file_path = self.root / 'slice_train.pickle'
-        if os.path.exists(sorted_file_path) and os.path.exists(slice_file_path):
+    def get_1hop_nb(self):
+        one_hop_path = self.root / 'one_hop_list.pickle'
+        slice_file_path = self.root / 'one_hop_slice.pickle'
+        if os.path.exists(one_hop_path) and os.path.exists(slice_file_path):
             print('Sorted train set loaded')
-            return pickle.load(open(sorted_file_path, 'rb')), \
+            return pickle.load(open(one_hop_path, 'rb')), \
                    pickle.load(open(slice_file_path, 'rb'))
         else:
             print('Create new sorted list')
@@ -55,7 +55,7 @@ class Dataset(object):
 
             train = train[train[:, 0].argsort()]  # sorts the dataset in order with respect to subject entity id
 
-            i = 0  # each triple
+            i = 0
 
             print('Min entity id for {} is {}'.format(self.name, train[0, 0]))
 
@@ -63,28 +63,36 @@ class Dataset(object):
             start = 0
             ent_idx = 0
             curr_ent = train[0, 0]
+            one_hop_list = []
+            candidate_nb = []
 
             while i < len(train):
                 prev_ent = curr_ent
                 curr_ent = train[i, 0]
+                candidate_nb.append(curr_ent)
 
                 if prev_ent != curr_ent:
                     while ent_idx != curr_ent:
                         slice_dic.append([start, start])
-                    slice_dic.append([start, i])  # slice_dic[i] == (start, end)
+                    candidate_nb = list(set(candidate_nb))
+                    one_hop_list += candidate_nb
+                    slice_dic.append([start, start + len(candidate_nb)])
                     start = i
                     ent_idx += 1
 
                 if i == len(train) - 1:
-                    slice_dic.append([start, i+1])
+                    candidate_nb = list(set(candidate_nb))
+                    slice_dic.append([start, start + len(candidate_nb)])
+                    one_hop_list += candidate_nb
 
                 i += 1
 
+            one_hop_list = np.array(one_hop_list, dtype=np.int64)
             slice_dic = np.array(slice_dic, dtype=np.int64)
 
-            pickle.dump(train, open(sorted_file_path, 'wb'))
+            pickle.dump(one_hop_list, open(one_hop_path, 'wb'))
             pickle.dump(slice_dic, open(slice_file_path, 'wb'))
-            return train, slice_dic
+            return one_hop_list, slice_dic
 
     def get_2hop_nb(self):
         '''
@@ -103,7 +111,6 @@ class Dataset(object):
 
             i = 0
             two_start = 0
-            two_end = 0
 
             two_hop_list = []
             two_hop_slice = []
@@ -112,22 +119,22 @@ class Dataset(object):
 
                 # add one hop neighbors to candidate_nb
                 one_start, one_end = one_hop_slice[i]
-                curr_one_hop_nb = one_hop_sorted[one_start:one_end, 2]
-                two_hop_list += curr_one_hop_nb
-                two_end += len(curr_one_hop_nb)
+                curr_one_hop = list(set(one_hop_sorted[one_start:one_end, 2]))
+                two_hop_candidate = curr_one_hop
 
                 # add two hop neighbors to candidate_nb
-                for each_obj in curr_one_hop_nb:
+                for each_obj in curr_one_hop:
                     each_start, each_end = one_hop_slice[each_obj]
-                    two_hop_list += one_hop_sorted[each_start:each_end, 2]
-                    two_end += each_end - each_start
+                    two_hop_candidate += one_hop_sorted[each_start:each_end]
 
+                two_hop_candidate = list(set(two_hop_candidate))
+                two_end = two_start + len(two_hop_candidate)
                 two_hop_slice.append([two_start, two_end])
                 two_start = two_end
                 i += 1
 
-            two_hop_list = np.array(two_hop_list)
-            two_hop_slice = np.array(two_hop_slice)
+            two_hop_list = np.array(two_hop_list, dtype=np.int64)
+            two_hop_slice = np.array(two_hop_slice, dtype=np.int64)
 
             pickle.dump(two_hop_list, open(sorted_file_path, 'rb'))
             pickle.dump(two_hop_slice, open(slice_file_path, 'rb'))

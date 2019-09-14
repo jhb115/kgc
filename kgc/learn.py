@@ -162,9 +162,7 @@ if args.model in ['CP', 'ComplEx']:
     examples = unsorted_examples
 else:
     if args.n_hop_nb == 1:
-        sorted_data, slice_dic = dataset.get_sorted_train()
-        nb_list = sorted_data[:, 2]
-        del sorted_data
+        nb_list, slice_dic = dataset.get_1hop_nb()
     else:
         nb_list, slice_dic = dataset.get_2hop_nb()
     examples = torch.from_numpy(dataset.get_train().astype('int64'))
