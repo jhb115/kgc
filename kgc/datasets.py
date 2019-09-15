@@ -130,6 +130,7 @@ class Dataset(object):
                 two_hop_candidate = list(set(two_hop_candidate))
                 two_end = two_start + len(two_hop_candidate)
                 two_hop_slice.append([two_start, two_end])
+                two_hop_list += two_hop_candidate
                 two_start = two_end
                 i += 1
 

@@ -249,17 +249,18 @@ class ContExt(KBCModel):
         index_array = torch.full((len(subj), self.max_NB), self.padding_idx, dtype=torch.long).cuda()
 
         for i, each_subj in enumerate(subj):
-            start_i, end_i = torch.index_select(self.slice_dic, 0, each_subj)
+            start_i, end_i = self.slice_dic[each_subj]
             length = end_i - start_i
 
             if length > 0:
                 rnd_idx = torch.randperm(length, dtype=torch.int32) + torch.full((length,), start_i, dtype=torch.int32)
                 rnd_idx.cuda()
-                index_array = self.nb_list[rnd_idx]
+                nb_idx = self.nb_list[rnd_idx]
                 if forward_flag:
-                    index_array = index_array[index_array != obj[i]]  # remove any target o included in the neighborhood
-                if len(index_array) > self.max_NB:
-                    index_array = index_array[:self.max_NB]
+                    nb_idx = nb_idx[nb_idx != obj[i]]  # remove any target o included in the neighborhood
+
+                max_len = max([self.max_NB, len(nb_idx)])
+                index_array[:max_len] = nb_idx
 
         self.index_array = index_array.clone().data.cpu().numpy()
 

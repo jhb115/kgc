@@ -509,16 +509,15 @@ for e in range(args.max_epochs):
         forward_g.append(model.g.clone().data.cpu().numpy())
         forward_alpha.append(model.alpha.clone().data.cpu().numpy())
 
-        if (e+1) % (args.valid * 3) == 0:
-            np.save(folder_name + '/forward_g', np.array(forward_g))
-            np.save(folder_name + '/forward_alpha', np.array(forward_alpha))
+        np.save(folder_name + '/forward_g', np.array(forward_g))
+        np.save(folder_name + '/forward_alpha', np.array(forward_alpha))
 
-            if args.evaluation_mode:
-                forward_nb_index.append(model.index_array)
-                forward_spo_index.append(model.spo.clone().data.cpu().numpy())
+        if args.evaluation_mode:
+            forward_nb_index.append(model.index_array)
+            forward_spo_index.append(model.spo.clone().data.cpu().numpy())
 
-                np.save(folder_name + '/forward_nb_index', np.array(forward_nb_index))
-                np.save(folder_name + '/forward_spo_index', np.array(forward_spo_index))
+            np.save(folder_name + '/forward_nb_index', np.array(forward_nb_index))
+            np.save(folder_name + '/forward_spo_index', np.array(forward_spo_index))
 
         print("\n\t TRAIN: ", train_results)
 
@@ -571,18 +570,17 @@ for e in range(args.max_epochs):
             summary_config['summary']['best_hits@10'] = str(max_test_hits)
             torch.save(model.state_dict(), folder_name + '/model_state.pt')
 
-        if (e + 1) % (args.valid * 3) == 0:
-            test_g.append(model.g.clone().data.cpu().numpy())
-            test_alpha.append(model.alpha.clone().data.cpu().numpy())
-            np.save(folder_name + '/test_g', np.array(test_g))
-            np.save(folder_name + '/test_alpha', np.array(test_alpha))
+        test_g.append(model.g.clone().data.cpu().numpy())
+        test_alpha.append(model.alpha.clone().data.cpu().numpy())
+        np.save(folder_name + '/test_g', np.array(test_g))
+        np.save(folder_name + '/test_alpha', np.array(test_alpha))
 
-            if args.evaluation_mode:
-                test_nb_index.append(model.index_array)
-                test_spo_index.append(model.spo.clone().data.cpu().numpy())
+        if args.evaluation_mode:
+            test_nb_index.append(model.index_array)
+            test_spo_index.append(model.spo.clone().data.cpu().numpy())
 
-                np.save(folder_name + '/test_nb_index', np.array(test_nb_index))
-                np.save(folder_name + '/test_spo_index', np.array(test_spo_index))
+            np.save(folder_name + '/test_nb_index', np.array(test_nb_index))
+            np.save(folder_name + '/test_spo_index', np.array(test_spo_index))
 
 
         config['e'] = e
