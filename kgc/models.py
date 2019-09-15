@@ -263,7 +263,7 @@ class ContExt(KBCModel):
                     if np.count_nonzero(nb_idx == obj[i]) <= 1:
                         nb_idx = nb_idx[nb_idx != obj[i]]
 
-                nb_idx = np.unique(nb_idx)
+                nb_idx = np.random.permutation(np.unique(nb_idx))
                 max_len = max([self.max_NB, len(nb_idx)])
                 index_array[:max_len] = nb_idx
 
