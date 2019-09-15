@@ -43,12 +43,11 @@ class Dataset(object):
         return np.vstack((self.data['train'], copy))
 
     def get_1hop_nb(self):
-        one_hop_path = self.root / 'one_hop_list.pickle'
-        slice_file_path = self.root / 'one_hop_slice.pickle'
+        one_hop_path = self.root / 'one_hop_list.npy'
+        slice_file_path = self.root / 'one_hop_slice.npy'
         if os.path.exists(one_hop_path) and os.path.exists(slice_file_path):
             print('Sorted train set loaded')
-            return pickle.load(open(one_hop_path, 'rb')), \
-                   pickle.load(open(slice_file_path, 'rb'))
+            return np.load(one_hop_path), np.load(slice_file_path)
         else:
             print('Create new sorted list')
             train = self.get_train().astype('int64')
@@ -74,7 +73,6 @@ class Dataset(object):
                 if prev_ent != curr_ent:
                     while ent_idx != curr_ent:
                         slice_dic.append([start, start])
-                    candidate_nb = list(set(candidate_nb))
                     one_hop_list += candidate_nb
                     slice_dic.append([start, start + len(candidate_nb)])
                     start = i
@@ -90,8 +88,9 @@ class Dataset(object):
             one_hop_list = np.array(one_hop_list, dtype=np.int64)
             slice_dic = np.array(slice_dic, dtype=np.int64)
 
-            pickle.dump(one_hop_list, open(one_hop_path, 'wb'))
-            pickle.dump(slice_dic, open(slice_file_path, 'wb'))
+            np.save(one_hop_path, one_hop_list)
+            np.save(slice_file_path, slice_dic)
+
             return one_hop_list, slice_dic
 
     def get_2hop_nb(self):
@@ -99,12 +98,12 @@ class Dataset(object):
         2-hop neighborhood
         :return: 2_hop_sorted_train, 2_hop_slice_train
         '''
-        sorted_file_path = self.root / 'two_hop_list.pickle'
-        slice_file_path = self.root / 'two_hop_slice.pickle'
+        sorted_file_path = self.root / 'two_hop_list.npy'
+        slice_file_path = self.root / 'two_hop_slice.npy'
         if os.path.exists(sorted_file_path) and os.path.exists(slice_file_path):
             # load data if exists
             print('Sorted train set loaded')
-            return pickle.load(open(sorted_file_path, 'rb')), pickle.load(open(slice_file_path, 'rb'))
+            return np.load(sorted_file_path), pickle.load(slice_file_path)
         else:  # create data if not exists
             print('Create new sorted list')
             one_hop_sorted, one_hop_slice = self.get_sorted_train()  # sorted-train and slice-dic
@@ -127,7 +126,6 @@ class Dataset(object):
                     each_start, each_end = one_hop_slice[each_obj]
                     two_hop_candidate += one_hop_sorted[each_start:each_end]
 
-                two_hop_candidate = list(set(two_hop_candidate))
                 two_end = two_start + len(two_hop_candidate)
                 two_hop_slice.append([two_start, two_end])
                 two_hop_list += two_hop_candidate
@@ -137,8 +135,8 @@ class Dataset(object):
             two_hop_list = np.array(two_hop_list, dtype=np.int64)
             two_hop_slice = np.array(two_hop_slice, dtype=np.int64)
 
-            pickle.dump(two_hop_list, open(sorted_file_path, 'rb'))
-            pickle.dump(two_hop_slice, open(slice_file_path, 'rb'))
+            np.save(sorted_file_path, two_hop_list)
+            np.save(slice_file_path, two_hop_slice)
 
             return two_hop_list, two_hop_slice
 

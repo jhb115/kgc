@@ -240,12 +240,16 @@ class ContExt(KBCModel):
 
         nn.init.xavier_uniform_(self.b_g)
 
-        self.nb_list = torch.cuda.IntTensor(nb_list)
-        self.slice_dic = torch.cuda.IntTensor(slice_dic)
+        self.nb_list = nb_list
+        self.slice_dic = slice_dic
+
+        # self.nb_list = torch.cuda.IntTensor(nb_list)
+        # self.slice_dic = torch.cuda.IntTensor(slice_dic)
         self.max_NB = max_NB
 
-    def get_neighbor(self, subj: torch.Tensor, forward_flag: bool = True, obj: torch.Tensor = None):
-        #  if forward_flag = False -> obj = None
+    # def get_neighbor(self, subj: torch.Tensor, forward_flag: bool = True, obj: torch.Tensor = None):
+    def get_neighbor(self, subj: np.array, forward_flag: bool = True, obj: np.array = None):
+        # if forward_flag = False -> obj = None
         index_array = torch.full((len(subj), self.max_NB), self.padding_idx, dtype=torch.long).cuda()
 
         for i, each_subj in enumerate(subj):
@@ -253,11 +257,12 @@ class ContExt(KBCModel):
             length = end_i - start_i
 
             if length > 0:
-                rnd_idx = torch.randperm(length, dtype=torch.int32) + torch.full((length,), start_i, dtype=torch.int32)
-                rnd_idx.cuda()
-                nb_idx = self.nb_list[rnd_idx]
+                nb_idx = self.nb_list[start_i:end_i]
                 if forward_flag:
-                    nb_idx = nb_idx[nb_idx != obj[i]]  # remove any target o included in the neighborhood
+                    if np.count_nonzero(nb_idx == obj[i]) > 1:
+                        nb_idx = np.unique(nb_idx)
+                    else:
+                        nb_idx = np.unique(nb_idx[nb_idx != obj[i]])
 
                 max_len = max([self.max_NB, len(nb_idx)])
                 index_array[:max_len] = nb_idx
