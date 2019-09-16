@@ -50,7 +50,7 @@ class Dataset(object):
             return np.load(one_hop_path), np.load(slice_file_path)
         else:
             print('Create new sorted list')
-            train = self.get_train().astype('int64')
+            train = self.get_train().astype('int32')
 
             train = train[train[:, 0].argsort()]  # sorts the dataset in order with respect to subject entity id
 
@@ -63,9 +63,10 @@ class Dataset(object):
             ent_idx = 0
             curr_ent = train[0, 0]
             one_hop_list = []
+            candidate_nb = []
 
             while i < len(train):
-                candidate_nb = []
+
                 prev_ent = curr_ent
                 curr_ent = train[i, 0]
                 candidate_nb.append(curr_ent)
@@ -75,6 +76,7 @@ class Dataset(object):
                         slice_dic.append([start, start])
                     one_hop_list += candidate_nb
                     slice_dic.append([start, start + len(candidate_nb)])
+                    candidate_nb = []
                     start = i
                     ent_idx += 1
 
@@ -83,10 +85,15 @@ class Dataset(object):
                     slice_dic.append([start, start + len(candidate_nb)])
                     one_hop_list += candidate_nb
 
+                if i % 100 == 0:
+                    print(i, ' done')
+
                 i += 1
 
-            one_hop_list = np.array(one_hop_list, dtype=np.int64)
-            slice_dic = np.array(slice_dic, dtype=np.int64)
+            print('past this step')
+
+            one_hop_list = np.array(one_hop_list, dtype=np.int32)
+            slice_dic = np.array(slice_dic, dtype=np.int32)
 
             np.save(one_hop_path, one_hop_list)
             np.save(slice_file_path, slice_dic)
