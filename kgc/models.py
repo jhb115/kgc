@@ -265,7 +265,7 @@ class ContExt(KBCModel):
 
                 nb_idx = np.random.permutation(np.unique(nb_idx))
                 max_len = max([self.max_NB, len(nb_idx)])
-                index_array[:max_len] = nb_idx
+                index_array[i, :max_len] = nb_idx
 
         self.index_array = index_array.clone().data.cpu().numpy()
 
