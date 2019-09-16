@@ -63,9 +63,9 @@ class Dataset(object):
             ent_idx = 0
             curr_ent = train[0, 0]
             one_hop_list = []
-            candidate_nb = []
 
             while i < len(train):
+                candidate_nb = []
                 prev_ent = curr_ent
                 curr_ent = train[i, 0]
                 candidate_nb.append(curr_ent)
