@@ -45,12 +45,12 @@ class Dataset(object):
     def get_1hop_nb(self):
         one_hop_path = self.root / 'one_hop_list.npy'
         slice_file_path = self.root / 'one_hop_slice.npy'
-        if os.path.exists(one_hop_path) and os.path.exists(slice_file_path):
+        if os.path.exists(one_hop_path) and os.path.exists(slice_file_path) and 0:
             print('Sorted train set loaded')
             return np.load(one_hop_path), np.load(slice_file_path)
         else:
             print('Create new sorted list')
-            train = self.get_train().astype('int32')
+            train = self.get_train().astype('int64')
 
             train = train[train[:, 0].argsort()]  # sorts the dataset in order with respect to subject entity id
 
@@ -60,40 +60,33 @@ class Dataset(object):
 
             slice_dic = []
             start = 0
-            ent_idx = 0
             curr_ent = train[0, 0]
             one_hop_list = []
             candidate_nb = []
 
             while i < len(train):
-
                 prev_ent = curr_ent
+                i += 1
                 curr_ent = train[i, 0]
-                candidate_nb.append(curr_ent)
+                candidate_nb.append(prev_ent)
 
                 if prev_ent != curr_ent:
-                    while ent_idx != curr_ent:
-                        slice_dic.append([start, start])
                     one_hop_list += candidate_nb
-                    slice_dic.append([start, start + len(candidate_nb)])
+                    end = start + len(candidate_nb)
+                    slice_dic.append([start, end])
                     candidate_nb = []
-                    start = i
-                    ent_idx += 1
+                    start = end
+                    while prev_ent+1 != curr_ent:
+                        slice_dic.append([end, end])
+                        prev_ent += 1
 
                 if i == len(train) - 1:
                     candidate_nb = list(set(candidate_nb))
                     slice_dic.append([start, start + len(candidate_nb)])
                     one_hop_list += candidate_nb
 
-                if i % 100 == 0:
-                    print(i, ' done')
-
-                i += 1
-
-            print('past this step')
-
-            one_hop_list = np.array(one_hop_list, dtype=np.int32)
-            slice_dic = np.array(slice_dic, dtype=np.int32)
+            one_hop_list = np.array(one_hop_list, dtype=np.int64)
+            slice_dic = np.array(slice_dic, dtype=np.int64)
 
             np.save(one_hop_path, one_hop_list)
             np.save(slice_file_path, slice_dic)
