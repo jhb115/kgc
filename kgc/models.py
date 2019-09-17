@@ -305,9 +305,9 @@ class ContExt(KBCModel):
             if length > 0:
                 nb_idx = self.nb_list[start_i:end_i]
 
-                if forward_flag:
-                    if (nb_idx == obj[i]).sum() <= 1:
-                        nb_idx = nb_idx[nb_idx != obj[i]]
+                # if forward_flag:
+                #     if (nb_idx == obj[i]).sum() <= 1:
+                #         nb_idx = nb_idx[nb_idx != obj[i]]
 
                 nb_idx = torch.unique(nb_idx)
                 nb_idx = nb_idx[torch.randperm(len(nb_idx))]
