@@ -36,7 +36,8 @@ def prepare_dataset(path='../dataset/raw_data', name='YAGO3-10'):  # this path i
     entities, relations = set(), set()
 
     for f in files:
-        file_path = os.path.join(path, f)
+
+        file_path = os.path.join(path, name, f)
         to_read = open(file_path + '.txt', 'r')
         for line in to_read.readlines():
             lhs, rel, rhs = line.strip().split('\t')
@@ -50,8 +51,6 @@ def prepare_dataset(path='../dataset/raw_data', name='YAGO3-10'):  # this path i
     print("{} entities and {} relations".format(len(entities), len(relations)))
     n_relations = len(relations)
     n_entities = len(entities)
-    os.makedirs(os.path.join(path , name))
-    # write ent to id / rel to id
     for (dic, f) in zip([entities_to_id, relations_to_id], ['ent_id', 'rel_id']):
         ff = open(os.path.join(path, name, f), 'w+')
         for (x, i) in dic.items():
@@ -60,7 +59,7 @@ def prepare_dataset(path='../dataset/raw_data', name='YAGO3-10'):  # this path i
 
     # map train/test/valid with the ids
     for f in files:
-        file_path = os.path.join(path, f)
+        file_path = os.path.join(path, name, f)
         to_read = open(file_path + '.txt', 'r')
         examples = []
         for line in to_read.readlines():
@@ -69,7 +68,7 @@ def prepare_dataset(path='../dataset/raw_data', name='YAGO3-10'):  # this path i
                 examples.append([entities_to_id[lhs], relations_to_id[rel], entities_to_id[rhs]])
             except ValueError:
                 continue
-        out = open(path + '/' + name + '/' + (f + '.pickle'), 'wb')
+        out = open(os.path.join(path, name + (f + '.pickle')), 'wb')
         pickle.dump(np.array(examples).astype('uint64'), out)
         out.close()
 
@@ -78,7 +77,7 @@ def prepare_dataset(path='../dataset/raw_data', name='YAGO3-10'):  # this path i
     # create filtering files
     to_skip = {'lhs': defaultdict(set), 'rhs': defaultdict(set)}
     for f in files:
-        examples = pickle.load(open(path + '/' + name + '/' + (f + '.pickle'), 'rb'))
+        examples = pickle.load(open(os.path.join(path, name, (f + '.pickle')), 'rb'))
         for lhs, rel, rhs in examples:
             to_skip['lhs'][(rhs, rel + n_relations)].add(lhs)  # reciprocals
             to_skip['rhs'][(lhs, rel)].add(rhs)
@@ -88,11 +87,11 @@ def prepare_dataset(path='../dataset/raw_data', name='YAGO3-10'):  # this path i
         for k, v in skip.items():
             to_skip_final[kk][k] = sorted(list(v))
 
-    out = open(path + '/' + name + '/' + 'to_skip.pickle', 'wb')
+    out = open(os.path.join(path, name, 'to_skip.pickle'), 'wb')
     pickle.dump(to_skip_final, out)
     out.close()
 
-    examples = pickle.load(open(path + '/' + name + '/' + 'train.pickle', 'rb'))
+    examples = pickle.load(open(os.path.join(path, name, 'train.pickle'), 'rb'))
     counters = {
         'lhs': np.zeros(n_entities),
         'rhs': np.zeros(n_entities),
@@ -106,7 +105,7 @@ def prepare_dataset(path='../dataset/raw_data', name='YAGO3-10'):  # this path i
         counters['both'][rhs] += 1
     for k, v in counters.items():
         counters[k] = v / np.sum(v)
-    out = open(path + '/' + name + '/' + 'probas.pickle', 'wb')
+    out = open(os.path.join(path, name, 'probas.pickle'), 'wb')
     pickle.dump(counters, out)
     out.close()
 

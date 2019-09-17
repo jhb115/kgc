@@ -12,12 +12,12 @@ DATA_PATH = '../dataset/raw_data'
 
 class Dataset(object):
     def __init__(self, name: str):
-        self.root = DATA_PATH + '/' + name
+        self.root = os.path.join(DATA_PATH, name)
         self.name = name
         self.data = {}
 
         for f in ['train', 'test', 'valid']:
-            in_file = open(str(self.root + '/' + (f + '.pickle')), 'rb')
+            in_file = open(self.root / str(f + '.pickle'), 'rb')
             self.data[f] = pickle.load(in_file)
 
         maxis = np.max(self.data['train'], axis=0)
@@ -25,7 +25,7 @@ class Dataset(object):
         self.n_predicates = int(maxis[1] + 1)
         self.n_predicates *= 2
 
-        inp_f = open(str(self.root + '/' + f'to_skip.pickle'), 'rb')
+        inp_f = open(self.root / 'to_skip.pickle', 'rb')
         self.to_skip: Dict[str, Dict[Tuple[int, int], List[int]]] = pickle.load(inp_f)
         inp_f.close()
 
@@ -43,8 +43,8 @@ class Dataset(object):
         return np.vstack((self.data['train'], copy))
 
     def get_1hop_nb(self):
-        one_hop_path = self.root + '/' + 'one_hop_list.npy'
-        slice_file_path = self.root + '/' + 'one_hop_slice.npy'
+        one_hop_path = self.root / 'one_hop_list.npy'
+        slice_file_path = self.root / 'one_hop_slice.npy'
         if os.path.exists(one_hop_path) and os.path.exists(slice_file_path):
             print('Sorted train set loaded')
             return np.load(one_hop_path), np.load(slice_file_path)
@@ -98,8 +98,8 @@ class Dataset(object):
         2-hop neighborhood
         :return: 2_hop_sorted_train, 2_hop_slice_train
         '''
-        sorted_file_path = self.root + '/' + 'two_hop_list.npy'
-        slice_file_path = self.root + '/' + 'two_hop_slice.npy'
+        sorted_file_path = self.root / 'two_hop_list.npy'
+        slice_file_path = self.root / 'two_hop_slice.npy'
         if os.path.exists(sorted_file_path) and os.path.exists(slice_file_path) and 0:
             # load data if exists
             print('Sorted train set loaded')
