@@ -350,30 +350,17 @@ class ContExt(KBCModel):
         w_nb_E = torch.einsum('bk,bmk->bm', w[0], nb_E[0]) - torch.einsum('bk,bmk->bm', w[1], nb_E[1])
         w_nb_E = torch.where(w_nb_E == 0., torch.tensor(-float('inf')), w_nb_E)
 
-        print('w_nb_E = ', w_nb_E)
-
         self.alpha = torch.softmax(w_nb_E, dim=1)
-
-        print('alpha = ', self.alpha)
-
 
         e_c = (torch.einsum('bm,bmk->bk', self.alpha, nb_E[0]),
                torch.einsum('bm,bmk->bk', self.alpha, nb_E[1]))
-
-        print('e_c = ', e_c)
-
 
         # calculation of g
         self.g = Sigmoid((lhs[0]*rel[0]-lhs[1]*rel[1])@ self.Uo[0] - (lhs[1]*rel[0]+lhs[0]*rel[1])@ self.Uo[1]
                          + e_c[0] @ self.Wo[0] + self.b_g)
         g = self.drop_layer_g(self.g)
 
-        print('g = ', g)
-
         gated_e_c = (g * e_c[0] + (torch.ones((self.chunk_size, 1)) - g) * torch.ones_like(e_c[0]), g * e_c[1])
-
-        print('gated_e_c = ', gated_e_c)
-
 
         srrr = lhs[0] * rel[0]
         siri = lhs[1] * rel[1]
