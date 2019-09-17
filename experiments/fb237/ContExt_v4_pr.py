@@ -28,20 +28,21 @@ def to_cmd(c, _path=None):
         f'--optimizer {c["optimizer"]} ' \
         f'--mkdir 1 --rank {c["rank"]} --load_pre_train {c["load_pre_train"]} --max_NB {c["max_NB"]} --valid 3 ' \
         f'--learning_rate 0.01 --reg {c["reg"]} --batch_size 500 --g_weight {c["g_weight"]} ' \
-        f'--n_freeze {c["n_freeze"]} --evaluation_mode 1 --n_hop_nb {c["n_hop_nb"]}'
+        f'--n_freeze {c["n_freeze"]} --evaluation_mode 1 --n_hop_nb {c["n_hop_nb"]} --dropout_g {c["dropout_g"]}'
     return command
 
 
 def main(argv):
     hyp_space = dict(
         rank=[500],
-        max_NB=[50, 200],
+        max_NB=[200],
         g_weight=[0.03, 0.08],
-        reg=[0.01, 0.08],
+        reg=[0.02],
         optimizer=['Adagrad'],
         n_freeze=[0, 20],
         n_hop_nb=[1, 2],
-        load_pre_train=[1]
+        load_pre_train=[1],
+        dropout_g=[0., 0.3, 0.8]
     )
 
     configurations = list(cartesian_product(hyp_space))
