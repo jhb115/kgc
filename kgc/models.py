@@ -24,7 +24,7 @@ class KBCModel(nn.Module, ABC):
         pass
 
     def get_ranking(
-            self, queries: torch.Tensor,
+            self, queries: torch.tensor,
             filters: Dict[Tuple[int, int], List[int]],
             batch_size: int = 1000, chunk_size: int = -1
     ):
@@ -68,8 +68,8 @@ class KBCModel(nn.Module, ABC):
                             scores[i, np.array(filter_out, dtype=np.int64)] = -1e6
 
                     ranks[b_begin:b_begin + batch_size] += torch.sum(
-                        (scores > targets).float(), dim=1
-                    ).cpu()
+                        (scores > targets), dim=1
+                    ).to(device)
 
                     b_begin += batch_size
 
