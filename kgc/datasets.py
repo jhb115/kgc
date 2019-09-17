@@ -45,7 +45,7 @@ class Dataset(object):
     def get_1hop_nb(self):
         one_hop_path = self.root / 'one_hop_list.npy'
         slice_file_path = self.root / 'one_hop_slice.npy'
-        if os.path.exists(one_hop_path) and os.path.exists(slice_file_path) and 0:
+        if os.path.exists(one_hop_path) and os.path.exists(slice_file_path):
             print('Sorted train set loaded')
             return np.load(one_hop_path), np.load(slice_file_path)
         else:
@@ -65,7 +65,7 @@ class Dataset(object):
 
             while i < len(train):
                 curr_ent = train[i, 0]
-                candidate_nb.append(prev_ent)
+                candidate_nb.append(train[i-1, 2])
 
                 if prev_ent != curr_ent:
                     one_hop_list += candidate_nb
@@ -78,22 +78,18 @@ class Dataset(object):
                         prev_ent += 1
 
                 if i == len(train) - 1:
-                    candidate_nb = list(set(candidate_nb))
+                    candidate_nb.append(train[i, 2])
                     slice_dic.append([start, start + len(candidate_nb)])
                     one_hop_list += candidate_nb
 
                 prev_ent = curr_ent
                 i += 1
 
-
-
             one_hop_list = np.array(one_hop_list, dtype=np.int64)
             slice_dic = np.array(slice_dic, dtype=np.int64)
 
             np.save(one_hop_path, one_hop_list)
             np.save(slice_file_path, slice_dic)
-
-
 
             return one_hop_list, slice_dic
 
