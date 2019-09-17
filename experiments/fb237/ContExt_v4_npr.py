@@ -35,11 +35,11 @@ def to_cmd(c, _path=None):
 def main(argv):
     hyp_space = dict(
         rank=[500],
-        max_NB=[200],
+        max_NB=[50, 200],
         g_weight=[0.03, 0.08],
         reg=[0.01, 0.08],
         optimizer=['Adagrad'],
-        n_freeze=[0, 20],
+        n_freeze=[0],
         n_hop_nb=[1, 2],
         load_pre_train=[0]
     )
