@@ -20,7 +20,7 @@ def summary(configuration):
 
 def to_cmd(c, _path=None):
     command = f'python kgc/learn_grid.py --dataset YAGO3-10 ' \
-        f'--model Context_CP_v2 ' \
+        f'--model ContExt ' \
         f'--regularizer N4 ' \
         f'--max_epoch 100 ' \
         f'--optimizer {c["optimizer"]} ' \
@@ -62,7 +62,7 @@ def main(argv):
 #$ -S /bin/bash
 #$ -o /home/jeunbyun/sgelogs
 #$ -j y
-#$ -N yago_npr
+#$ -N npr_yago
 #$ -l tmem=14G
 #$ -l h_rt=92:00:00
 #$ -l gpu=1
