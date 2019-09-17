@@ -240,20 +240,43 @@ class ContExt(KBCModel):
 
         nn.init.xavier_uniform_(self.b_g)
 
-        self.nb_list = nb_list
-        self.slice_dic = slice_dic
+        # self.nb_list = nb_list
+        # self.slice_dic = slice_dic
 
-        # self.nb_list = torch.cuda.IntTensor(nb_list)
-        # self.slice_dic = torch.cuda.IntTensor(slice_dic)
+        self.nb_list = torch.cuda.IntTensor(nb_list)
+        self.slice_dic = torch.cuda.IntTensor(slice_dic)
         self.max_NB = max_NB
 
     # def get_neighbor(self, subj: torch.Tensor, forward_flag: bool = True, obj: torch.Tensor = None):
-    def get_neighbor(self, subj: np.array, forward_flag: bool = True, obj: torch.tensor = None):
+    # def get_neighbor(self, subj: torch.tensor, forward_flag: bool = True, obj: torch.tensor = None):
+    #     # if forward_flag = False -> obj = None
+    #     index_array = torch.full((len(subj), self.max_NB), self.padding_idx, dtype=torch.long).cuda()
+    #
+    #     if forward_flag:
+    #         obj = obj.cpu().numpy().astype('int64')
+    #
+    #     for i, each_subj in enumerate(subj):
+    #         start_i, end_i = self.slice_dic[each_subj]
+    #         length = end_i - start_i
+    #
+    #         if length > 0:
+    #             nb_idx = self.nb_list[start_i:end_i]
+    #
+    #             if forward_flag:
+    #                 if np.count_nonzero(nb_idx == obj[i]) <= 1:
+    #                     nb_idx = nb_idx[nb_idx != obj[i]]
+    #
+    #             nb_idx = np.random.permutation(np.unique(nb_idx))
+    #             max_len = min([self.max_NB, len(nb_idx)])
+    #             index_array[i, :max_len] = torch.tensor(nb_idx[:max_len], dtype=torch.long).cuda()
+    #
+    #     self.index_array = index_array.clone().data.cpu().numpy()
+    #
+    #     return self.embeddings[2](index_array)
+
+    def get_neighbor(self, subj: torch.tensor, forward_flag: bool = True, obj: torch.tensor = None):
         # if forward_flag = False -> obj = None
         index_array = torch.full((len(subj), self.max_NB), self.padding_idx, dtype=torch.long).cuda()
-
-        if forward_flag:
-            obj = obj.cpu().numpy().astype('int64')
 
         for i, each_subj in enumerate(subj):
             start_i, end_i = self.slice_dic[each_subj]
@@ -263,12 +286,13 @@ class ContExt(KBCModel):
                 nb_idx = self.nb_list[start_i:end_i]
 
                 if forward_flag:
-                    if np.count_nonzero(nb_idx == obj[i]) <= 1:
+                    if (nb_idx == obj[i]).sum() <= 1:
                         nb_idx = nb_idx[nb_idx != obj[i]]
 
-                nb_idx = np.random.permutation(np.unique(nb_idx))
+                nb_idx = torch.unique(nb_idx)
+                nb_idx = torch.randperm(len(nb_idx))
                 max_len = min([self.max_NB, len(nb_idx)])
-                index_array[i, :max_len] = torch.tensor(nb_idx[:max_len], dtype=torch.long).cuda()
+                index_array[i, :max_len] = nb_idx[:max_len]
 
         self.index_array = index_array.clone().data.cpu().numpy()
 
