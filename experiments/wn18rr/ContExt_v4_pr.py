@@ -21,7 +21,7 @@ def summary(configuration):
 
 
 def to_cmd(c, _path=None):
-    command = f'PYTHONPATH=. python kgc/learn.py --dataset wn18rr ' \
+    command = f'PYTHONPATH=. python kgc/learn.py --dataset WN18RR ' \
         f'--model ContExt ' \
         f'--regularizer N4 ' \
         f'--max_epoch 100 ' \
