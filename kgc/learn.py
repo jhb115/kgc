@@ -170,7 +170,7 @@ else:
         nb_list, slice_dic = dataset.get_1hop_nb()
     else:
         nb_list, slice_dic = dataset.get_2hop_nb()
-    examples = torch.from_numpy(dataset.get_train().astype('int64'))
+    examples = torch.from_numpy(dataset.get_train().astype('int64')).to(device)
 
 model = {
     'CP': lambda: CP(dataset.get_shape(), args.rank, args.init),

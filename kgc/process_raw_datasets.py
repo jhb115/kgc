@@ -11,15 +11,15 @@ import numpy as np
 from collections import defaultdict
 
 DATA_PATH = pkg_resources.resource_filename('kgc', 'data/')  # this is where the processed data get stored.
-
-if os.path.exists(DATA_PATH + '/YAGO3-10'):
-    shutil.rmtree(DATA_PATH + '/YAGO3-10')
-
-if os.path.exists(DATA_PATH + '/WN18RR'):
-    shutil.rmtree(DATA_PATH + '/WN18RR')
-
-if os.path.exists(DATA_PATH + '/FB237'):
-    shutil.rmtree(DATA_PATH + '/FB237')
+#
+# if os.path.exists(DATA_PATH + '/YAGO3-10'):
+#     shutil.rmtree(DATA_PATH + '/YAGO3-10')
+#
+# if os.path.exists(DATA_PATH + '/WN18RR'):
+#     shutil.rmtree(DATA_PATH + '/WN18RR')
+#
+# if os.path.exists(DATA_PATH + '/FB237'):
+#     shutil.rmtree(DATA_PATH + '/FB237')
 
 def prepare_dataset(path='../dataset/raw_data', name='YAGO3-10'):  # this path is where the raw data lies
     """
