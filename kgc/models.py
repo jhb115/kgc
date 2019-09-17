@@ -203,11 +203,12 @@ class ContExt(KBCModel):
         self.ascending = ascending
         self.evaluation_mode = evaluation_mode
         self.padding_idx = n_o
+        self.dummy_nb_idx = n_o + 1
 
         self.embeddings = nn.ModuleList([
             nn.Embedding(n_s, 2 * rank, sparse=True),
             nn.Embedding(n_r, 2 * rank, sparse=True),
-            nn.Embedding(n_o+1, 2 * rank, sparse=True, padding_idx=self.padding_idx)
+            nn.Embedding(n_o+2, 2 * rank, sparse=True, padding_idx=self.padding_idx)
         ])
 
         # self.embeddings = nn.ModuleList([
@@ -242,57 +243,9 @@ class ContExt(KBCModel):
 
         nn.init.xavier_uniform_(self.b_g)
 
-        # self.nb_list = nb_list
-        # self.slice_dic = slice_dic
-
         self.nb_list = torch.LongTensor(nb_list).to(device)
         self.slice_dic = torch.LongTensor(slice_dic).to(device)
         self.max_NB = max_NB
-
-    # def get_neighbor(self, subj: torch.tensor, forward_flag: bool = True, obj: torch.tensor = None):
-    #     # if forward_flag = False -> obj = None
-    #     index_array = torch.full((len(subj), self.max_NB), self.padding_idx, dtype=torch.long).cuda()
-    #
-    #     if forward_flag:
-    #         obj = obj.cpu().numpy().astype('int64')
-    #
-    #     for i, each_subj in enumerate(subj):
-    #         start_i, end_i = self.slice_dic[each_subj]
-    #         length = end_i - start_i
-    #
-    #         if length > 0:
-    #             nb_idx = self.nb_list[start_i:end_i]
-    #
-    #             if forward_flag:
-    #                 if np.count_nonzero(nb_idx == obj[i]) <= 1:
-    #                     nb_idx = nb_idx[nb_idx != obj[i]]
-    #
-    #             nb_idx = np.random.permutation(np.unique(nb_idx))
-    #             max_len = min([self.max_NB, len(nb_idx)])
-    #             index_array[i, :max_len] = torch.tensor(nb_idx[:max_len], dtype=torch.long).cuda()
-    #
-    #     self.index_array = index_array.clone().data.cpu().numpy()
-    #
-    #     return self.embeddings[2](index_array)
-
-    # def assign_nb(self, each_subj, forward_flag, each_obj):
-    #     start_i, end_i = self.slice_dic[each_subj]
-    #     length = end_i - start_i
-    #
-    #     if length > 0:
-    #         nb_idx = self.nb_list[start_i:end_i]
-    #
-    #         if forward_flag:
-    #             if (nb_idx == each_obj).sum() <= 1:
-    #                 nb_idx = nb_idx[nb_idx != each_obj]
-    #
-    #         nb_idx = torch.unique(nb_idx)
-    #         nb_idx = torch.randperm(len(nb_idx))
-    #         max_len = min([self.max_NB, len(nb_idx)])  #used for index_array[i, :max_len] = nb_idx[:max_len]
-    #
-    #     return max_len, nb_idx[:max_len]
-
-
 
     def get_neighbor(self, subj: torch.tensor, forward_flag: bool = True, obj: torch.tensor = None):
         # if forward_flag = False -> obj = None
@@ -305,11 +258,15 @@ class ContExt(KBCModel):
             if length > 0:
                 nb_idx = self.nb_list[start_i:end_i]
 
-                # if forward_flag:
-                #     if (nb_idx == obj[i]).sum() <= 1:
-                #         nb_idx = nb_idx[nb_idx != obj[i]]
+                if forward_flag:
+                    if (nb_idx == obj[i]).sum() <= 1:
+                        nb_idx = nb_idx[nb_idx != obj[i]]
 
                 nb_idx = torch.unique(nb_idx)
+
+                if len(nb_idx) < 1:
+                    nb_idx = torch.LongTensor([self.dummy_nb_idx]).to(device)
+
                 nb_idx = nb_idx[torch.randperm(len(nb_idx))]
                 max_len = min([self.max_NB, len(nb_idx)])
                 index_array[i, :max_len] = nb_idx[:max_len]
