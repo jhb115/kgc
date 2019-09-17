@@ -68,8 +68,8 @@ class KBCModel(nn.Module, ABC):
                             scores[i, np.array(filter_out, dtype=np.int64)] = -1e6
 
                     ranks[b_begin:b_begin + batch_size] += torch.sum(
-                        (scores > targets), dim=1
-                    ).to(device)
+                        (scores > targets).float().to(device), dim=1
+                    )
 
                     b_begin += batch_size
 
