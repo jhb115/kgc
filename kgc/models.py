@@ -174,7 +174,7 @@ class ComplEx(KBCModel):
             chunk_begin:chunk_begin + chunk_size
         ].transpose(0, 1)
 
-    def get_queries(self, queries: torch.Tensor):
+    def get_queries(self, queries: torch.tensor):
         lhs = self.embeddings[0](queries[:, 0])
         rel = self.embeddings[1](queries[:, 1])
         lhs = lhs[:, :self.rank], lhs[:, self.rank:]
@@ -318,7 +318,7 @@ class ContExt(KBCModel):
 
         return self.embeddings[2](index_array)
 
-    def score(self, x: torch.Tensor):
+    def score(self, x: torch.tensor):
 
         self.chunk_size = len(x)
 
@@ -423,7 +423,7 @@ class ContExt(KBCModel):
            g * torch.sqrt(e_c[0]**2 + e_c[1] ** 2)
         )
 
-    def get_queries(self, queries: torch.Tensor):
+    def get_queries(self, queries: torch.tensor):
 
         self.chunk_size = len(queries)
         self.flag += 1
