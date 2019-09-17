@@ -24,7 +24,7 @@ def to_cmd(c, _path=None):
     command = f'PYTHONPATH=. python kgc/learn.py --dataset FB237 ' \
         f'--model ContExt ' \
         f'--regularizer N4 ' \
-        f'--max_epoch 140 ' \
+        f'--max_epoch 100 ' \
         f'--optimizer {c["optimizer"]} ' \
         f'--mkdir 1 --rank {c["rank"]} --load_pre_train {c["load_pre_train"]} --max_NB {c["max_NB"]} --valid 3 ' \
         f'--learning_rate 0.01 --reg {c["reg"]} --batch_size 500 --g_weight {c["g_weight"]} ' \
