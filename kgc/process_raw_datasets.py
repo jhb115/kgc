@@ -34,6 +34,7 @@ def prepare_dataset(path='../dataset/raw_data', name='YAGO3-10'):  # this path i
     """
     files = ['train', 'valid', 'test']
     entities, relations = set(), set()
+
     for f in files:
         file_path = os.path.join(path, f)
         to_read = open(file_path + '.txt', 'r')
@@ -68,7 +69,7 @@ def prepare_dataset(path='../dataset/raw_data', name='YAGO3-10'):  # this path i
                 examples.append([entities_to_id[lhs], relations_to_id[rel], entities_to_id[rhs]])
             except ValueError:
                 continue
-        out = open(path / name / (f + '.pickle'), 'wb')
+        out = open(path + '/' + name + '/' + (f + '.pickle'), 'wb')
         pickle.dump(np.array(examples).astype('uint64'), out)
         out.close()
 
@@ -87,11 +88,11 @@ def prepare_dataset(path='../dataset/raw_data', name='YAGO3-10'):  # this path i
         for k, v in skip.items():
             to_skip_final[kk][k] = sorted(list(v))
 
-    out = open(path / name / 'to_skip.pickle', 'wb')
+    out = open(path + '/' + name + '/' + 'to_skip.pickle', 'wb')
     pickle.dump(to_skip_final, out)
     out.close()
 
-    examples = pickle.load(open(path / name / 'train.pickle', 'rb'))
+    examples = pickle.load(open(path + '/' + name + '/' + 'train.pickle', 'rb'))
     counters = {
         'lhs': np.zeros(n_entities),
         'rhs': np.zeros(n_entities),
@@ -104,8 +105,8 @@ def prepare_dataset(path='../dataset/raw_data', name='YAGO3-10'):  # this path i
         counters['both'][lhs] += 1
         counters['both'][rhs] += 1
     for k, v in counters.items():
-        counters[k] = v / np.sum(v)
-    out = open(path / name / 'probas.pickle', 'wb')
+        counters[k] = v + '/' + np.sum(v)
+    out = open(path + '/' + name + '/' + 'probas.pickle', 'wb')
     pickle.dump(counters, out)
     out.close()
 
