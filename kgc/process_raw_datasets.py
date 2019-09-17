@@ -105,7 +105,7 @@ def prepare_dataset(path='../dataset/raw_data', name='YAGO3-10'):  # this path i
         counters['both'][lhs] += 1
         counters['both'][rhs] += 1
     for k, v in counters.items():
-        counters[k] = v + '/' + np.sum(v)
+        counters[k] = v / np.sum(v)
     out = open(path + '/' + name + '/' + 'probas.pickle', 'wb')
     pickle.dump(counters, out)
     out.close()
