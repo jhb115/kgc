@@ -265,7 +265,7 @@ class ContExt(KBCModel):
                         nb_idx = nb_idx[nb_idx != obj[i]]
 
                 nb_idx = np.random.permutation(np.unique(nb_idx))
-                max_len = max([self.max_NB, len(nb_idx)])
+                max_len = min([self.max_NB, len(nb_idx)])
                 index_array[i, :max_len] = torch.tensor(nb_idx, dtype=torch.long).cuda()
 
         self.index_array = index_array.clone().data.cpu().numpy()
