@@ -140,11 +140,6 @@ class Dataset(object):
                 two_hop_list += two_hop_candidate
                 two_start = two_end
 
-
-                i += 1
-                if i % 5000 == 0:
-                    print(i)
-
             two_hop_list = np.array(two_hop_list, dtype=np.int32)
             two_hop_slice = np.array(two_hop_slice, dtype=np.int32)
 
