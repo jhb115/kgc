@@ -19,7 +19,7 @@ def summary(configuration):
 
 
 def to_cmd(c, _path=None):
-    command = f'python kgc/learn_grid.py --dataset YAGO3-10 ' \
+    command = f'python kgc/learn.py --dataset YAGO3-10 ' \
         f'--model ContExt ' \
         f'--regularizer N4 ' \
         f'--max_epoch 100 ' \
