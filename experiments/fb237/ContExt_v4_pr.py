@@ -21,25 +21,27 @@ def summary(configuration):
 
 
 def to_cmd(c, _path=None):
-    command = f'python kgc/learn_grid.py --dataset FB237 ' \
-        f'--model Context_ComplEx_v3 ' \
+    command = f'python kgc/learn.py --dataset FB237 ' \
+        f'--model ContExt ' \
         f'--regularizer N4 ' \
         f'--max_epoch 140 ' \
         f'--optimizer {c["optimizer"]} ' \
-        f'--mkdir 1 --rank {c["rank"]} --load_pre_train 0 --max_NB {c["max_NB"]} --valid 3 ' \
+        f'--mkdir 1 --rank {c["rank"]} --load_pre_train {c["load_pre_train"]} --max_NB {c["max_NB"]} --valid 3 ' \
         f'--learning_rate 0.01 --reg {c["reg"]} --batch_size 500 --g_weight {c["g_weight"]} ' \
-        f'--n_freeze {c["n_freeze"]} --evaluation_mode 1'
+        f'--n_freeze {c["n_freeze"]} --evaluation_mode 1 --n_hop_nb {c["n_hop_nb"]}'
     return command
 
 
 def main(argv):
     hyp_space = dict(
         rank=[500],
-        max_NB=[50, 150],
+        max_NB=[200],
         g_weight=[0.03, 0.08],
         reg=[0.01, 0.08],
         optimizer=['Adagrad'],
-        n_freeze=[0, 20]
+        n_freeze=[0, 20],
+        n_hop_nb=[1, 2],
+        load_pre_train=[1]
     )
 
     configurations = list(cartesian_product(hyp_space))
@@ -63,8 +65,8 @@ def main(argv):
 #$ -S /bin/bash
 #$ -o /home/jeunbyun/sgelogs
 #$ -j y
-#$ -N pr_grid_fb237_ContExt_v3
-#$ -l tmem=9G
+#$ -N pr_fb237
+#$ -l tmem=14G
 #$ -l h_rt=92:00:00
 #$ -l gpu=1
 
