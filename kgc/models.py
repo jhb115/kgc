@@ -243,8 +243,8 @@ class ContExt(KBCModel):
         # self.nb_list = nb_list
         # self.slice_dic = slice_dic
 
-        self.nb_list = torch.cuda.IntTensor(nb_list)
-        self.slice_dic = torch.cuda.IntTensor(slice_dic)
+        self.nb_list = torch.cuda.LongTensor(nb_list)
+        self.slice_dic = torch.cuda.LongTensor(slice_dic)
         self.max_NB = max_NB
 
     # def get_neighbor(self, subj: torch.Tensor, forward_flag: bool = True, obj: torch.Tensor = None):
