@@ -54,19 +54,16 @@ class Dataset(object):
 
             train = train[train[:, 0].argsort()]  # sorts the dataset in order with respect to subject entity id
 
-            i = 0
-
             print('Min entity id for {} is {}'.format(self.name, train[0, 0]))
 
             slice_dic = []
             start = 0
-            curr_ent = train[0, 0]
+            i = 1
+            prev_ent = train[0, 0]
             one_hop_list = []
             candidate_nb = []
 
             while i < len(train):
-                prev_ent = curr_ent
-                i += 1
                 curr_ent = train[i, 0]
                 candidate_nb.append(prev_ent)
 
@@ -85,11 +82,18 @@ class Dataset(object):
                     slice_dic.append([start, start + len(candidate_nb)])
                     one_hop_list += candidate_nb
 
+                prev_ent = curr_ent
+                i += 1
+
+
+
             one_hop_list = np.array(one_hop_list, dtype=np.int64)
             slice_dic = np.array(slice_dic, dtype=np.int64)
 
             np.save(one_hop_path, one_hop_list)
             np.save(slice_file_path, slice_dic)
+
+
 
             return one_hop_list, slice_dic
 
