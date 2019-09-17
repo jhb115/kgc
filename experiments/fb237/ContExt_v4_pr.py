@@ -35,7 +35,7 @@ def to_cmd(c, _path=None):
 def main(argv):
     hyp_space = dict(
         rank=[500],
-        max_NB=[200],
+        max_NB=[50, 200],
         g_weight=[0.03, 0.08],
         reg=[0.01, 0.08],
         optimizer=['Adagrad'],
