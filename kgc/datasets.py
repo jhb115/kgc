@@ -9,6 +9,8 @@ from kgc.models import KBCModel
 import os
 
 DATA_PATH = '../dataset/raw_data'
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
 
 class Dataset(object):
     def __init__(self, name: str):
@@ -153,7 +155,7 @@ class Dataset(object):
             at: Tuple[int] = (1, 3, 10)
     ):
         test = self.get_examples(split)
-        examples = torch.from_numpy(test.astype('int64'))
+        examples = torch.from_numpy(test.astype('int64')).to(device)
         missing = [missing_eval]
         if missing_eval == 'both':
             missing = ['rhs', 'lhs']
