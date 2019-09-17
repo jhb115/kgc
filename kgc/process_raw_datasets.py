@@ -115,7 +115,7 @@ if __name__ == "__main__":
     for each_data in ['YAGO3-10', 'WN18RR', 'FB237']:
         print("Preparing dataset {}".format(each_data))
         try:
-            prepare_dataset('../dataset/raw_data/'+each_data, each_data)
+            prepare_dataset('../dataset/raw_data', each_data)
         except OSError as e:
             if e.errno == errno.EEXIST:
                 print(e)
