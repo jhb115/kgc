@@ -78,7 +78,7 @@ def prepare_dataset(path='../dataset/raw_data', name='YAGO3-10'):  # this path i
     # create filtering files
     to_skip = {'lhs': defaultdict(set), 'rhs': defaultdict(set)}
     for f in files:
-        examples = pickle.load(open(path / name / (f + '.pickle'), 'rb'))
+        examples = pickle.load(open(path + '/' + name + '/' + (f + '.pickle'), 'rb'))
         for lhs, rel, rhs in examples:
             to_skip['lhs'][(rhs, rel + n_relations)].add(lhs)  # reciprocals
             to_skip['rhs'][(lhs, rel)].add(rhs)
