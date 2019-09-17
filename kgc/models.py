@@ -8,6 +8,8 @@ import random
 from torch.nn import functional as F, Parameter
 from torch.nn.init import xavier_normal_
 
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
 class KBCModel(nn.Module, ABC):
     @abstractmethod
     def get_rhs(self, chunk_begin: int, chunk_size: int):
@@ -243,8 +245,8 @@ class ContExt(KBCModel):
         # self.nb_list = nb_list
         # self.slice_dic = slice_dic
 
-        self.nb_list = torch.LongTensor(nb_list)
-        self.slice_dic = torch.LongTensor(slice_dic)
+        self.nb_list = torch.LongTensor(nb_list).to(device)
+        self.slice_dic = torch.LongTensor(slice_dic).to(device)
         self.max_NB = max_NB
 
     # def get_neighbor(self, subj: torch.tensor, forward_flag: bool = True, obj: torch.tensor = None):
