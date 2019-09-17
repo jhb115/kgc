@@ -108,7 +108,8 @@ class Dataset(object):
             print('Create new sorted list')
             one_hop_sorted, one_hop_slice = self.get_1hop_nb()  # sorted-train and slice-dic
 
-            one_hop_sorted.tolist()
+            one_hop_sorted = one_hop_sorted.tolist()
+            one_hop_slice = one_hop_slice.tolist()
 
             i = 0
             two_start = 0
@@ -132,6 +133,7 @@ class Dataset(object):
                 two_hop_slice.append([two_start, two_end])
                 two_hop_list += two_hop_candidate
                 two_start = two_end
+
                 i += 1
 
             two_hop_list = np.array(two_hop_list, dtype=np.int64)
