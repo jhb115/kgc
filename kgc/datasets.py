@@ -8,7 +8,7 @@ import torch
 from kgc.models import KBCModel
 import os
 
-DATA_PATH = Path(pkg_resources.resource_filename('kgc', 'data/'))
+DATA_PATH = '../dataset/raw_data'
 
 class Dataset(object):
     def __init__(self, name: str):
