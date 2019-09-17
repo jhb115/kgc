@@ -153,7 +153,7 @@ class Dataset(object):
             at: Tuple[int] = (1, 3, 10)
     ):
         test = self.get_examples(split)
-        examples = torch.from_numpy(test.astype('int64')).cuda()
+        examples = torch.from_numpy(test.astype('int64'))
         missing = [missing_eval]
         if missing_eval == 'both':
             missing = ['rhs', 'lhs']

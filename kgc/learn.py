@@ -18,6 +18,11 @@ torch.manual_seed(0)
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
 
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+if torch.cuda.is_available():
+    torch.set_default_tensor_type(torch.cuda.FloatTensor)
+
 '''
 List of Hyperparameters to tune:
 rank = [100, 200, 400]
@@ -183,8 +188,6 @@ regularizer = {
     'N4': N4(args.reg, g_weight=args.g_weight)
 }[args.regularizer]
 
-#device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-device = torch.device('cuda')
 model.to(device)
 
 # Freeze the embeddings for n_freeze epochs

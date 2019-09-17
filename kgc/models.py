@@ -243,11 +243,10 @@ class ContExt(KBCModel):
         # self.nb_list = nb_list
         # self.slice_dic = slice_dic
 
-        self.nb_list = torch.cuda.LongTensor(nb_list)
-        self.slice_dic = torch.cuda.LongTensor(slice_dic)
+        self.nb_list = torch.LongTensor(nb_list)
+        self.slice_dic = torch.LongTensor(slice_dic)
         self.max_NB = max_NB
 
-    # def get_neighbor(self, subj: torch.Tensor, forward_flag: bool = True, obj: torch.Tensor = None):
     # def get_neighbor(self, subj: torch.tensor, forward_flag: bool = True, obj: torch.tensor = None):
     #     # if forward_flag = False -> obj = None
     #     index_array = torch.full((len(subj), self.max_NB), self.padding_idx, dtype=torch.long).cuda()
@@ -274,9 +273,28 @@ class ContExt(KBCModel):
     #
     #     return self.embeddings[2](index_array)
 
+    def assign_nb(self, each_subj, forward_flag, each_obj):
+        start_i, end_i = self.slice_dic[each_subj]
+        length = end_i - start_i
+
+        if length > 0:
+            nb_idx = self.nb_list[start_i:end_i]
+
+            if forward_flag:
+                if (nb_idx == each_obj).sum() <= 1:
+                    nb_idx = nb_idx[nb_idx != each_obj]
+
+            nb_idx = torch.unique(nb_idx)
+            nb_idx = torch.randperm(len(nb_idx))
+            max_len = min([self.max_NB, len(nb_idx)])  #used for index_array[i, :max_len] = nb_idx[:max_len]
+
+        return max_len, nb_idx[:max_len]
+
+
+
     def get_neighbor(self, subj: torch.tensor, forward_flag: bool = True, obj: torch.tensor = None):
         # if forward_flag = False -> obj = None
-        index_array = torch.full((len(subj), self.max_NB), self.padding_idx, dtype=torch.long).cuda()
+        index_array = torch.full((len(subj), self.max_NB), self.padding_idx, dtype=torch.long)
 
         for i, each_subj in enumerate(subj):
             start_i, end_i = self.slice_dic[each_subj]
@@ -325,7 +343,7 @@ class ContExt(KBCModel):
         nb_E = nb_E[:, :, :self.rank], nb_E[:, :, self.rank:]  # check on this
 
         w_nb_E = torch.einsum('bk,bmk->bm', w[0], nb_E[0]) - torch.einsum('bk,bmk->bm', w[1], nb_E[1])
-        w_nb_E = torch.where(w_nb_E == 0., torch.tensor(-float('inf')).cuda(), w_nb_E)
+        w_nb_E = torch.where(w_nb_E == 0., torch.tensor(-float('inf')), w_nb_E)
 
         self.alpha = torch.softmax(w_nb_E, dim=1)
 
@@ -335,7 +353,7 @@ class ContExt(KBCModel):
         self.g = Sigmoid((lhs[0]*rel[0]-lhs[1]*rel[1]) @ self.Uo[0] - (lhs[1]*rel[0]+lhs[0]*rel[1]) @ self.Uo[1]
                          + e_c[0] @ self.Wo[0] + self.b_g)
 
-        gated_e_c = (self.g * e_c[0] + (torch.ones((self.chunk_size, 1)).cuda() - self.g)*torch.ones_like(e_c[0]),
+        gated_e_c = (self.g * e_c[0] + (torch.ones((self.chunk_size, 1)) - self.g)*torch.ones_like(e_c[0]),
                      self.g * e_c[1])
 
         srrr = lhs[0] * rel[0]
@@ -371,7 +389,7 @@ class ContExt(KBCModel):
         nb_E = nb_E[:, :, :self.rank], nb_E[:, :, self.rank:]
 
         w_nb_E = torch.einsum('bk,bmk->bm', w[0], nb_E[0]) - torch.einsum('bk,bmk->bm', w[1], nb_E[1])
-        w_nb_E = torch.where(w_nb_E == 0., torch.tensor(-float('inf')).cuda(), w_nb_E)
+        w_nb_E = torch.where(w_nb_E == 0., torch.tensor(-float('inf')), w_nb_E)
 
         self.alpha = torch.softmax(w_nb_E, dim=1)
 
@@ -383,7 +401,7 @@ class ContExt(KBCModel):
                          + e_c[0] @ self.Wo[0] + self.b_g)
         g = self.drop_layer_g(self.g)
 
-        gated_e_c = (g * e_c[0] + (torch.ones((self.chunk_size, 1)).cuda() - g) * torch.ones_like(e_c[0]), g * e_c[1])
+        gated_e_c = (g * e_c[0] + (torch.ones((self.chunk_size, 1)) - g) * torch.ones_like(e_c[0]), g * e_c[1])
 
         srrr = lhs[0] * rel[0]
         siri = lhs[1] * rel[1]
@@ -424,7 +442,7 @@ class ContExt(KBCModel):
         nb_E = nb_E[:, :, :self.rank], nb_E[:, :, self.rank:]  # check on this
 
         w_nb_E = torch.einsum('bk,bmk->bm', w[0], nb_E[0]) - torch.einsum('bk,bmk->bm', w[1], nb_E[1])
-        w_nb_E = torch.where(w_nb_E == 0., torch.tensor(-float('inf')).cuda(), w_nb_E)
+        w_nb_E = torch.where(w_nb_E == 0., torch.tensor(-float('inf')), w_nb_E)
 
         self.alpha = torch.softmax(w_nb_E, dim=1)
 
@@ -435,7 +453,7 @@ class ContExt(KBCModel):
                          - (lhs[1] * rel[0] + lhs[0] * rel[1]) @ self.Uo[1]
                          + e_c[0] @ self.Wo[0] + self.b_g)
 
-        gated_e_c = (self.g * e_c[0] + (torch.ones((self.chunk_size, 1)).cuda() - self.g) * torch.ones_like(e_c[0]),
+        gated_e_c = (self.g * e_c[0] + (torch.ones((self.chunk_size, 1)) - self.g) * torch.ones_like(e_c[0]),
                      self.g * e_c[1])
 
         srrr = lhs[0] * rel[0]
