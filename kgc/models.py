@@ -310,7 +310,7 @@ class ContExt(KBCModel):
                         nb_idx = nb_idx[nb_idx != obj[i]]
 
                 nb_idx = torch.unique(nb_idx)
-                nb_idx = torch.randperm(len(nb_idx))
+                nb_idx = nb_idx[torch.randperm(len(nb_idx))]
                 max_len = min([self.max_NB, len(nb_idx)])
                 index_array[i, :max_len] = nb_idx[:max_len]
 
