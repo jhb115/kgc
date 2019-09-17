@@ -100,12 +100,16 @@ class Dataset(object):
         '''
         sorted_file_path = self.root / 'two_hop_list.npy'
         slice_file_path = self.root / 'two_hop_slice.npy'
-        if os.path.exists(sorted_file_path) and os.path.exists(slice_file_path):
+        if os.path.exists(sorted_file_path) and os.path.exists(slice_file_path) and 0:
             # load data if exists
             print('Sorted train set loaded')
-            return np.load(sorted_file_path), pickle.load(slice_file_path)
+            return np.load(sorted_file_path), np.load(slice_file_path)
         else:  # create data if not exists
+
             one_hop_sorted, one_hop_slice = self.get_1hop_nb()  # sorted-train and slice-dic
+
+            one_hop_sorted.astype('int32')
+            one_hop_slice.astype('int32')
 
             one_hop_sorted = one_hop_sorted.tolist()
             one_hop_slice = one_hop_slice.tolist()
@@ -124,7 +128,7 @@ class Dataset(object):
                 two_hop_candidate = curr_one_hop
 
                 # add two hop neighbors to candidate_nb
-                for each_obj in curr_one_hop:
+                for each_obj in list(set(curr_one_hop)):
                     each_start, each_end = one_hop_slice[each_obj]
                     two_hop_candidate += one_hop_sorted[each_start:each_end]
 
@@ -136,16 +140,16 @@ class Dataset(object):
                 two_hop_list += two_hop_candidate
                 two_start = two_end
 
-                i += 1
 
-            two_hop_list = np.array(two_hop_list, dtype=np.int64)
-            two_hop_slice = np.array(two_hop_slice, dtype=np.int64)
+                i += 1
+                if i % 5000 == 0:
+                    print(i)
+
+            two_hop_list = np.array(two_hop_list, dtype=np.int32)
+            two_hop_slice = np.array(two_hop_slice, dtype=np.int32)
 
             np.save(sorted_file_path, two_hop_list)
             np.save(slice_file_path, two_hop_slice)
-
-            np.save('./one_hop_list.npy', two_hop_list)
-            np.save('./slice_dic.npy', two_hop_slice)
 
             return two_hop_list, two_hop_slice
 
