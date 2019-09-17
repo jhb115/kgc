@@ -106,7 +106,9 @@ class Dataset(object):
             return np.load(sorted_file_path), pickle.load(slice_file_path)
         else:  # create data if not exists
             print('Create new sorted list')
-            one_hop_sorted, one_hop_slice = self.get_sorted_train()  # sorted-train and slice-dic
+            one_hop_sorted, one_hop_slice = self.get_1hop_nb()  # sorted-train and slice-dic
+
+            one_hop_sorted.tolist()
 
             i = 0
             two_start = 0
@@ -118,7 +120,7 @@ class Dataset(object):
 
                 # add one hop neighbors to candidate_nb
                 one_start, one_end = one_hop_slice[i]
-                curr_one_hop = list(set(one_hop_sorted[one_start:one_end, 2]))
+                curr_one_hop = one_hop_sorted[one_start:one_end]
                 two_hop_candidate = curr_one_hop
 
                 # add two hop neighbors to candidate_nb
