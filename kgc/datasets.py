@@ -105,7 +105,6 @@ class Dataset(object):
             print('Sorted train set loaded')
             return np.load(sorted_file_path), pickle.load(slice_file_path)
         else:  # create data if not exists
-            print('Create new sorted list')
             one_hop_sorted, one_hop_slice = self.get_1hop_nb()  # sorted-train and slice-dic
 
             one_hop_sorted = one_hop_sorted.tolist()
@@ -128,6 +127,9 @@ class Dataset(object):
                 for each_obj in curr_one_hop:
                     each_start, each_end = one_hop_slice[each_obj]
                     two_hop_candidate += one_hop_sorted[each_start:each_end]
+
+                nb_candidates, counts = np.unique(two_hop_candidate, return_counts=True)
+                two_hop_candidate = list(nb_candidates[counts > 1]) + list(nb_candidates)
 
                 two_end = two_start + len(two_hop_candidate)
                 two_hop_slice.append([two_start, two_end])
