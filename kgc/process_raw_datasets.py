@@ -68,7 +68,7 @@ def prepare_dataset(path='../dataset/raw_data', name='YAGO3-10'):  # this path i
                 examples.append([entities_to_id[lhs], relations_to_id[rel], entities_to_id[rhs]])
             except ValueError:
                 continue
-        out = open(os.path.join(path, name + (f + '.pickle')), 'wb')
+        out = open(os.path.join(path, name, (f + '.pickle')), 'wb')
         pickle.dump(np.array(examples).astype('uint64'), out)
         out.close()
 
