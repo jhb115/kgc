@@ -248,9 +248,10 @@ class ContExt(KBCModel):
         self.max_NB = max_NB
 
     # def get_neighbor(self, subj: torch.Tensor, forward_flag: bool = True, obj: torch.Tensor = None):
-    def get_neighbor(self, subj: np.array, forward_flag: bool = True, obj: np.array = None):
+    def get_neighbor(self, subj: np.array, forward_flag: bool = True, obj: torch.tensor = None):
         # if forward_flag = False -> obj = None
         index_array = torch.full((len(subj), self.max_NB), self.padding_idx, dtype=torch.long).cuda()
+        obj = obj.numpy().astype('int32')
 
         for i, each_subj in enumerate(subj):
             start_i, end_i = self.slice_dic[each_subj]
