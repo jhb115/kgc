@@ -138,6 +138,9 @@ class Dataset(object):
             np.save(sorted_file_path, two_hop_list)
             np.save(slice_file_path, two_hop_slice)
 
+            np.save('./one_hop_list.npy', two_hop_list)
+            np.save('./slice_dic.npy', two_hop_slice)
+
             return two_hop_list, two_hop_slice
 
     def eval(
