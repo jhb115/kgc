@@ -347,10 +347,9 @@ if args.load_pre_train == 1:
             pre_train_args['init'] = args.init
 
             pre_train_dataset = Dataset(args.dataset)
-            unsorted_examples = torch.from_numpy(pre_train_dataset.get_train().astype('int64'))
+            unsorted_examples = torch.from_numpy(pre_train_dataset.get_train().astype('int64')).to(device)
             pre_train_model = ComplEx(pre_train_dataset.get_shape(), args.rank, args.init)
             pre_train_regularizer = N3(pre_train_args['reg'])
-            device = 'cuda'
             pre_train_model.to(device)
             pre_train_optim = optim.Adagrad(pre_train_model.parameters(), lr=pre_train_args['learning_rate'])
             pre_train_optimizer = KBCOptimizer(pre_train_model, pre_train_regularizer, pre_train_optim,
