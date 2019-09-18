@@ -42,7 +42,7 @@ def main(argv):
         n_freeze=[0, 20],
         n_hop_nb=[1, 2],
         load_pre_train=[1],
-        dropout_g=[0., 0.3, 0.8],
+        dropout_g=[0., 0.3],
         learning_rate=[0.01]
     )
 
