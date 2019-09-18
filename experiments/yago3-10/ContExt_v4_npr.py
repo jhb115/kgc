@@ -63,7 +63,7 @@ def main(argv):
 #$ -S /bin/bash
 #$ -o /home/jeunbyun/sgelogs
 #$ -j y
-#$ -N 2_npr_yago
+#$ -N 2npr_yago
 #$ -l tmem=14G
 #$ -l h_rt=92:00:00
 #$ -l gpu=1

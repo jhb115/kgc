@@ -67,7 +67,7 @@ def main(argv):
 #$ -S /bin/bash
 #$ -o /home/jeunbyun/sgelogs
 #$ -j y
-#$ -N 2_npr_fb237
+#$ -N 2npr_fb237
 #$ -l tmem=14G
 #$ -l h_rt=92:00:00
 #$ -l gpu=1
