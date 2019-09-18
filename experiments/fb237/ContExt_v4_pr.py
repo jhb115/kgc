@@ -43,7 +43,7 @@ def main(argv):
         n_hop_nb=[1, 2],
         load_pre_train=[1],
         dropout_g=[0., 0.3, 0.8],
-        learning_rate=[0.1]
+        learning_rate=[0.01]
     )
 
     configurations = list(cartesian_product(hyp_space))
