@@ -25,7 +25,7 @@ def to_cmd(c, _path=None):
         f'--max_epoch 100 ' \
         f'--optimizer {c["optimizer"]} ' \
         f'--mkdir 1 --rank {c["rank"]} --load_pre_train {c["load_pre_train"]} --max_NB {c["max_NB"]} --valid 3 ' \
-        f'--learning_rate 0.01 --reg {c["reg"]} --batch_size 500 --g_weight {c["g_weight"]} ' \
+        f'--learning_rate {c["learning_rate"]} --reg {c["reg"]} --batch_size 500 --g_weight {c["g_weight"]} ' \
         f'--n_freeze {c["n_freeze"]} --n_hop_nb {c["n_hop_nb"]} --dropout_g {c["dropout_g"]}'
     return command
 
@@ -40,7 +40,8 @@ def main(argv):
         n_freeze=[0],
         n_hop_nb=[1, 2],
         load_pre_train=[0],
-        dropout_g=[0., 0.3, 0.8]
+        dropout_g=[0., 0.3, 0.8],
+        learning_rate=[0.1]
     )
 
     configurations = list(cartesian_product(hyp_space))
