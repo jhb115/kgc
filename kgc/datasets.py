@@ -173,6 +173,8 @@ class Dataset(object):
                 q[:, 0] = q[:, 2]
                 q[:, 2] = tmp
                 q[:, 1] += self.n_predicates // 2
+
+            #  where we run the model on self.to_skip
             ranks = model.get_ranking(q, self.to_skip[m], batch_size=500)
             mean_reciprocal_rank[m] = torch.mean(1. / ranks).item()
             hits_at[m] = torch.FloatTensor((list(map(

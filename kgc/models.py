@@ -45,12 +45,19 @@ class KBCModel(nn.Module, ABC):
             while c_begin < self.sizes[2]:
                 b_begin = 0
                 rhs = self.get_rhs(c_begin, chunk_size)
+
+                self.spo_list = []
+                self.test_nb_index = []
+
                 while b_begin < len(queries):
                     these_queries = queries[b_begin:b_begin + batch_size]
                     q = self.get_queries(these_queries)
 
                     scores = q @ rhs
                     targets = self.score(these_queries)
+
+                    self.spo_list.append(self.spo.clone().data.cpu().numpy())
+                    self.test_nb_index.append(self.index_array)
 
                     # set filtered and true scores to -1e6 to be ignored
                     # take care that scores are chunked

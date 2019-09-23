@@ -540,6 +540,7 @@ for e in range(args.max_epochs):
         np.save(folder_name + '/train_hit3', np.array(train_hit3))
         np.save(folder_name + '/train_hit10', np.array(train_hit10))
 
+        # Where we run our model on test dataset
         results = avg_both(*dataset.eval(model, 'test', -1))
 
         test_mrr.append(results['MRR'])
@@ -578,8 +579,8 @@ for e in range(args.max_epochs):
         np.save(folder_name + '/test_alpha', np.array(test_alpha))
 
         if args.evaluation_mode:
-            test_nb_index.append(model.index_array)
-            test_spo_index.append(model.spo.clone().data.cpu().numpy())
+            test_nb_index.append(model.test_nb_index)
+            test_spo_index.append(model.spo_list)
 
             np.save(folder_name + '/test_nb_index', np.array(test_nb_index))
             np.save(folder_name + '/test_spo_index', np.array(test_spo_index))
