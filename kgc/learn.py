@@ -287,8 +287,8 @@ run_pre_train_flag = 0
 
 
 # Need to consider the case when args.model == 'Context_CP
-pre_model_name = {'Contact': 'Contact',
-                  'ContExt': 'ContExt'}[args.model]
+pre_model_name = {'Contact': 'Context_CP',
+                  'ContExt': 'Context_ComplEx'}[args.model]
 
 if args.load_pre_train == 1:
     pre_train_folder = '../pre_train/{}/{}/{}'.format(pre_model_name, args.dataset, str(args.rank))
