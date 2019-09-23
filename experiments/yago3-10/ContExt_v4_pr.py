@@ -26,7 +26,7 @@ def to_cmd(c, _path=None):
         f'--optimizer {c["optimizer"]} ' \
         f'--mkdir 1 --rank {c["rank"]} --load_pre_train {c["load_pre_train"]} --max_NB {c["max_NB"]} --valid 3 ' \
         f'--learning_rate {c["learning_rate"]} --reg {c["reg"]} --batch_size 500 --g_weight {c["g_weight"]} ' \
-        f'--n_freeze {c["n_freeze"]} --n_hop_nb {c["n_hop_nb"]} --dropout_g {c["dropout_g"]}'
+        f'--n_freeze {c["n_freeze"]} --n_hop_nb {c["n_hop_nb"]} --dropout_g {c["dropout_g"]} --evaluation_mode 1'
     return command
 
 
