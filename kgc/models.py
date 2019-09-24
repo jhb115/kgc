@@ -278,7 +278,8 @@ class ContExt(KBCModel):
                 max_len = min([self.max_NB, len(nb_idx)])
                 index_array[i, :max_len] = nb_idx[:max_len]
 
-        self.index_array = index_array.clone().data.cpu().numpy()
+        if not forward_flag:
+            self.index_array = index_array.clone().data.cpu().numpy()
 
         return self.embeddings[0](index_array)
 
