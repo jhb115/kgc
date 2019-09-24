@@ -212,16 +212,16 @@ class ContExt(KBCModel):
         self.padding_idx = n_o
         self.dummy_nb_idx = n_o + 1
 
-        self.embeddings = nn.ModuleList([
-            nn.Embedding(n_s, 2 * rank, sparse=True),
-            nn.Embedding(n_r, 2 * rank, sparse=True),
-            nn.Embedding(n_o+2, 2 * rank, sparse=True, padding_idx=self.padding_idx)
-        ])
-
         # self.embeddings = nn.ModuleList([
-        #     nn.Embedding(s, 2 * rank, sparse=True)
-        #     for s in self.sizes[:2]
+        #     nn.Embedding(n_s, 2 * rank, sparse=True),
+        #     nn.Embedding(n_r, 2 * rank, sparse=True),
+        #     nn.Embedding(n_o+2, 2 * rank, sparse=True, padding_idx=self.padding_idx)
         # ])
+
+        self.embeddings = nn.ModuleList([
+            nn.Embedding(n_s + 2, 2 * rank, sparse=True, padding_idx=self.padding_idx),
+            nn.Embedding(n_r, 2 * rank, sparse=True)
+        ])
 
         self.embeddings[0].weight.data *= init_size
         self.embeddings[1].weight.data *= init_size
@@ -280,7 +280,7 @@ class ContExt(KBCModel):
 
         self.index_array = index_array.clone().data.cpu().numpy()
 
-        return self.embeddings[2](index_array)
+        return self.embeddings[0](index_array)
 
     def score(self, x: torch.tensor):
 
