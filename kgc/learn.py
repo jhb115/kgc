@@ -144,6 +144,11 @@ parser.add_argument(
     help='How many hops to consider'
 )
 
+parser.add_argument(
+    '--rcp_bool', default=1, type=int, choices=[0, 1],
+    help='0 for standard link prediction and 1 for reciprocal link prediction'
+)
+
 # Setup parser
 args = parser.parse_args()
 
