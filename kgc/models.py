@@ -435,3 +435,4 @@ class ContExt(KBCModel):
         return self.embeddings[0].weight.data[
                chunk_begin:chunk_begin + chunk_size
                ].transpose(0, 1)
+
