@@ -96,14 +96,6 @@ parser.add_argument(
     '--learning_rate', default=0.1, type=float,
     help="Learning rate"
 )
-parser.add_argument(
-    '--decay1', default=0.9, type=float,
-    help="decay rate for the first moment estimate in Adam"
-)
-parser.add_argument(
-    '--decay2', default=0.999, type=float,
-    help="decay rate for second moment estimate in Adam"
-)
 
 # For Context-based models
 parser.add_argument(
@@ -125,11 +117,6 @@ parser.add_argument(
 parser.add_argument(
     '--load_pre_train', default=0, type=int, choices=[0, 1],
     help='1 if you wish to load the saved pre-train the embedding for Context-based model'
-)
-
-parser.add_argument(
-    '--ascending', default=1, type=int, choices=[-1, 1],
-    help='1 if you wish to consider neighborhood degrees in ascending order, -1 otherwise'
 )
 
 parser.add_argument(
@@ -177,8 +164,8 @@ model = {
     'ComplEx': lambda: ComplEx(dataset.get_shape(), args.rank, args.init),
     'ContExt': lambda: ContExt(dataset.get_shape(), args.rank, nb_list, slice_dic,
                                max_NB=args.max_NB, init_size=args.init, data_name=args.dataset,
-                               ascending=args.ascending, dropout_1=args.dropout_1,
-                               dropout_g=args.dropout_g, evaluation_mode=args.evaluation_mode),
+                               dropout_1=args.dropout_1, dropout_g=args.dropout_g,
+                               evaluation_mode=args.evaluation_mode)
 }[args.model]()
 
 regularizer = {

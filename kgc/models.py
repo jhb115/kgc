@@ -197,7 +197,7 @@ class ContExt(KBCModel):
     def __init__(
             self, sizes: Tuple[int, int, int], rank: int, nb_list:np.ndarray,
             slice_dic: np.ndarray, max_NB: int=50, init_size: float=1e-3,
-            data_name: str='FB15K', ascending=1, dropout_1=0.5, dropout_g=0.5,
+            data_name: str='FB15K', dropout_1=0.5, dropout_g=0.5,
             evaluation_mode = False
     ):
         super(ContExt, self).__init__()
@@ -207,7 +207,6 @@ class ContExt(KBCModel):
         self.data_name = data_name
         self.context_flag = 1
         self.flag = 0
-        self.ascending = ascending
         self.evaluation_mode = evaluation_mode
         self.padding_idx = n_o
         self.dummy_nb_idx = n_o + 1
