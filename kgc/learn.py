@@ -12,7 +12,7 @@ from kgc.optimizers import KBCOptimizer
 import os
 import numpy as np
 
-# For reproducilibility
+# For reproducibility
 np.random.seed(0)
 torch.manual_seed(0)
 torch.backends.cudnn.deterministic = True
@@ -491,6 +491,7 @@ def save_np(folder_name, name_list, value_list):
 
     for i in range(len(name_list)):
         np.save(folder_name + name_list[i], np.array(value_list[i]))
+
 
 for e in range(args.max_epochs):
 

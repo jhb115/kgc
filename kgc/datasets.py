@@ -13,7 +13,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
 class Dataset(object):
-    def __init__(self, name: str, rcp_bool: bool=True):
+    def __init__(self, name: str, rcp_bool: int = 1):
         self.root = os.path.join(DATA_PATH, name)
         self.name = name
         self.data = {}
@@ -103,10 +103,7 @@ class Dataset(object):
             return one_hop_list, slice_dic
 
     def get_2hop_nb(self):
-        '''
-        2-hop neighborhood
-        :return: 2_hop_sorted_train, 2_hop_slice_train
-        '''
+
         sorted_file_path = os.path.join(self.root, 'two_hop_list.npy')
         slice_file_path = os.path.join(self.root, 'two_hop_slice.npy')
         if os.path.exists(sorted_file_path) and os.path.exists(slice_file_path) and 0:
