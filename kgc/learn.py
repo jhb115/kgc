@@ -153,11 +153,12 @@ parser.add_argument(
 args = parser.parse_args()
 
 # Get Dataset
-dataset = Dataset(args.dataset)
 if args.model in ['CP', 'ComplEx']:
+    dataset = Dataset(args.dataset, rcp_bool=1)
     unsorted_examples = torch.from_numpy(dataset.get_train().astype('int64'))
     examples = unsorted_examples
 else:
+    dataset = Dataset(args.dataset, rcp_bool=args.rcp_bool)
     if args.n_hop_nb == 1:
         nb_list, slice_dic = dataset.get_1hop_nb()
     else:
@@ -301,7 +302,7 @@ if args.load_pre_train == 1:
                               'save_pre_train': 1, 'learning_rate': 0.1, 'reg': 0.1, 'dataset': args.dataset,
                               'rank': args.rank, 'init': args.init}
 
-            pre_train_dataset = Dataset(args.dataset)
+            pre_train_dataset = Dataset(args.dataset, rcp_bool=1)
             unsorted_examples = torch.from_numpy(pre_train_dataset.get_train().astype('int64'))
             pre_train_model = CP(pre_train_dataset.get_shape(), args.rank, args.init)
             pre_train_regularizer = N3(pre_train_args['reg'])
@@ -338,7 +339,7 @@ if args.load_pre_train == 1:
             pre_train_args['rank'] = args.rank
             pre_train_args['init'] = args.init
 
-            pre_train_dataset = Dataset(args.dataset)
+            pre_train_dataset = Dataset(args.dataset, rcp_bool=1)
             unsorted_examples = torch.from_numpy(pre_train_dataset.get_train().astype('int64')).to(device)
             pre_train_model = ComplEx(pre_train_dataset.get_shape(), args.rank, args.init)
             pre_train_regularizer = N3(pre_train_args['reg'])
@@ -477,15 +478,19 @@ hits_name = ['_hits@1', '_hits@3', '_hits@10']
 
 train_mrr = []
 train_hit1 = []
-train_hit3 = []
 train_hit10 = []
 
 test_mrr = []
 test_hit1 = []
-test_hit3 = []
 test_hit10 = []
 
 folder_name = '../results/{}/{}/{}'.format(args.model, args.dataset, train_no)
+
+
+def save_np(folder_name, name_list, value_list):
+
+    for i in range(len(name_list)):
+        np.save(folder_name + name_list[i], np.array(value_list[i]))
 
 for e in range(args.max_epochs):
 
@@ -497,58 +502,56 @@ for e in range(args.max_epochs):
     cur_loss = optimizer.epoch(examples)
 
     if (e + 1) % args.valid == 0 or (e+1) == args.max_epochs:
+        if args.rcp_bool:
+            train_results = avg_both(*dataset.eval(model, 'train', 50000))
+        else:
+            train_results = dataset.eval(model, 'train', 50000)
+            train_results = (train_results[0]['rhs'], train_results[1]['rhs'])
 
-        train_results = avg_both(*dataset.eval(model, 'train', 50000))
+        print("\n\t TRAIN: ", train_results)
 
+        # start save train results
         forward_g.append(model.g.clone().data.cpu().numpy())
         forward_alpha.append(model.alpha.clone().data.cpu().numpy())
-
-        np.save(folder_name + '/forward_g', np.array(forward_g))
-        np.save(folder_name + '/forward_alpha', np.array(forward_alpha))
+        save_np(folder_name, ['/forward_g', '/forward_alpha'], forward_g, forward_alpha)
 
         if args.evaluation_mode:
             forward_nb_index.append(model.index_array)
             forward_spo_index.append(model.spo.clone().data.cpu().numpy())
-
-            np.save(folder_name + '/forward_nb_index', np.array(forward_nb_index))
-            np.save(folder_name + '/forward_spo_index', np.array(forward_spo_index))
-
-        print("\n\t TRAIN: ", train_results)
+            save_np(folder_name, ['/forward_nb_index', '/forward_spo_index'], [forward_nb_index, forward_spo_index])
 
         train_mrr.append(train_results['MRR'])
 
         hits1310 = train_results['hits@[1,3,10]'].numpy()
         train_hit1.append(hits1310[0])
-        train_hit3.append(hits1310[1])
         train_hit10.append(hits1310[2])
 
         summary_config[train_no]['curr_train_hit10'] = str(hits1310[2])
         summary_config[train_no]['curr_train_mrr'] = str(train_results['MRR'])
 
-        np.save(folder_name + '/loss', np.array(optimizer.loss_list))
-
-        np.save(folder_name + '/train_mrr', np.array(train_mrr))
-        np.save(folder_name + '/train_hit1', np.array(train_hit1))
-        np.save(folder_name + '/train_hit3', np.array(train_hit3))
-        np.save(folder_name + '/train_hit10', np.array(train_hit10))
+        save_np(folder_name, ['/loss', '/train_mrr', '/train_hit1', '/train_hit10'],
+                [optimizer.loss_list, train_mrr, train_hit1, train_hit10])
+        # end save train results
 
         # Where we run our model on test dataset
-        results = avg_both(*dataset.eval(model, 'test', -1))
 
-        test_mrr.append(results['MRR'])
-
-        hits1310 = results['hits@[1,3,10]'].numpy()
-
-        test_hit1.append(hits1310[0])
-        test_hit3.append(hits1310[1])
-        test_hit10.append(hits1310[2])
+        if args.rcp_bool:
+            results = avg_both(*dataset.eval(model, 'test', -1))
+        else:
+            results = dataset.eval(model, 'test', -1)
+            results = (results[0]['rhs'], results[1]['rhs'])
 
         print("\n\nTEST : ", results)
 
-        np.save(folder_name + '/test_mrr', np.array(test_mrr))
-        np.save(folder_name + '/test_hit1', np.array(test_hit1))
-        np.save(folder_name + '/test_hit3', np.array(test_hit3))
-        np.save(folder_name + '/test_hit10', np.array(test_hit10))
+        # save test results
+
+        test_mrr.append(results['MRR'])
+        hits1310 = results['hits@[1,3,10]'].numpy()
+
+        test_hit1.append(hits1310[0])
+        test_hit10.append(hits1310[2])
+
+        save_np(folder_name, ['/test_mrr', '/test_hit1', '/test_hit10'], [test_mrr, test_hit1, test_hit10])
 
         max_test_mrr = max(np.array(test_mrr))
         max_test_hits = max(np.array(test_hit10))
@@ -567,17 +570,16 @@ for e in range(args.max_epochs):
 
         test_g.append(model.g.clone().data.cpu().numpy())
         test_alpha.append(model.alpha.clone().data.cpu().numpy())
-        np.save(folder_name + '/test_g', np.array(test_g))
-        np.save(folder_name + '/test_alpha', np.array(test_alpha))
+
+        save_np(folder_name, ['/test_g', '/test_alpha'], [test_g, test_alpha])
 
         if args.evaluation_mode:
             test_nb_index.append(model.test_nb_index)
             test_spo_index.append(model.spo_list)
 
-            np.save(folder_name + '/test_nb_index', np.array(test_nb_index))
-            np.save(folder_name + '/test_spo_index', np.array(test_spo_index))
+            save_np(folder_name, ['/test_nb_index','/test_spo_index' ], [test_nb_index, test_spo_index] )
 
-
+        # Update the configuration file
         config['e'] = e
         pickle.dump(config, open(folder_name + '/config.p', 'wb'))
 
