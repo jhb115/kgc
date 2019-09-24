@@ -198,7 +198,7 @@ class ContExt(KBCModel):
             self, sizes: Tuple[int, int, int], rank: int, nb_list:np.ndarray,
             slice_dic: np.ndarray, max_NB: int=50, init_size: float=1e-3,
             data_name: str='FB15K', dropout_1=0.5, dropout_g=0.5,
-            evaluation_mode = False
+            evaluation_mode=True
     ):
         super(ContExt, self).__init__()
         n_s, n_r, n_o = sizes

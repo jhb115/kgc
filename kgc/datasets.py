@@ -13,10 +13,11 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
 class Dataset(object):
-    def __init__(self, name: str):
+    def __init__(self, name: str, rcp_bool: bool=True):
         self.root = os.path.join(DATA_PATH, name)
         self.name = name
         self.data = {}
+        self.rcp_bool = rcp_bool
 
         for f in ['train', 'test', 'valid']:
             in_file = open(os.path.join(self.root, str(f + '.pickle')), 'rb')
@@ -25,7 +26,9 @@ class Dataset(object):
         maxis = np.max(self.data['train'], axis=0)
         self.n_entities = int(max(maxis[0], maxis[2]) + 1)
         self.n_predicates = int(maxis[1] + 1)
-        self.n_predicates *= 2
+
+        if self.rcp_bool:
+            self.n_predicates *= 2
 
         inp_f = open(os.path.join(self.root, 'to_skip.pickle'), 'rb')
         self.to_skip: Dict[str, Dict[Tuple[int, int], List[int]]] = pickle.load(inp_f)
@@ -37,12 +40,16 @@ class Dataset(object):
     def get_train(self):
         # .pickle file contains non-reciprocals which is data['train']
         #  this function returns org+reciprocal triplets
-        copy = np.copy(self.data['train'])
-        tmp = np.copy(copy[:, 0])
-        copy[:, 0] = copy[:, 2]
-        copy[:, 2] = tmp
-        copy[:, 1] += self.n_predicates // 2  # has been multiplied by two.
-        return np.vstack((self.data['train'], copy))
+        if self.rcp_bool:
+            copy = np.copy(self.data['train'])
+            tmp = np.copy(copy[:, 0])
+
+            copy[:, 0] = copy[:, 2]
+            copy[:, 2] = tmp
+            copy[:, 1] += self.n_predicates // 2  # has been multiplied by two.
+            return np.vstack((self.data['train'], copy))
+        else:
+            return self.data['train']
 
     def get_1hop_nb(self):
         one_hop_path = os.path.join(self.root, 'one_hop_list.npy')
@@ -159,6 +166,9 @@ class Dataset(object):
         missing = [missing_eval]
         if missing_eval == 'both':
             missing = ['rhs', 'lhs']
+
+        if not self.rcp_bool:
+            missing = ['rhs']
 
         mean_reciprocal_rank = {}
         hits_at = {}
