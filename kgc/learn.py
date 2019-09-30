@@ -514,7 +514,7 @@ for e in range(args.max_epochs):
         # start save train results
         forward_g.append(model.g.clone().data.cpu().numpy())
         forward_alpha.append(model.alpha.clone().data.cpu().numpy())
-        save_np(folder_name, ['/forward_g', '/forward_alpha'], forward_g, forward_alpha)
+        save_np(folder_name, ['/forward_g', '/forward_alpha'], [forward_g, forward_alpha])
 
         if args.evaluation_mode:
             forward_nb_index.append(model.index_array)
@@ -578,7 +578,7 @@ for e in range(args.max_epochs):
             test_nb_index.append(model.test_nb_index)
             test_spo_index.append(model.spo_list)
 
-            save_np(folder_name, ['/test_nb_index','/test_spo_index' ], [test_nb_index, test_spo_index] )
+            save_np(folder_name, ['/test_nb_index', '/test_spo_index'], [test_nb_index, test_spo_index])
 
         # Update the configuration file
         config['e'] = e
