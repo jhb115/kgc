@@ -507,7 +507,7 @@ for e in range(args.max_epochs):
             train_results = avg_both(*dataset.eval(model, 'train', 50000))
         else:
             train_results = dataset.eval(model, 'train', 50000)
-            train_results = (train_results[0]['rhs'], train_results[1]['rhs'])
+            train_results = {'MRR': train_results[0]['rhs'], 'hits@[1,3,10]': train_results[1]['rhs']}
 
         print("\n\t TRAIN: ", train_results)
 
@@ -540,7 +540,7 @@ for e in range(args.max_epochs):
             results = avg_both(*dataset.eval(model, 'test', -1))
         else:
             results = dataset.eval(model, 'test', -1)
-            results = (results[0]['rhs'], results[1]['rhs'])
+            results = {'MRR': results[0]['rhs'], 'hits@[1,3,10]': results[1]['rhs']}
 
         print("\n\nTEST : ", results)
 
