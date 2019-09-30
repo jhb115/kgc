@@ -28,7 +28,8 @@ def to_cmd(c, _path=None):
         f'--optimizer {c["optimizer"]} ' \
         f'--mkdir 1 --rank {c["rank"]} --load_pre_train {c["load_pre_train"]} --max_NB {c["max_NB"]} --valid 3 ' \
         f'--learning_rate {c["learning_rate"]} --reg {c["reg"]} --batch_size 500 --g_weight {c["g_weight"]} ' \
-        f'--n_freeze {c["n_freeze"]} --evaluation_mode 1 --n_hop_nb {c["n_hop_nb"]} --dropout_g {c["dropout_g"]}'
+        f'--n_freeze {c["n_freeze"]} --evaluation_mode 1 --n_hop_nb {c["n_hop_nb"]} --dropout_g {c["dropout_g"]} ' \
+        f'--rcp_bool {c["rcp_bool"]}'
     return command
 
 
@@ -43,7 +44,8 @@ def main(argv):
         n_hop_nb=[1],
         load_pre_train=[0],
         dropout_g=[0.],
-        learning_rate=[0.1]
+        learning_rate=[0.1],
+        rcp_bool=[0]
     )
 
     configurations = list(cartesian_product(hyp_space))
@@ -67,7 +69,7 @@ def main(argv):
 #$ -S /bin/bash
 #$ -o /home/jeunbyun/sgelogs
 #$ -j y
-#$ -N npr2_fb237
+#$ -N test1_fb237
 #$ -l tmem=14G
 #$ -l h_rt=92:00:00
 #$ -l gpu=1
