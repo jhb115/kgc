@@ -136,7 +136,7 @@ class Dataset(object):
                 # add two hop neighbors to candidate_nb
                 for each_obj in list(set(curr_one_hop)):
                     each_start, each_end = one_hop_slice[each_obj]
-                    if each_end - each_start < threshold:
+                    if each_end - each_start < threshold:  # consider only neighbors (two-hop) of nodes neq hubs.
                         two_hop_candidate += one_hop_sorted[each_start:each_end]
 
                 nb_candidates, counts = np.unique(two_hop_candidate, return_counts=True)

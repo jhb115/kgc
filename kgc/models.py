@@ -218,7 +218,6 @@ class ContExt(KBCModel):
 
         self.embeddings[0].weight.data *= init_size
         self.embeddings[1].weight.data *= init_size
-        # self.embeddings[2].weight.data *= init_size  # For context
 
         self.W = nn.ParameterList([nn.Parameter(torch.randn((rank*2, rank))), nn.Parameter(torch.randn((rank*2, rank)))])
         self.b_w = nn.ParameterList([nn.Parameter(torch.randn((1, rank))), nn.Parameter(torch.randn((1, rank)))])
