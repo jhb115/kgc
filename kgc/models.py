@@ -198,7 +198,7 @@ class ContExt(KBCModel):
             self, sizes: Tuple[int, int, int], rank: int, nb_list:np.ndarray,
             slice_dic: np.ndarray, max_NB: int=50, init_size: float=1e-3,
             data_name: str='FB15K', dropout_1=0.5, dropout_g=0.5,
-            evaluation_mode=True, T='default'
+            evaluation_mode=True, temperature='default'
     ):
         super(ContExt, self).__init__()
         n_s, n_r, n_o = sizes
@@ -210,7 +210,7 @@ class ContExt(KBCModel):
         self.evaluation_mode = evaluation_mode
         self.padding_idx = n_o
         self.dummy_nb_idx = n_o + 1
-        self.T = T
+        self.T = temperature
 
         self.embeddings = nn.ModuleList([
             nn.Embedding(n_s + 2, 2 * rank, sparse=True, padding_idx=self.padding_idx),

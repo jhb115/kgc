@@ -149,6 +149,10 @@ parser.add_argument(
     help='0 for standard link prediction and 1 for reciprocal link prediction'
 )
 
+parser.add_argument(
+    '--temperature', default='default'
+)
+
 # Setup parser
 args = parser.parse_args()
 
@@ -171,7 +175,7 @@ model = {
     'ContExt': lambda: ContExt(dataset.get_shape(), args.rank, nb_list, slice_dic,
                                max_NB=args.max_NB, init_size=args.init, data_name=args.dataset,
                                dropout_1=args.dropout_1, dropout_g=args.dropout_g,
-                               evaluation_mode=args.evaluation_mode)
+                               evaluation_mode=args.evaluation_mode, temperature=args.temperature)
 }[args.model]()
 
 regularizer = {
