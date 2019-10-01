@@ -70,7 +70,7 @@ def main(argv):
 #$ -S /bin/bash
 #$ -o /home/jeunbyun/sgelogs
 #$ -j y
-#$ -N test1_fb237
+#$ -N test2_fb237
 #$ -l tmem=14G
 #$ -l h_rt=92:00:00
 #$ -l gpu=1
