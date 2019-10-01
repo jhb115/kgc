@@ -211,12 +211,6 @@ class ContExt(KBCModel):
         self.padding_idx = n_o
         self.dummy_nb_idx = n_o + 1
 
-        # self.embeddings = nn.ModuleList([
-        #     nn.Embedding(n_s, 2 * rank, sparse=True),
-        #     nn.Embedding(n_r, 2 * rank, sparse=True),
-        #     nn.Embedding(n_o+2, 2 * rank, sparse=True, padding_idx=self.padding_idx)
-        # ])
-
         self.embeddings = nn.ModuleList([
             nn.Embedding(n_s + 2, 2 * rank, sparse=True, padding_idx=self.padding_idx),
             nn.Embedding(n_r, 2 * rank, sparse=True)

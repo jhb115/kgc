@@ -102,7 +102,7 @@ class Dataset(object):
 
             return one_hop_list, slice_dic
 
-    def get_2hop_nb(self):
+    def get_2hop_nb(self, threshold=20):
 
         sorted_file_path = os.path.join(self.root, 'two_hop_list.npy')
         slice_file_path = os.path.join(self.root, 'two_hop_slice.npy')
@@ -136,7 +136,8 @@ class Dataset(object):
                 # add two hop neighbors to candidate_nb
                 for each_obj in list(set(curr_one_hop)):
                     each_start, each_end = one_hop_slice[each_obj]
-                    two_hop_candidate += one_hop_sorted[each_start:each_end]
+                    if each_end - each_start < threshold:
+                        two_hop_candidate += one_hop_sorted[each_start:each_end]
 
                 nb_candidates, counts = np.unique(two_hop_candidate, return_counts=True)
                 two_hop_candidate = list(nb_candidates[counts > 1]) + list(nb_candidates)
