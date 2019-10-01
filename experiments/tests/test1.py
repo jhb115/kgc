@@ -29,7 +29,7 @@ def to_cmd(c, _path=None):
         f'--mkdir 1 --rank {c["rank"]} --load_pre_train {c["load_pre_train"]} --max_NB {c["max_NB"]} --valid 3 ' \
         f'--learning_rate {c["learning_rate"]} --reg {c["reg"]} --batch_size 500 --g_weight {c["g_weight"]} ' \
         f'--n_freeze {c["n_freeze"]} --evaluation_mode 1 --n_hop_nb {c["n_hop_nb"]} --dropout_g {c["dropout_g"]} ' \
-        f'--rcp_bool {c["rcp_bool"]}'
+        f'--rcp_bool {c["rcp_bool"]} --temperature {c["temperature"]}'
     return command
 
 
@@ -38,14 +38,15 @@ def main(argv):
         rank=[500],
         max_NB=[50],
         g_weight=[0.],
-        reg=[0.04],
+        reg=[0.03, 0.07],
         optimizer=['Adagrad'],
         n_freeze=[0],
         n_hop_nb=[1],
         load_pre_train=[0],
         dropout_g=[0.],
-        learning_rate=[0.1],
-        rcp_bool=[0]
+        learning_rate=[0.1, 0.05],
+        rcp_bool=[0],
+        temperature=["default", 20., 50.]
     )
 
     configurations = list(cartesian_product(hyp_space))
