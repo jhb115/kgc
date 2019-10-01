@@ -304,7 +304,7 @@ class ContExt(KBCModel):
         w_nb_E = torch.einsum('bk,bmk->bm', w[0], nb_E[0]) - torch.einsum('bk,bmk->bm', w[1], nb_E[1])
         w_nb_E = torch.where(w_nb_E == 0., torch.tensor(-float('inf')), w_nb_E)
 
-        self.alpha = torch.softmax(w_nb_E, dim=1)
+        self.alpha = torch.softmax(w_nb_E/self.temperature(), dim=1)
 
         e_c = torch.einsum('bm,bmk->bk', self.alpha, nb_E[0]), torch.einsum('bm,bmk->bk', self.alpha, nb_E[1])
 
@@ -323,6 +323,12 @@ class ContExt(KBCModel):
         return torch.sum(((srrr - siri) * gated_e_c[0] + (sirr + srri) * gated_e_c[1]) * rhs[0] +
                          ((sirr + srri) * gated_e_c[0] + (siri - srrr) * gated_e_c[1]) * rhs[1]
                          , 1, keepdim=True)
+
+    def temperature(self):
+        if self.T == 'default':
+            return torch.tensor(np.sqrt(self.max_NB), device=device)
+        else:
+            return torch.tensor(np.sqrt(self.T), device=device)
 
     def forward(self, x):
 
@@ -350,7 +356,7 @@ class ContExt(KBCModel):
         w_nb_E = torch.einsum('bk,bmk->bm', w[0], nb_E[0]) - torch.einsum('bk,bmk->bm', w[1], nb_E[1])
         w_nb_E = torch.where(w_nb_E == 0., torch.tensor(-float('inf')), w_nb_E)
 
-        self.alpha = torch.softmax(w_nb_E, dim=1)
+        self.alpha = torch.softmax(w_nb_E/self.temperature(), dim=1)
 
         e_c = (torch.einsum('bm,bmk->bk', self.alpha, nb_E[0]),
                torch.einsum('bm,bmk->bk', self.alpha, nb_E[1]))
@@ -403,7 +409,7 @@ class ContExt(KBCModel):
         w_nb_E = torch.einsum('bk,bmk->bm', w[0], nb_E[0]) - torch.einsum('bk,bmk->bm', w[1], nb_E[1])
         w_nb_E = torch.where(w_nb_E == 0., torch.tensor(-float('inf')), w_nb_E)
 
-        self.alpha = torch.softmax(w_nb_E, dim=1)
+        self.alpha = torch.softmax(w_nb_E/self.temperature(), dim=1)
 
         e_c = torch.einsum('bm,bmk->bk', self.alpha, nb_E[0]), torch.einsum('bm,bmk->bk', self.alpha, nb_E[1])
 
